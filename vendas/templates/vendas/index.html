@@ -2,287 +2,388 @@
 {% load static %}
 
 {% block content %}
-
-<!-- CSS externo a partir do static -->
+<!-- Ícones do Bootstrap -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
 <div class="container-projetos">
-    <!-- Filtros - ESTILO ORIGINAL PERSONALIZADO -->
-    <div class="filters-container mb-5">
-        <h2 class="filters-title mb-4">Loja!</h2>
-        <h1 class="filters-title text-center">Mirna Boutique.</h1>
-        
-        <ul class="filter-list mb-4">
-            <li class="nav-item">
-                <a class="nav-link {% if not categoria_selecionada %}active{% endif %}" 
-                   href="{% url 'pagina_inicial' %}">Todos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if categoria_selecionada == 'lancamentos' %}active{% endif %}" 
-                   href="{% url 'pagina_inicial' %}?categoria=lancamentos">Lançamentos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if categoria_selecionada == 'promocoes' %}active{% endif %}" 
-                   href="{% url 'pagina_inicial' %}?categoria=promocoes">Promoções</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if categoria_selecionada == 'conjuntos' %}active{% endif %}" 
-                   href="{% url 'pagina_inicial' %}?categoria=conjuntos">Conjuntos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link " href="{% url 'orcamento' %}">
-                    <i class="bi bi-card-list"></i> Orçamento
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if categoria_selecionada == 'outros' %}active{% endif %}" 
-                   href="{% url 'pagina_inicial' %}?categoria=outros">Outros</a>
-            </li>
-            <li class="nav-item d-flex align-items-center me-3">
-                <a class="nav-link IG-link-filter" href="https://instagram.com/boutiquemirna7" target="_blank">
-                    <i class="bi bi-instagram fs-5 text-danger"></i>MirnaBoutique
-                </a>
-                </li>
-        </ul>
+
+    <!-- MENU -->
+    <div class="hero-header">
+        <div class="menu-container">
+
+            <a class="menu-item {% if not categoria_selecionada %}active{% endif %}"
+               href="{% url 'pagina_inicial' %}">Todos</a>
+
+            <a class="menu-item {% if categoria_selecionada == 'lancamentos' %}active{% endif %}"
+               href="?categoria=lancamentos">Lançamentos</a>
+
+            <a class="menu-item {% if categoria_selecionada == 'promocoes' %}active{% endif %}"
+               href="?categoria=promocoes">Promoções</a>
+
+            <a class="menu-item {% if categoria_selecionada == 'conjuntos' %}active{% endif %}"
+               href="?categoria=conjuntos">Conjuntos</a>
+
+            <a class="menu-item" href="{% url 'orcamento' %}">
+                <i class="bi bi-card-list"></i> Orçamento
+            </a>
+
+            <a class="menu-item {% if categoria_selecionada == 'outros' %}active{% endif %}"
+               href="?categoria=outros">Outros</a>
+
+            <a class="menu-instagram" href="https://instagram.com/boutiquemirna7" target="_blank">
+                <i class="bi bi-instagram"></i> MirnaBoutique
+            </a>
+
+        </div>
     </div>
-    
-    <!-- Seção de produtos dinâmica -->
-    {% if produtos %}
-        <h1 class="section-title text-center mt-5 mb-4">
-            {% if categoria_selecionada == 'lancamentos' %}Lançamentos
-            {% elif categoria_selecionada == 'promocoes' %}Promoções
-            {% elif categoria_selecionada == 'conjuntos' %}Conjuntos
-            {% elif categoria_selecionada == 'outros' %}Outros
-            {% else %}Todos os Produtos da Loja{% endif %}
-        </h1>
-        
-        <div class="row g-4 row-custom mx-0">
-            {% for produto in produtos %}
-            <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100 shadow-sm border-0 overflow-hidden">
-                    <div class="image-container position-relative overflow-hidden">
-                        <a href="{% url 'detalhes_produto' produto.id %}">
-                            {% if produto.imagem %}
-                            <img src="{{ produto.imagem.url }}" class="img-fluid" 
-                                 alt="{{ produto.nome }}">
-                            {% else %}
-                            <img src="{% static 'vendas/images/default-product.png' %}" class="img-fluid" 
-                                 alt="{{ produto.nome }}">
-                            {% endif %}
-                        </a>
+
+     <!-- LOGO/BANNER -->
+    <section class="hero-banner" style="background: url('{% static 'img/logo.jpg' %}') no-repeat center center; background-size: cover;">
+        <div class="hero-content">
+            <h1>Distrito Fitness</h1>
+            <a href="#" class="btn-hero">Ver produtos</a>
+        </div>
+    </section>
+
+    <!-- 🎯 CAROUSEL (apenas na página inicial) -->
+    {% if not categoria_selecionada %}
+    <div id="carouselProdutos" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            {% for produto in produtos_destaque|slice:":3" %}
+            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                <div class="carousel-banner">
+                    <div class="carousel-content">
+                        <p class="carousel-tag">⭐ Destaque</p>
+                        <h2 class="carousel-title">{{ produto.nome }}</h2>
+                        <p class="carousel-price">💰 R$ {{ produto.preco_pix }} no PIX</p>
+                        <p class="carousel-parcelado">ou 3x de R$ {{ produto.preco_parcela }} sem juros</p>
+                        <a href="{% url 'detalhes_produto' produto.id %}" class="btn-carousel">🛒 Comprar agora →</a>
                     </div>
-                    <div class="card-body">
-                        <h5 class="card-title">{{ produto.nome }}</h5>
-
-                        <!-- preço normal -->
-                        <p class="text-muted mb-1">
-                            <del>R$ {{ produto.preco }}</del>
-                        </p>
-
-                        <!-- preço no PIX -->
-                        <p class="fw-bold text-success mb-1">
-                            R$ {{ produto.preco_pix }} (10% OFF)
-                        </p>
-
-                        <!-- preço parcelado -->
-                        <p class="text-primary mb-2">
-                            ou em até 3x  sem juros
-                        </p>
-
-                        <!-- Botões -->
-                        <div class="d-flex gap-2">
-                            <a href="{% url 'detalhes_produto' produto.id %}" class="btn btn-sm btn-outline-primary">
-                                Ver Detalhes
-                            </a>
-                            <form method="POST" action="{% url 'adicionar_carrinho' produto.id %}" class="d-inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="quantidade" value="1">
-                                <button type="submit" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-cart-plus"></i> Add
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+                    {% if produto.imagem %}
+                        <img src="{{ produto.imagem.url }}" class="carousel-img" alt="{{ produto.nome }}">
+                    {% else %}
+                        <img src="{% static 'vendas/images/default-product.png' %}" class="carousel-img" alt="Produto">
+                    {% endif %}
+                    <div class="carousel-overlay"></div>
                 </div>
             </div>
             {% endfor %}
         </div>
-    {% else %}
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                Nenhum produto encontrado nesta categoria.
-            </div>
-        </div>
-    {% endif %}
-    
-    <!-- Conteúdo estático (APENAS SE NENHUMA CATEGORIA ESTIVER SELECIONADA) -->
-    {% if not categoria_selecionada %}
-    <!-- Seção Promoções -->
-    <h1 class="section-title text-center mt-5 mb-4" id="cozinha">Promoções</h1>
-    
-    <div class="row g-4 row-custom mx-0">
-        <!-- Imagem Cozinha 1 -->
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 shadow-sm border-0 overflow-hidden">
-                <div class="image-container position-relative overflow-hidden">
-                    <img src="{% static 'img/Conjuntob.jpeg' %}" class="img-fluid" alt="Cozinha Moderna">
-                </div>
-                <div class="card-body">
-                    <h5 class="card-title">Conjuntinho - Branco</h5>
-                    <p class="card-text text-muted">R$ 125,99</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Imagem Cozinha 2 -->
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 shadow-sm border-0 overflow-hidden">
-                <div class="image-container position-relative overflow-hidden">
-                    <img src="{% static 'img/Conjuntop.jpeg' %}" class="img-fluid" alt="Cozinha Clássica">
-                </div>
-                <div class="card-body">
-                    <h5 class="card-title">Conjuntinho - Preto</h5>
-                    <p class="card-text text-muted">R$ 130,99</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 shadow-sm border-0 overflow-hidden">
-                <div class="image-container position-relative overflow-hidden">
-                    <img src="{% static 'img/Conjuntol.jpeg' %}" class="img-fluid" alt="Cozinha Clássica">
-                </div>
-                <div class="card-body">
-                    <h5 class="card-title">Conjuntinho - Laranja</h5>
-                    <p class="card-text text-muted">R$ 150,99</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <h4 class="section-title text-center mt-5 mb-4" id="cozinha">Aqui é onde você encontra peças selecinadas com otimo design.</h4>
-
-    <!-- Bloco informativo com ícones (MANTIDO ORIGINAL) -->
-    <div class="row my-5 align-items-center">
-        <div class="col-md-6">
-            <h2 class="fw-bold">Mirna Boutique</h2>
-            <hr class="w-25">
-            <p class="mb-4">
-                Vejo o que nossa loja tem de mais moderno e variedades, cada detalhe faz a diferença. <br>
-                Padrões de alto e bom gosto, <strong>Mirna. Boutique:</strong>
-            </p>
-        </div>
-        <div class="col-md-6">
-            <div class="row g-3">
-                <div class="col-6">
-                    <div class="border p-3 h-100 rounded shadow-sm bg-white">
-                        <div class="mb-2"><i class="bi bi-building fs-3 text-dark"></i></div>
-                        <h6 class="fw-bold">Padrão industrial e acabamento superior</h6>
-                        <p class="small mb-0">Peças selecionadas absoluta na produção e acabamento impecável.</p>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="border p-3 h-100 rounded shadow-sm bg-white">
-                        <div class="mb-2"><i class="bi bi-layers fs-3 text-dark"></i></div>
-                        <h6 class="fw-bold">Lançamentos de Variedade</h6>
-                        <p class="small mb-0">Vestimenta do basico ao sofisticado.</p>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="border p-3 h-100 rounded shadow-sm bg-white">
-                        <div class="mb-2"><i class="bi bi-shield-check fs-3 text-dark"></i></div>
-                        <h6 class="fw-bold">Garantia e confiabilidade</h6>
-                        <p class="small mb-0">Garantismo a satisfação de nosso clientes.</p>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="border p-3 h-100 rounded shadow-sm bg-white">
-                        <div class="mb-2"><i class="bi bi-truck fs-3 text-dark"></i></div>
-                        <h6 class="fw-bold">Entrega ágil e sem surpresas</h6>
-                        <p class="small mb-0">Processos otimizados para evitar imprevistos na produção.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!--Carousel Slides - COM EFEITO HOVER NAS SETAS (MANTIDO ORIGINAL) -->
-    <div id="carrosselImagens" class="carousel slide carousel-fade mt-5 carousel-container" data-bs-ride="carousel" data-bs-interval="3000">
-        <!-- Indicadores -->
-        <div class="carousel-indicators">
-            <button type="button" data-bs-target="#carrosselImagens" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-            <button type="button" data-bs-target="#carrosselImagens" data-bs-slide-to="1" aria-label="Slide 2"></button>
-            <button type="button" data-bs-target="#carrosselImagens" data-bs-slide-to="2" aria-label="Slide 3"></button>
-        </div>
-                
-        <div class="carousel-inner rounded shadow">
-            <!-- Slide 1 -->
-            <div class="carousel-item active">
-                <div class="row g-0 bg-light align-items-center" style="min-height: 400px;">
-                    <div class="col-12 col-md-6 p-4">
-                        <h3 class="fw-bold text-dark">Lançamentos</h3>
-                        <p class="text-muted">Conjunto blusa e saia longa</p>
-                    </div>
-                    <div class="col-12 col-md-6 p-3 text-center">
-                        <img src="{% static 'img/vestidoflor.jpeg' %}" class="img-fluid rounded shadow-sm" alt="Ambiente 1">
-                    </div>
-                </div>
-            </div>
-            <!-- Slide 2 -->
-            <div class="carousel-item">
-                <div class="row g-0 bg-light align-items-center" style="min-height: 400px;">
-                    <div class="col-12 col-md-6 p-4">
-                        <h3 class="fw-bold text-dark">Lançamentos</h3>
-                        <p class="text-muted">Vestido longo florido</p>
-                    </div>
-                    <div class="col-12 col-md-6 p-3 text-center">
-                        <img src="{% static 'img/vestidoflorl.jpeg' %}" class="img-fluid rounded shadow-sm" alt="Ambiente 2">
-                    </div>
-                </div>
-            </div>
-            <!-- Slide 3 -->
-            <div class="carousel-item">
-                <div class="row g-0 bg-light align-items-center" style="min-height: 400px;">
-                    <div class="col-12 col-md-6 p-4">
-                        <h3 class="fw-bold text-dark">Lançamentos</h3>
-                        <p class="text-muted">Vestido curto</p>
-                    </div>
-                    <div class="col-12 col-md-6 p-3 text-center">
-                        <img src="{% static 'img/vestidocur.jpeg' %}" class="img-fluid rounded shadow-sm" alt="Ambiente 3">
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Controles (setas) - COM EFEITO HOVER -->
-        <button class="carousel-control-prev carousel-control-btn" type="button" data-bs-target="#carrosselImagens" data-bs-slide="prev">
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselProdutos" data-bs-slide="prev">
             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Anterior</span>
         </button>
-        <button class="carousel-control-next carousel-control-btn" type="button" data-bs-target="#carrosselImagens" data-bs-slide="next">
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselProdutos" data-bs-slide="next">
             <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Próximo</span>
         </button>
+        <div class="carousel-indicators">
+            {% for produto in produtos_destaque|slice:":3" %}
+            <button type="button" data-bs-target="#carouselProdutos" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></button>
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
 
-    <!-- Rodapé -->
-    <div class="bg-white p-2 rounded-2 mt-2 shadow-sm" style="border: 1px solid #dee2e6;">
-        <div class="d-flex justify-content-between align-items-center">
-            <small class="text-muted">
-                Total: {{ produtos|length }} produto{{ produtos|length|pluralize }}
-            </small>
-            <small class="text-muted">
-                <i class="bi bi-clock-history me-1"></i> {% now "d/m/Y H:i" %}
-            </small>
+    <!-- ============================================ -->
+    <!-- SEÇÃO: LANÇAMENTOS -->
+    <!-- ============================================ -->
+    {% if not categoria_selecionada or categoria_selecionada == 'lancamentos' %}
+    <section class="categoria-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="bi bi-stars"></i> Lançamentos
+                <span class="section-badge">Novidades</span>
+            </h2>
+            <a href="?categoria=lancamentos" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
         </div>
-    </div>
+        
+        <div class="produtos-scroll-container">
+            <div class="produtos-scroll" id="scrollLancamentos">
+                {% for produto in produtos_lancamentos %}
+                <div class="produto-card">
+                    <a href="{% url 'detalhes_produto' produto.id %}">
+                        {% if produto.imagem %}
+                            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" loading="lazy">
+                        {% else %}
+                            <img src="{% static 'vendas/images/default-product.png' %}" alt="Produto" loading="lazy">
+                        {% endif %}
+                        {% if produto.novo %}
+                            <span class="badge-novo">NOVO</span>
+                        {% endif %}
+                    </a>
+                    <div class="produto-info">
+                        <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
+                        <p class="old-price">R$ {{ produto.preco }}</p>
+                        <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                        <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                        <button class="btn-quick-add" data-id="{{ produto.id }}">
+                            <i class="bi bi-cart-plus"></i> Comprar
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">Nenhum lançamento disponível no momento.</div>
+                {% endfor %}
+            </div>
+            <button class="scroll-btn left" onclick="scrollProdutos('scrollLancamentos', -1)"><i class="bi bi-chevron-left"></i></button>
+            <button class="scroll-btn right" onclick="scrollProdutos('scrollLancamentos', 1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ============================================ -->
+    <!-- SEÇÃO: PROMOÇÕES -->
+    <!-- ============================================ -->
+    {% if not categoria_selecionada or categoria_selecionada == 'promocoes' %}
+    <section class="categoria-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="bi bi-fire"></i> Promoções
+                <span class="section-badge discount">Ofertas</span>
+            </h2>
+            <a href="?categoria=promocoes" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
+        </div>
+        
+        <div class="produtos-scroll-container">
+            <div class="produtos-scroll" id="scrollPromocoes">
+                {% for produto in produtos_promocoes %}
+                <div class="produto-card destaque">
+                    <a href="{% url 'detalhes_produto' produto.id %}">
+                        {% if produto.imagem %}
+                            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" loading="lazy">
+                        {% else %}
+                            <img src="{% static 'vendas/images/default-product.png' %}" alt="Produto" loading="lazy">
+                        {% endif %}
+                        <span class="badge-desconto">{{ produto.desconto|default:"10" }}% OFF</span>
+                    </a>
+                    <div class="produto-info">
+                        <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
+                        <p class="old-price">R$ {{ produto.preco }}</p>
+                        <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                        <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                        <button class="btn-quick-add" data-id="{{ produto.id }}">
+                            <i class="bi bi-cart-plus"></i> Comprar
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">Nenhuma promoção disponível no momento.</div>
+                {% endfor %}
+            </div>
+            <button class="scroll-btn left" onclick="scrollProdutos('scrollPromocoes', -1)"><i class="bi bi-chevron-left"></i></button>
+            <button class="scroll-btn right" onclick="scrollProdutos('scrollPromocoes', 1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ============================================ -->
+    <!-- SEÇÃO: CONJUNTOS -->
+    <!-- ============================================ -->
+    {% if not categoria_selecionada or categoria_selecionada == 'conjuntos' %}
+    <section class="categoria-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="bi bi-collection"></i> Conjuntos
+                <span class="section-badge">Looks completos</span>
+            </h2>
+            <a href="?categoria=conjuntos" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
+        </div>
+        
+        <div class="produtos-scroll-container">
+            <div class="produtos-scroll" id="scrollConjuntos">
+                {% for produto in produtos_conjuntos %}
+                <div class="produto-card">
+                    <a href="{% url 'detalhes_produto' produto.id %}">
+                        {% if produto.imagem %}
+                            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" loading="lazy">
+                        {% else %}
+                            <img src="{% static 'vendas/images/default-product.png' %}" alt="Produto" loading="lazy">
+                        {% endif %}
+                    </a>
+                    <div class="produto-info">
+                        <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
+                        <p class="old-price">R$ {{ produto.preco }}</p>
+                        <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                        <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                        <button class="btn-quick-add" data-id="{{ produto.id }}">
+                            <i class="bi bi-cart-plus"></i> Comprar
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">Nenhum conjunto disponível no momento.</div>
+                {% endfor %}
+            </div>
+            <button class="scroll-btn left" onclick="scrollProdutos('scrollConjuntos', -1)"><i class="bi bi-chevron-left"></i></button>
+            <button class="scroll-btn right" onclick="scrollProdutos('scrollConjuntos', 1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ============================================ -->
+    <!-- SEÇÃO: OUTROS PRODUTOS -->
+    <!-- ============================================ -->
+    {% if not categoria_selecionada or categoria_selecionada == 'outros' %}
+    <section class="categoria-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="bi bi-grid"></i> Outros Produtos
+            </h2>
+            <a href="?categoria=outros" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
+        </div>
+        
+        <div class="produtos-scroll-container">
+            <div class="produtos-scroll" id="scrollOutros">
+                {% for produto in produtos_outros %}
+                <div class="produto-card">
+                    <a href="{% url 'detalhes_produto' produto.id %}">
+                        {% if produto.imagem %}
+                            <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" loading="lazy">
+                        {% else %}
+                            <img src="{% static 'vendas/images/default-product.png' %}" alt="Produto" loading="lazy">
+                        {% endif %}
+                    </a>
+                    <div class="produto-info">
+                        <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
+                        <p class="old-price">R$ {{ produto.preco }}</p>
+                        <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                        <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                        <button class="btn-quick-add" data-id="{{ produto.id }}">
+                            <i class="bi bi-cart-plus"></i> Comprar
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">Nenhum produto disponível no momento.</div>
+                {% endfor %}
+            </div>
+            <button class="scroll-btn left" onclick="scrollProdutos('scrollOutros', -1)"><i class="bi bi-chevron-left"></i></button>
+            <button class="scroll-btn right" onclick="scrollProdutos('scrollOutros', 1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Bloco informativo (apenas na página inicial) -->
+    {% if not categoria_selecionada %}
+    <section class="info-section mt-5">
+        <h4 class="section-title text-center mb-4">Aqui é onde você encontra peças selecionadas com ótimo design.</h4>
+        <div class="row my-5 align-items-center">
+            <div class="col-md-6">
+                <h2 class="fw-bold">Distrito Fitness</h2>
+                <hr class="w-25">
+                <p class="mb-4">
+                    Veja o que nossa loja tem de mais moderno e variedades, cada detalhe faz a diferença.<br>
+                    Padrões de alto e bom gosto, <strong>Distrito Fitness:</strong>
+                </p>
+            </div>
+            <div class="col-md-6">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="info-card border p-3 h-100 rounded shadow-sm bg-white">
+                            <i class="bi bi-building fs-3 text-dark mb-2 d-block"></i>
+                            <h6 class="fw-bold">Padrão industrial e acabamento superior</h6>
+                            <p class="small mb-0">Peças selecionadas com absoluta produção e acabamento impecável.</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="info-card border p-3 h-100 rounded shadow-sm bg-white">
+                            <i class="bi bi-layers fs-3 text-dark mb-2 d-block"></i>
+                            <h6 class="fw-bold">Lançamentos e Variedade</h6>
+                            <p class="small mb-0">Vestimenta do básico ao sofisticado.</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="info-card border p-3 h-100 rounded shadow-sm bg-white">
+                            <i class="bi bi-shield-check fs-3 text-dark mb-2 d-block"></i>
+                            <h6 class="fw-bold">Garantia e confiabilidade</h6>
+                            <p class="small mb-0">Garantimos a satisfação de nossos clientes.</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="info-card border p-3 h-100 rounded shadow-sm bg-white">
+                            <i class="bi bi-truck fs-3 text-dark mb-2 d-block"></i>
+                            <h6 class="fw-bold">Entrega ágil e sem surpresas</h6>
+                            <p class="small mb-0">Processos otimizados para evitar imprevistos.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
 </div>
 
-<!-- Ícones do Bootstrap -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
-{% endblock %}
 
-{% block scripts %}
-{{ block.super }}
+<!-- 🎨 ESTILO -->
+<style>
+.hero-title {
+    color: #1f2937;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+.hero-overlay {
+    position: relative;
+    z-index: 2;
+}
+    
+
+
+.menu-item {
+    padding: 10px 18px;
+    border-radius: 30px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.menu-item:hover {
+    background: #f1f5f9;
+}
+
+.menu-item.active {
+    background: linear-gradient(135deg, #92400e, #78350f);
+    color: #fff;
+}
+
+.menu-instagram {
+    padding: 10px 18px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #facc15, #f59e0b);
+    color: #000;
+    font-weight: bold;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.3s;
+}
+
+.menu-instagram:hover {
+    transform: scale(1.05);
+}
+
+    
+    
+.product-card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.product-card img {
+    transition: transform 0.4s ease;
+}
+
+.product-card:hover img {
+    transform: scale(1.05);
+}
+</style>
+
 {% endblock %}
