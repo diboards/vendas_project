@@ -386,4 +386,148 @@
 }
 </style>
 
+<script>
+function scrollProdutos(scrollId, direction) {
+    const container = document.getElementById(scrollId);
+    if (!container) return;
+    
+    const card = container.querySelector('.produto-card');
+    if (!card) return;
+    
+    const gap = 25;
+    const scrollAmount = card.offsetWidth + gap;
+    
+    container.scrollBy({
+        left: direction * scrollAmount,
+        behavior: 'smooth'
+    });
+}
+
+// Função para obter o CSRF token de forma segura
+function getCSRFToken() {
+    // Procura o token no formulário
+    const tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (tokenInput) return tokenInput.value;
+    
+    // Procura o token no meta tag
+    const metaToken = document.querySelector('meta[name="csrf-token"]');
+    if (metaToken) return metaToken.content;
+    
+    console.warn('CSRF token não encontrado');
+    return '';
+}
+
+// Função para adicionar ao carrinho via AJAX
+async function adicionarAoCarrinho(produtoId, buttonElement) {
+    if (!produtoId) {
+        console.error('ID do produto não encontrado');
+        return;
+    }
+    
+    const originalText = buttonElement.innerHTML;
+    
+    // Mostrar loading
+    buttonElement.innerHTML = '<i class="bi bi-arrow-repeat spinner"></i> Adicionando...';
+    buttonElement.disabled = true;
+    
+    try {
+        // Criar formulário com os dados
+        const formData = new FormData();
+        formData.append('quantidade', 1);
+        formData.append('action', 'add');
+        
+        const csrfToken = getCSRFToken();
+        
+        const response = await fetch(`/carrinho/adicionar/${produtoId}/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        if (response.ok) {
+            // Sucesso - mostra feedback
+            buttonElement.innerHTML = '<i class="bi bi-check-lg"></i> Adicionado!';
+            buttonElement.style.background = '#28a745';
+            buttonElement.style.borderColor = '#28a745';
+            buttonElement.style.color = 'white';
+            
+            // Atualizar contador do carrinho (apenas se o elemento existir)
+            await atualizarCarrinhoCount();
+            
+            // Voltar ao normal após 2 segundos
+            setTimeout(() => {
+                buttonElement.innerHTML = originalText;
+                buttonElement.disabled = false;
+                buttonElement.style.background = '';
+                buttonElement.style.borderColor = '';
+                buttonElement.style.color = '';
+            }, 2000);
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erro ao adicionar');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        buttonElement.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Erro!';
+        setTimeout(() => {
+            buttonElement.innerHTML = originalText;
+            buttonElement.disabled = false;
+        }, 2000);
+    }
+}
+
+// Função para atualizar contador do carrinho (com verificação de segurança)
+async function atualizarCarrinhoCount() {
+    try {
+        const response = await fetch('/carrinho/count/');
+        const data = await response.json();
+        
+        // Só tenta atualizar se o elemento existir
+        const badge = document.getElementById('carrinho-count');
+        if (badge) {
+            badge.innerText = data.count || 0;
+        } else {
+            // Elemento não existe (usuário não logado) - não faz nada
+            console.log('Carrinho não disponível (usuário não logado)');
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar contador:', error);
+    }
+}
+
+// Inicializar quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar scroll com wheel
+    const scrollContainers = document.querySelectorAll('.produtos-scroll');
+    scrollContainers.forEach(container => {
+        container.addEventListener('wheel', function(e) {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                container.scrollLeft += e.deltaY;
+            }
+        });
+    });
+    
+    // Botões "Comprar" nos cards
+    const botoesComprar = document.querySelectorAll('.btn-quick-add');
+    console.log(`✅ ${botoesComprar.length} botões de compra encontrados`);
+    
+    botoesComprar.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const produtoId = this.dataset.id;
+            if (produtoId) {
+                adicionarAoCarrinho(produtoId, this);
+            } else {
+                console.error('Botão sem data-id', this);
+            }
+        });
+    });
+    
+    // Tenta atualizar o contador (se o elemento existir)
+    atualizarCarrinhoCount();
+});
+</script>
 {% endblock %}
