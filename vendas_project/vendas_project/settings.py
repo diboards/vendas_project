@@ -151,7 +151,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'dionne.fernandes1gmail.com'
-EMAIL_HOST_PASSWORD = 'uynx qmks brya uxqq'  # ← SENHA DE APP (sem espaços)
+EMAIL_HOST_PASSWORD = 'uynxqmksbryauxqq'  # ← SENHA DE APP (sem espaços)
 DEFAULT_FROM_EMAIL = 'Mirna Boutique <dionne.fernandes1@gmail.com>'
 PASSWORD_RESET_TIMEOUT = 3600
 
