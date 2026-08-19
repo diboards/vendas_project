@@ -1,17 +1,16 @@
-# migrate.py
 import os
 import django
 from django.core.management import call_command
 from django.contrib.auth import get_user_model
+from decimal import Decimal
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vendas_project.settings')
 django.setup()
 
 print("🔄 Criando variação padrão...")
 from vendas.models import Produto, ProdutoVariacao
-from decimal import Decimal
 
-# Criar um produto padrão se não existir
+# 🔥 CRIA UM PRODUTO PADRÃO SEM CAMPO 'preco'
 produto, created = Produto.objects.get_or_create(
     nome='Produto Padrão',
     defaults={
@@ -21,7 +20,7 @@ produto, created = Produto.objects.get_or_create(
     }
 )
 
-# Criar uma variação padrão
+# 🔥 CRIA UMA VARIAÇÃO PARA O PRODUTO (com preço)
 variacao, created = ProdutoVariacao.objects.get_or_create(
     produto=produto,
     cor='Branco',
