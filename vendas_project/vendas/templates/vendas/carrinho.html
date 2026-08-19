@@ -46,42 +46,43 @@
             <div class="card mb-3 border-0 shadow-sm" id="cart-item-{{ item.id }}">
                 <div class="card-body">
                     <div class="row align-items-center">
-                        <!-- Imagem do produto -->
+                        <!-- Imagem do produto (da variação) -->
                         <div class="col-md-2 position-relative">
-                            {% if item.imagem_selecionada %}
-                                <img src="{{ item.imagem_selecionada.url }}" 
-                                    class="img-fluid rounded" alt="{{ item.produto.nome }}" 
-                                    style="height: 100px; object-fit: cover;">
-                            {% elif item.produto.imagem %}
-                                <img src="{{ item.produto.imagem.url }}" 
-                                    class="img-fluid rounded" alt="{{ item.produto.nome }}" 
-                                    style="height: 100px; object-fit: cover;">
+                            {% if item.imagem %}
+                                <img src="{{ item.imagem }}" 
+                                    class="img-fluid rounded" alt="{{ item.nome }}" 
+                                    style="height: 100px; width: 100%; object-fit: cover;">
                             {% else %}
                                 <img src="{% static 'vendas/images/default-product.png' %}" 
-                                    class="img-fluid rounded" alt="{{ item.produto.nome }}" 
-                                    style="height: 100px; object-fit: cover;">
+                                    class="img-fluid rounded" alt="{{ item.nome }}" 
+                                    style="height: 100px; width: 100%; object-fit: cover;">
                             {% endif %}
                         </div>
-
+            
                         <!-- Informações do produto -->
                         <div class="col-md-4">
-                            <h5 class="mb-2 fw-bold">{{ item.produto.nome }}</h5>
-                            <p class="mb-1 text-muted small">Ref: #{{ item.produto.id|stringformat:"06d" }}</p>
-                            <p class="mb-1 text-muted small">Vendido por <strong>Mirna Boutique</strong></p>
-                            <p class="mb-1 text-muted small">Entregue por <strong>FULL</strong></p>
+                            <h5 class="mb-2 fw-bold">{{ item.nome }}</h5>
+                            <p class="mb-1 text-muted small">Ref: #{{ item.produto_id|stringformat:"06d" }}</p>
+                            <p class="mb-1 text-muted small">Vendido por <strong>Distrito Fitness</strong></p>
                             <div class="mt-2">
-                                <span class="badge bg-light text-dark border">Cor: {{ item.cor_selecionada|default:"Branco" }}</span>
-                                <span class="badge bg-light text-dark border">Tamanho: {{ item.tamanho_selecionado|default:"39" }}</span>
+                                <span class="badge bg-light text-dark border">Cor: {{ item.cor|default:"Branco" }}</span>
+                                <span class="badge bg-light text-dark border">Tamanho: {{ item.tamanho|default:"M" }}</span>
                             </div>
                         </div>
-
+            
                         <!-- Quantidade -->
                         <div class="col-md-3">
                             <div class="d-flex align-items-center justify-content-start mb-2">
                                 <p class="mb-0 me-2 small fw-bold">Quantidade:</p>
-                                <form method="POST" action="{% url 'atualizar_carrinho' item.id %}" 
+                                <form method="POST" 
+                                      action="
+                                        {% if user.is_authenticated and item.id %}
+                                            {% url 'atualizar_carrinho' item.id %}
+                                        {% elif item.chave %}
+                                            {% url 'atualizar_carrinho_chave' item.chave %}
+                                        {% endif %}" 
                                       class="cart-update-form d-flex align-items-center" 
-                                      data-item-id="{{ item.id }}">
+                                      data-item-id="{{ item.id|default:item.chave }}">
                                     {% csrf_token %}
                                     <button type="button" class="btn btn-outline-secondary btn-sm minus-btn" 
                                             style="width: 30px; height: 30px; border-radius: 50%;">-</button>
@@ -93,35 +94,41 @@
                                 </form>
                             </div>
                         </div>
-
+            
                         <!-- Preços -->
                         <div class="col-md-3 text-end">
                             <!-- Botão excluir -->
                             <div class="mb-2">
-                                <form method="POST" action="{% url 'remover_carrinho' item.id %}">
+                                <form method="POST" action="{% if user.is_authenticated %}{% url 'remover_carrinho' item.id %}{% else %}{% url 'remover_carrinho_chave' item.chave %}{% endif %}">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-danger btn-sm">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
                             </div>
-
+            
                             <!-- Preço normal riscado -->
                             <p class="text-muted mb-1">
-                                <del>R$ {{ item.produto.preco|floatformat:2 }}</del>
+                                <del>R$ {{ item.preco|floatformat:2 }}</del>
                             </p>
-
+            
                             <!-- Preço no PIX com 10% OFF -->
-                            <p class="fw-bold text-success mb-1" id="preco-pix-{{ item.id }}"></p>
-
+                            <p class="fw-bold text-success mb-1" id="preco-pix-{{ forloop.counter }}">
+                                R$ {{ item.preco|mul:0.90|floatformat:2 }} (10% OFF)
+                            </p>
+            
                             <!-- Preço parcelado -->
-                            <p class="text-primary mb-2 small" id="preco-parcela-{{ item.id }}"></p>
-
+                            <p class="text-primary mb-2 small" id="preco-parcela-{{ forloop.counter }}">
+                                ou 3x de R$ {{ item.preco|div:3|floatformat:2 }} sem juros
+                            </p>
+            
                             <!-- Subtotal deste item -->
-                            <p class="fw-bold border-top pt-2 mt-2" id="subtotal-normal-{{ item.id }}">
+                            <p class="fw-bold border-top pt-2 mt-2" id="subtotal-normal-{{ forloop.counter }}">
                                 Subtotal: R$ {{ item.subtotal|floatformat:2 }}
                             </p>
-                            <p class="text-success small" id="subtotal-pix-{{ item.id }}"></p>
+                            <p class="text-success small" id="subtotal-pix-{{ forloop.counter }}">
+                                PIX: R$ {{ item.subtotal|mul:0.90|floatformat:2 }}
+                            </p>
                         </div>
                     </div>
                 </div>

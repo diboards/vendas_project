@@ -28,6 +28,11 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+# Configurações da Sessão
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1209600  # 2 semanas
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True  # 🔥 ADICIONE ESTA LINHA
 
 # Aplicações
 INSTALLED_APPS = [
@@ -52,6 +57,11 @@ cloudinary.config(
     api_key=os.getenv('CLOUDINARY_API_KEY'),
     api_secret=os.getenv('CLOUDINARY_API_SECRET'),
 )
+CLOUDINARY_STORAGE = {
+    'UPLOAD_OPTIONS': {
+        'folder': 'distrito_fitness/produtos'
+    }
+}
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
@@ -67,12 +77,15 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'vendas_project.urls'
+ROOT_URLCONF = 'distrito_fitness.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [
+            BASE_DIR / 'templates',  # Já existe
+            BASE_DIR / 'vendas' / 'templates',  # ← ADICIONE ESTA LINHA
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -81,18 +94,20 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'vendas.context_processors.mercadopago_settings',
+                'vendas.context_processors.carrinho_count',  # ← Contador carrinho
             ],
         },
     },
 ]
 
 
-WSGI_APPLICATION = 'vendas_project.wsgi.application'
+WSGI_APPLICATION = 'distrito_fitness.wsgi.application'
 
-# 🗄️ Banco (Render)
+# 🗄️ Banco (NEON)
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+        conn_max_age=60,
+        ssl_require=True
     )
 }
 
@@ -137,10 +152,10 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = 'mirnaboutique851@gmail.com'
-EMAIL_HOST_PASSWORD = 'idbfhhwnjavyvmie'  # senha de app
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 
-DEFAULT_FROM_EMAIL = 'mirnaboutique851@gmail.com'
+DEFAULT_FROM_EMAIL = 'distritofitness@gmail.com'
 
 # 💳 Mercado Pago (NUNCA hardcoded)
 MERCADOPAGO_ACCESS_TOKEN = os.getenv('MP_ACCESS_TOKEN')

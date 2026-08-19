@@ -344,28 +344,31 @@
                         </div>
                         
                         <!-- Lista de produtos -->
-                        <h6 class="border-bottom pb-2">Seus itens</h6>
-                        {% for item in itens_carrinho %}
-                        <div class="d-flex align-items-center mb-2">
-                            {% if item.produto.imagem %}
-                            <img src="{{ item.produto.imagem.url }}" alt="{{ item.produto.nome }}" 
-                                 class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                            {% else %}
-                            <img src="{% static 'vendas/images/default-product.png' %}" alt="{{ item.produto.nome }}" 
-                                 class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                            {% endif %}
-                            <div class="flex-grow-1">
-                                <div class="small">{{ item.produto.nome }}</div>
-                                <div class="text-muted smaller">
-                                    {{ item.cor_selecionada|default:"Branco" }}, {{ item.tamanho_selecionado|default:"M" }}
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <div class="small">R$ {{ item.subtotal|floatformat:2 }}</div>
-                                <div class="text-muted smaller">Qtd: {{ item.quantidade }}</div>
-                            </div>
-                        </div>
-                        {% endfor %}
+<h6 class="border-bottom pb-2">Seus itens</h6>
+{% for item in itens_carrinho %}
+<div class="d-flex align-items-center mb-2">
+    {% if item.imagem %}
+        <img src="{{ item.imagem }}" alt="{{ item.produto.nome }}" 
+             class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+    {% elif item.variacao and item.variacao.imagem %}
+        <img src="{{ item.variacao.imagem.url }}" alt="{{ item.produto.nome }}" 
+             class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+    {% else %}
+        <img src="{% static 'vendas/images/default-product.png' %}" alt="{{ item.produto.nome }}" 
+             class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+    {% endif %}
+    <div class="flex-grow-1">
+        <div class="small">{{ item.produto.nome }}</div>
+        <div class="text-muted smaller">
+            {{ item.cor_selecionada|default:"Branco" }}, {{ item.tamanho_selecionado|default:"M" }}
+        </div>
+    </div>
+    <div class="text-end">
+        <div class="small">R$ {{ item.subtotal|floatformat:2 }}</div>
+        <div class="text-muted smaller">Qtd: {{ item.quantidade }}</div>
+    </div>
+</div>
+{% endfor %}
                     </div>
                 </div>
             </div>
@@ -1159,6 +1162,51 @@ document.addEventListener("DOMContentLoaded", function() {
     
     console.log("✅ Checkout inicializado!");
 });
+
+    // ========== 🔽 ADICIONE AQUI, FORA DO DOMContentLoaded 🔽 ==========
+
+// GERENCIAMENTO DE ENDEREÇOS NO MODAL
+const formNovoEndereco = document.getElementById('form-novo-endereco');
+if (formNovoEndereco) {
+    formNovoEndereco.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-arrow-repeat spinner"></i> Salvando...';
+        
+        try {
+            const formData = new FormData(this);
+            
+            const response = await fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'Erro ao adicionar endereço');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao salvar endereço');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+}
+    
 </script>
 
 <style>

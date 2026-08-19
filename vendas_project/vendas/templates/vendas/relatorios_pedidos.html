@@ -1,0 +1,249 @@
+{% extends 'vendas/base.html' %}
+{% load extras %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card shadow-lg rounded-3">
+        <div class="card-header bg-dark text-white">
+            <strong><i class="bi bi-graph-up"></i> Relatórios de Pedidos</strong>
+        </div>
+
+        <div class="card-body bg-light rounded-bottom-3">
+
+            <!-- ========================================================== -->
+            <!-- FILTROS                                                    -->
+            <!-- ========================================================== -->
+            <form method="get" class="mb-4">
+                <div class="row p-3 text-primary-emphasis bg-primary-subtle border border-primary-subtle rounded-3">
+                    <div class="col-md-3">
+                        <label for="data_inicio" class="form-label">Data Início</label>
+                        <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="data_fim" class="form-label">Data Fim</label>
+                        <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
+                    </div>
+                    <div class="col-md-2 align-self-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-filter"></i> Filtrar
+                        </button>
+                    </div>
+                    <div class="col-md-2 align-self-end">
+                        <a href="{% url 'relatorios_pedidos' %}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-circle"></i> Limpar
+                        </a>
+                    </div>
+                </div>
+            </form>
+
+            <!-- ========================================================== -->
+            <!-- CARDS DE ESTATÍSTICAS                                      -->
+            <!-- ========================================================== -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-6">
+                    <div class="card text-center bg-primary text-white border-0 shadow-sm">
+                        <div class="card-body py-2">
+                            <h3 class="mb-0">{{ total_pedidos }}</h3>
+                            <small>Total de Pedidos</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card text-center bg-success text-white border-0 shadow-sm">
+                        <div class="card-body py-2">
+                            <h3 class="mb-0">R$ {{ valor_total|floatformat:2 }}</h3>
+                            <small>Valor Total</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card text-center bg-warning border-0 shadow-sm">
+                        <div class="card-body py-2">
+                            <h3 class="mb-0">{{ pedidos_pendentes }}</h3>
+                            <small class="text-dark">Pendentes</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card text-center bg-info text-white border-0 shadow-sm">
+                        <div class="card-body py-2">
+                            <h3 class="mb-0">{{ pedidos_entregues }}</h3>
+                            <small>Entregues</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- STATUS DOS PEDIDOS                                         -->
+            <!-- ========================================================== -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap gap-3 justify-content-around">
+                                <div><span class="badge bg-warning">Pendentes</span> {{ pedidos_pendentes }}</div>
+                                <div><span class="badge bg-success">Aprovados</span> {{ pedidos_aprovados }}</div>
+                                <div><span class="badge bg-primary">Processando</span> {{ pedidos_processando }}</div>
+                                <div><span class="badge bg-info">Enviados</span> {{ pedidos_enviados }}</div>
+                                <div><span class="badge bg-secondary">Entregues</span> {{ pedidos_entregues }}</div>
+                                <div><span class="badge bg-danger">Cancelados</span> {{ pedidos_cancelados }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- TABELA: PRODUTOS MAIS VENDIDOS                             -->
+            <!-- ========================================================== -->
+            <h4 class="mt-4"><i class="bi bi-trophy"></i> Produtos Mais Vendidos</h4>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>#</th>
+                            <th>Produto</th>
+                            <th class="text-center">Quantidade</th>
+                            <th class="text-center">Nº de Pedidos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for produto in produtos_vendidos %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ produto.variacao__produto__nome }}</td>
+                            <td class="text-center"><span class="badge bg-primary">{{ produto.total_quantidade }}</span></td>
+                            <td class="text-center">{{ produto.total_vendas }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">Nenhum produto vendido nesse período.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- GRÁFICOS                                                   -->
+            <!-- ========================================================== -->
+            <div class="row g-3 mt-3">
+                <div class="col-md-6">
+                    <div class="card p-2">
+                        <h6 class="text-center mt-2"><i class="bi bi-pie-chart"></i> Vendas por Mês</h6>
+                        <div style="position: relative; width: 100%; height: 250px;">
+                            <canvas id="graficoVendasPorMes"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-2">
+                        <h6 class="text-center mt-2"><i class="bi bi-pie-chart"></i> Formas de Pagamento</h6>
+                        <div style="position: relative; width: 100%; height: 250px;">
+                            <canvas id="graficoPagamentos"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // ========================================================== //
+    // GRÁFICO: VENDAS POR MÊS                                    //
+    // ========================================================== //
+    const mesesLabels = {{ meses_labels|safe }};
+    const mesesValores = {{ meses_valores|safe }};
+
+    if (mesesLabels.length > 0) {
+        const ctxLinha = document.getElementById('graficoVendasPorMes').getContext('2d');
+        new Chart(ctxLinha, {
+            type: 'line',
+            data: {
+                labels: mesesLabels,
+                datasets: [{
+                    label: 'Vendas (R$)',
+                    data: mesesValores,
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderColor: '#0d6efd',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#0d6efd',
+                    pointRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toFixed(0);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        document.getElementById('graficoVendasPorMes').parentElement.innerHTML = 
+            '<p class="text-center text-muted py-4">Nenhum dado para exibir</p>';
+    }
+
+    // ========================================================== //
+    // GRÁFICO: FORMAS DE PAGAMENTO                               //
+    // ========================================================== //
+    const pagamentosLabels = {{ pagamentos_labels|safe }};
+    const pagamentosValores = {{ pagamentos_valores|safe }};
+
+    const coresFixas = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'];
+
+    if (pagamentosLabels.length > 0) {
+        const ctxPizza = document.getElementById('graficoPagamentos').getContext('2d');
+        new Chart(ctxPizza, {
+            type: 'pie',
+            data: {
+                labels: pagamentosLabels,
+                datasets: [{
+                    data: pagamentosValores,
+                    backgroundColor: coresFixas.slice(0, pagamentosLabels.length),
+                    borderColor: '#fff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        document.getElementById('graficoPagamentos').parentElement.innerHTML = 
+            '<p class="text-center text-muted py-4">Nenhum dado para exibir</p>';
+    }
+</script>
+{% endblock %}

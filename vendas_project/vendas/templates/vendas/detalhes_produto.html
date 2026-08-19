@@ -7,16 +7,19 @@
         <!-- Imagem do Produto -->
         <div class="col-md-6">
             <div class="product-image-container">
-                {% if produto.imagem %}
-                <img src="{{ produto.imagem.url }}" class="img-fluid rounded shadow" alt="{{ produto.nome}}" 
-                     id="main-product-image" style="max-height: 500px; width: 100%; object-fit: cover;">
+                {% if primeira_variacao and primeira_variacao.imagem %}
+                    <img src="{{ primeira_variacao.imagem.url }}" class="img-fluid rounded shadow" alt="{{ produto.nome }}" 
+                         id="main-product-image" style="max-height: 500px; width: 100%; object-fit: cover;">
+                {% elif cores_com_imagem.0.imagem %}
+                    <img src="{{ cores_com_imagem.0.imagem }}" class="img-fluid rounded shadow" alt="{{ produto.nome }}" 
+                         id="main-product-image" style="max-height: 500px; width: 100%; object-fit: cover;">
                 {% else %}
-                <img src="{% static 'vendas/images/default-product.png' %}" class="img-fluid rounded shadow" 
-                     alt="{{ produto.nome }}" style="max-height: 500px; width: 100%; object-fit: cover;">
+                    <img src="{% static 'vendas/images/default-product.png' %}" class="img-fluid rounded shadow" 
+                         alt="{{ produto.nome }}" style="max-height: 500px; width: 100%; object-fit: cover;">
                 {% endif %}
             </div>
             
-            <!-- Calculadora de Frete - ATUALIZADA -->
+            <!-- Calculadora de Frete -->
             <div class="card mt-4">
                 <div class="card-header bg-light">
                     <h6 class="mb-0">🚚 Calcular Frete</h6>
@@ -44,7 +47,7 @@
         <div class="col-md-6">
             <div class="product-details">
                 <h1 class="product-title">{{ produto.nome }}</h1>
-                <p class="product-price h3 text-primary">R$ {{ produto.preco }}</p>
+                <p class="product-price h3 text-primary">R$ {{ preco_pix }}</p>
                 
                 <!-- Opções de Pagamento -->
                 <div class="payment-options mb-4">
@@ -60,7 +63,7 @@
                                 💳 Parcelado em 3x: <span id="preco-parcelado">R$ {{ preco_parcela }}</span> sem juros
                             </p>
                             <p class="text-muted">
-                                Preço original: <s>R$ {{ produto.preco }}</s>
+                                Preço original: <s>R$ {{ preco }}</s>
                             </p>
                         </div>
                     </div>
@@ -75,56 +78,87 @@
                 
                 <p class="product-description">{{ produto.descricao }}</p>
 
-                <!-- Formulário de Compra -->
-                <form method="POST" action="{% url 'adicionar_carrinho' produto.id %}" class="buy-form">
-                    <input type="hidden" name="cor" id="input-cor" value="{{ produto.cor }}">
-                    <input type="hidden" name="tamanho" id="input-tamanho" value="{{ produto.tamanho }}">
+                <!-- 🔥 FORMULÁRIO PARA COMPRAR AGORA -->
+                <form method="POST" action="{% url 'comprar_agora' produto.id %}" class="buy-form mb-3">
                     {% csrf_token %}
+                    <input type="hidden" name="cor" id="input-cor-comprar" value="">
+                    <input type="hidden" name="tamanho" id="input-tamanho-comprar" value="">
+                    <input type="hidden" name="quantidade" id="quantidade-comprar" value="1">
                     
                     <!-- Miniaturas de cores -->
-                    <div class="d-flex gap-2 mb-3" id="cores-container">
-                        {% for c in colors_list %}
-                        <button type="button" class="btn p-0 border cor-btn" 
-                                data-cor="{{ c.cor }}" 
-                                data-cor-display="{{ c.cor_display }}" 
-                                data-imagem="{{ c.imagem }}">
-                            {% if c.imagem %}
-                                <img src="{{ c.imagem }}" alt="{{ c.cor_display }}" 
-                                     class="img-thumbnail" style="width:60px; height:80px; object-fit:cover;">
-                            {% else %}
-                                <div class="img-thumbnail d-flex align-items-center justify-content-center"
-                                     style="width:60px;height:80px;background:#f4f4f4;">
-                                    {{ c.cor_display }}
-                                </div>
-                            {% endif %}
-                        </button>
-                        {% endfor %}
-                    </div>
+<div class="mb-3">
+    <label class="form-label fw-bold">Selecione a cor:</label>
+    <div class="d-flex gap-2" id="cores-container">
+        {% for cor_info in cores_com_imagem %}
+        <button type="button" class="btn p-0 border cor-btn" 
+                data-cor="{{ cor_info.cor }}" 
+                data-cor-display="{{ cor_info.cor_display }}" 
+                data-imagem="{{ cor_info.imagem|default:'' }}"
+                data-target="comprar">
+            {% if cor_info.imagem %}
+                <img src="{{ cor_info.imagem }}" alt="{{ cor_info.cor_display }}" 
+                     class="img-thumbnail" style="width:60px; height:80px; object-fit:cover;">
+            {% else %}
+                <div class="img-thumbnail d-flex align-items-center justify-content-center"
+                     style="width:60px;height:80px;background:#f4f4f4;">
+                    {{ cor_info.cor_display }}
+                </div>
+            {% endif %}
+        </button>
+        {% endfor %}
+    </div>
+</div>
 
                     <!-- Tamanhos -->
-                    <div id="tamanhos-container" class="d-flex gap-2 flex-wrap mb-3">
-                        {% for val, label in produto.TAMANHO_CHOICES %}
-                        <button type="button" class="btn btn-outline-dark tamanho-btn" data-tamanho="{{ val }}">
-                            {{ label }}
-                        </button>
-                        {% endfor %}
-                    </div>
+<div class="mb-3">
+    <label class="form-label fw-bold">Selecione o tamanho:</label>
+    <div id="tamanhos-container" class="d-flex gap-2 flex-wrap">
+        {% for tamanho in tamanhos_disponiveis %}
+        <button type="button" 
+                class="btn tamanho-btn {% if tamanho.disponivel %}btn-outline-dark{% else %}btn-outline-secondary disabled{% endif %}" 
+                data-tamanho="{{ tamanho.valor }}"
+                data-disponivel="{% if tamanho.disponivel %}true{% else %}false{% endif %}"
+                data-target="comprar"
+                {% if not tamanho.disponivel %}disabled{% endif %}
+                style="min-width: 50px; {% if not tamanho.disponivel %}opacity: 0.5;{% endif %}">
+            {{ tamanho.label }}
+            {% if not tamanho.disponivel %}
+                <span class="d-block small text-muted">indisponível</span>
+            {% endif %}
+        </button>
+        {% empty %}
+        <p class="text-muted">Nenhum tamanho disponível.</p>
+        {% endfor %}
+    </div>
+</div>
 
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <label for="quantidade" class="form-label">Quantidade:</label>
-                            <input type="number" name="quantidade" id="quantidade" 
-                                   class="form-control" min="1" value="1" max="{{ produto.quantidade_estoque }}"
-                                   onchange="atualizarPrecos()">
-                            <small class="text-muted">Disponível: {{ produto.quantidade_estoque }} unidades</small>
+                            <label for="quantidade-input-comprar" class="form-label">Quantidade:</label>
+                            <input type="number" id="quantidade-input-comprar" 
+                                   class="form-control" min="1" value="1" 
+                                   onchange="document.getElementById('quantidade-comprar').value = this.value">
+                            <small class="text-muted">Disponível: {{ primeira_variacao.quantidade_estoque|default:0 }} unidades</small>
                         </div>
                     </div>
 
-                    <div class="d-grid gap-2 d-md-flex">
-                        <button type="submit" name="action" value="comprar" class="btn btn-success btn-lg flex-fill">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">
                             <i class="bi bi-bag-check"></i> Comprar Agora
                         </button>
-                        <button type="submit" name="action" value="carrinho" class="btn btn-primary btn-lg flex-fill">
+                    </div>
+                </form>
+
+                <!-- 🔥 FORMULÁRIO PARA ADICIONAR AO CARRINHO -->
+                <form method="POST" action="{% url 'adicionar_carrinho' produto.id %}" class="buy-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="cor" id="input-cor-carrinho" value="">
+                    <input type="hidden" name="tamanho" id="input-tamanho-carrinho" value="">
+                    <input type="hidden" name="quantidade" id="quantidade-carrinho" value="1">
+                    <input type="hidden" name="action" value="carrinho">
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
                             <i class="bi bi-cart-plus"></i> Adicionar ao Carrinho
                         </button>
                     </div>
@@ -132,9 +166,9 @@
 
                 <!-- Informações de Estoque -->
                 <div class="mt-4">
-                    {% if produto.quantidade_estoque > 10 %}
+                    {% if primeira_variacao.quantidade_estoque > 10 %}
                     <span class="text-success"><i class="bi bi-check-circle"></i> Em estoque</span>
-                    {% elif produto.quantidade_estoque > 0 %}
+                    {% elif primeira_variacao.quantidade_estoque > 0 %}
                     <span class="text-warning"><i class="bi bi-exclamation-triangle"></i> Últimas unidades</span>
                     {% else %}
                     <span class="text-danger"><i class="bi bi-x-circle"></i> Fora de estoque</span>
@@ -145,11 +179,34 @@
     </div>
 </div>
 
-<!-- JAVASCRIPT COM CÁLCULO DE FRETE -->
+<!-- JAVASCRIPT -->
 <script>
-// Banco de dados de CEPs e regiões (mesmo do carrinho e checkout)
+// ============================================
+// FUNÇÕES DE FORMATAÇÃO E FRETE
+// ============================================
+
+function formatBR(value){
+    return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatarCEP(input) {
+    if (!input) return;
+    let cep = input.value.replace(/\D/g, '');
+    if (cep.length > 5) {
+        cep = cep.substring(0, 5) + '-' + cep.substring(5, 8);
+    }
+    input.value = cep;
+}
+
+function validarCEP(cep) {
+    cep = cep.replace(/\D/g, '');
+    return cep.length === 8;
+}
+
+// ============================================
+// BANCO DE DADOS DE FRETE
+// ============================================
 const regioesFrete = {
-    // Distrito Federal - Região Metropolitana
     '70000000-72799999': { cidade: 'Brasília-DF (Plano Piloto)', valor: 8.90, prazo: '2-3 dias', regiao: 'capital' },
     '71587040-71588238': { cidade: 'Paranoá-DF', valor: 8.90, prazo: '2-3 dias', regiao: 'rmdf' },
     '71590000-71590245': { cidade: 'Itapoã-DF', valor: 8.90, prazo: '2-3 dias', regiao: 'rmdf' },
@@ -161,54 +218,22 @@ const regioesFrete = {
     '73300000-73399999': { cidade: 'Planaltina-DF', valor: 10.90, prazo: '3-5 dias', regiao: 'rmdf' },
     '73200000-73299999': { cidade: 'Sobradinho-DF', valor: 10.90, prazo: '3-5 dias', regiao: 'rmdf' },
     '73500000-73599999': { cidade: 'Brazlândia-DF', valor: 11.90, prazo: '3-5 dias', regiao: 'rmdf' },
-    
-    // Goiás - Cidades próximas
     '74000000-74899999': { cidade: 'Goiânia-GO', valor: 12.90, prazo: '4-6 dias', regiao: 'goias' },
     '75000000-75999999': { cidade: 'Anápolis-GO', valor: 15.90, prazo: '5-8 dias', regiao: 'interior-go' },
     '72800000-72999999': { cidade: 'Luziânia-GO', valor: 13.90, prazo: '4-6 dias', regiao: 'goias' },
     '73800000-73999999': { cidade: 'Formosa-GO', valor: 14.90, prazo: '5-7 dias', regiao: 'goias' },
-    
-    // Outros estados
     '01000000-09999999': { cidade: 'São Paulo-SP', valor: 22.90, prazo: '8-12 dias', regiao: 'sul' },
     '20000000-28999999': { cidade: 'Rio de Janeiro-RJ', valor: 24.90, prazo: '8-12 dias', regiao: 'sudeste' },
     '30000000-39999999': { cidade: 'Belo Horizonte-MG', valor: 19.90, prazo: '7-10 dias', regiao: 'sudeste' },
     '50000000-56999999': { cidade: 'Recife-PE', valor: 29.90, prazo: '10-15 dias', regiao: 'nordeste' },
     '80000000-87999999': { cidade: 'Curitiba-PR', valor: 19.90, prazo: '7-10 dias', regiao: 'sul' },
-    
-    // Padrão para CEPs não mapeados
     'default': { cidade: 'sua cidade', valor: 15.90, prazo: '5-10 dias', regiao: 'default' }
 };
 
-function formatBR(value){
-    return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-// Formatar CEP (XXXXX-XXX)
-function formatarCEP(input) {
-    let cep = input.value.replace(/\D/g, '');
-    
-    if (cep.length > 5) {
-        cep = cep.substring(0, 5) + '-' + cep.substring(5, 8);
-    }
-    
-    input.value = cep;
-}
-
-// Validar CEP
-function validarCEP(cep) {
-    cep = cep.replace(/\D/g, '');
-    return cep.length === 8;
-}
-
-// Função de cálculo de frete
 function encontrarRegiaoPorCEP(cep) {
-    // Remove caracteres não numéricos e converte para string
     cep = cep.replace(/\D/g, '');
-    
-    // Converte para número, mas trata como string para comparação
     const cepNum = parseInt(cep, 10);
     
-    // Verifica se o CEP é válido
     if (isNaN(cepNum) || cep.length !== 8) {
         return regioesFrete['default'];
     }
@@ -217,217 +242,288 @@ function encontrarRegiaoPorCEP(cep) {
 
     for (const faixa in regioesFrete) {
         if (faixa === 'default') continue;
-
         const [inicioStr, fimStr] = faixa.split('-');
         const inicio = parseInt(inicioStr, 10);
         const fim = parseInt(fimStr, 10);
-
         if (cepNum >= inicio && cepNum <= fim) {
-            // Calcula o "tamanho" do intervalo
             const tamanhoFaixa = fim - inicio;
-
             if (!melhorMatch || tamanhoFaixa < melhorMatch.tamanho) {
-                melhorMatch = {
-                    dados: regioesFrete[faixa],
-                    tamanho: tamanhoFaixa
-                };
+                melhorMatch = { dados: regioesFrete[faixa], tamanho: tamanhoFaixa };
             }
         }
     }
-
     return melhorMatch ? melhorMatch.dados : regioesFrete['default'];
 }
 
-// Consultar frete
 function consultarFrete(cep) {
     return new Promise((resolve) => {
         setTimeout(() => {
             const regiao = encontrarRegiaoPorCEP(cep);
-            const precoProduto = parseFloat("{{ produto.preco|floatformat:2 }}".replace(",", ".")) || 0;
-            
-            // Frete grátis para compras acima de R$ 200
+            const precoProduto = parseFloat("{{ preco|floatformat:2 }}".replace(",", ".")) || 0;
             if (precoProduto > 200) {
                 regiao.valor = 0;
                 regiao.prazo = '3-5 dias (FRETE GRÁTIS)';
             }
-            
             resolve(regiao);
         }, 800);
     });
 }
 
-function mostrarLoadingFrete(mostrar) {
-    const loadingEl = document.querySelector('.loading-frete');
-    if (loadingEl) loadingEl.style.display = mostrar ? 'block' : 'none';
-}
-
-// Função principal para calcular frete
 async function calcularFrete() {
     const cepInput = document.getElementById('cep-frete');
+    if (!cepInput) return;
+    
     const cep = cepInput.value.replace(/\D/g, '');
     const resultadoEl = document.getElementById('resultado-frete');
+    const loadingEl = document.querySelector('.loading-frete');
     
     if (!validarCEP(cep)) {
-        resultadoEl.innerHTML = '<div class="alert alert-warning">Por favor, digite um CEP válido (8 dígitos)</div>';
+        if (resultadoEl) resultadoEl.innerHTML = '<div class="alert alert-warning">Digite um CEP válido (8 dígitos)</div>';
         return;
     }
     
-    mostrarLoadingFrete(true);
-    resultadoEl.innerHTML = '';
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (resultadoEl) resultadoEl.innerHTML = '';
     
     try {
         const resultado = await consultarFrete(cep);
-        
-        if (resultado.valor === 0) {
-            resultadoEl.innerHTML = `
-                <div class="alert alert-success">
-                    <strong>🎉 FRETE GRÁTIS!</strong><br>
-                    <small>Para ${resultado.cidade}<br>
-                    📅 ${resultado.prazo}</small>
-                </div>
-            `;
-        } else {
-            resultadoEl.innerHTML = `
-                <div class="alert alert-info">
-                    <strong>Frete: ${formatBR(resultado.valor)}</strong><br>
-                    <small>Para ${resultado.cidade}<br>
-                    📅 ${resultado.prazo}</small>
-                </div>
-            `;
+        if (resultadoEl) {
+            if (resultado.valor === 0) {
+                resultadoEl.innerHTML = `<div class="alert alert-success"><strong>🎉 FRETE GRÁTIS!</strong><br><small>${resultado.cidade}<br>📅 ${resultado.prazo}</small></div>`;
+            } else {
+                resultadoEl.innerHTML = `<div class="alert alert-info"><strong>Frete: ${formatBR(resultado.valor)}</strong><br><small>${resultado.cidade}<br>📅 ${resultado.prazo}</small></div>`;
+            }
         }
-        
     } catch (error) {
-        resultadoEl.innerHTML = '<div class="alert alert-danger">Erro ao calcular frete. Tente novamente.</div>';
-        console.error('Erro frete:', error);
+        if (resultadoEl) resultadoEl.innerHTML = '<div class="alert alert-danger">Erro ao calcular frete</div>';
     } finally {
-        mostrarLoadingFrete(false);
+        if (loadingEl) loadingEl.style.display = 'none';
     }
 }
 
-// Permitir calcular frete pressionando Enter
-document.getElementById('cep-frete').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        calcularFrete();
-    }
-});
+// ============================================
+// FUNÇÕES DE CORES, TAMANHOS E PREÇOS
+// ============================================
 
-// Código existente para cores, tamanhos e preços
+function atualizarPrecos() {
+    let quantidadeInput = document.getElementById('quantidade-input-comprar');
+    if (!quantidadeInput) return;
+    
+    const precoProduto = parseFloat("{{ preco|floatformat:2 }}".replace(",", ".")) || 0;
+    const qtd = parseInt(quantidadeInput.value) || 1;
+    const total = precoProduto * qtd;
+    const precoPix = total * 0.90;
+    
+    const precoPixEl = document.getElementById('preco-pix');
+    const precoParceladoEl = document.getElementById('preco-parcelado');
+    const qtdHidden = document.getElementById('quantidade-comprar');
+    
+    if (precoPixEl) precoPixEl.textContent = formatBR(precoPix);
+    if (precoParceladoEl) precoParceladoEl.textContent = formatBR(total);
+    if (qtdHidden) qtdHidden.value = qtd;
+}
+
+// ============================================
+// SELEÇÃO DE COR E TAMANHO (DINÂMICO)
+// ============================================
+
+// ============================================
+// SELEÇÃO DE COR E TAMANHO (DINÂMICO)
+// ============================================
+
 document.addEventListener('DOMContentLoaded', function() {
-    const colors = JSON.parse('{{ colors_json|escapejs }}');
-    const sizesByColor = JSON.parse('{{ sizes_json|escapejs }}');
-    const sizeLabels = JSON.parse('{{ size_labels_json|escapejs }}');
-
+    console.log('DOM carregado - Inicializando página de produto');
+    
     const mainImage = document.getElementById('main-product-image');
     const corDisplay = document.getElementById('cor-display');
     const tamanhoDisplay = document.getElementById('tamanho-display');
-    const inputCor = document.getElementById('input-cor');
-    const inputTamanho = document.getElementById('input-tamanho');
-
+    const inputCorComprar = document.getElementById('input-cor-comprar');
+    const inputTamanhoComprar = document.getElementById('input-tamanho-comprar');
+    const inputCorCarrinho = document.getElementById('input-cor-carrinho');
+    const inputTamanhoCarrinho = document.getElementById('input-tamanho-carrinho');
+    
     const corButtons = document.querySelectorAll('.cor-btn');
-    const tamanhoButtons = Array.from(document.querySelectorAll('.tamanho-btn'));
+    const tamanhoButtons = document.querySelectorAll('.tamanho-btn');
 
-    function applySizesForColor(cor, preferTamanho=null) {
-        const disponiveis = sizesByColor[cor] || [];
-        let selected = null;
+    // 🔥 DADOS DE CORES E TAMANHOS (passados pela view)
+    const sizesByColor = {{ sizes_by_color|safe }};
+    const sizeLabels = {{ size_labels|safe }};
 
+    console.log('sizesByColor:', sizesByColor);
+    console.log('sizeLabels:', sizeLabels);
+
+    // --- FUNÇÃO PARA ATUALIZAR TAMANHOS POR COR ---
+    function atualizarTamanhos(corSelecionada) {
+        // Obtém os tamanhos disponíveis para a cor selecionada
+        const tamanhosDisponiveis = sizesByColor[corSelecionada] || [];
+        console.log('Tamanhos disponíveis para', corSelecionada, ':', tamanhosDisponiveis);
+        
+        // Itera sobre todos os botões de tamanho
         tamanhoButtons.forEach(btn => {
-            const tamanhoVal = btn.dataset.tamanho;
-            if (disponiveis.includes(tamanhoVal)) {
-                btn.classList.remove('disabled', 'btn-secondary');
+            const tamanho = btn.dataset.tamanho;
+            const isDisponivel = tamanhosDisponiveis.includes(tamanho);
+            
+            // Atualiza o estado do botão
+            if (isDisponivel) {
+                btn.disabled = false;
+                btn.classList.remove('btn-outline-secondary', 'disabled');
                 btn.classList.add('btn-outline-dark');
-                btn.innerHTML = sizeLabels[tamanhoVal] || tamanhoVal;
+                btn.style.opacity = '1';
+                // Remove o texto "indisponível" se existir
+                const span = btn.querySelector('span.d-block');
+                if (span) span.remove();
             } else {
-                btn.classList.add('disabled', 'btn-secondary');
-                btn.classList.remove('btn-outline-dark', 'active');
-                btn.innerHTML = `<s>${sizeLabels[tamanhoVal] || tamanhoVal}</s>`;
+                btn.disabled = true;
+                btn.classList.remove('btn-outline-dark', 'active', 'btn-dark');
+                btn.classList.add('btn-outline-secondary', 'disabled');
+                btn.style.opacity = '0.5';
+                // Adiciona texto "indisponível" se não existir
+                if (!btn.querySelector('span.d-block')) {
+                    const span = document.createElement('span');
+                    span.className = 'd-block small text-muted';
+                    span.textContent = 'indisponível';
+                    btn.appendChild(span);
+                }
             }
         });
-
-        if (preferTamanho && disponiveis.includes(preferTamanho)) {
-            selected = preferTamanho;
-        } else if (disponiveis.length > 0) {
-            selected = disponiveis[0];
+        
+        // 🔥 Se o tamanho atualmente selecionado não está mais disponível, limpa a seleção
+        const tamanhoAtual = inputTamanhoComprar ? inputTamanhoComprar.value : '';
+        if (tamanhoAtual && !tamanhosDisponiveis.includes(tamanhoAtual)) {
+            if (inputTamanhoComprar) inputTamanhoComprar.value = '';
+            if (inputTamanhoCarrinho) inputTamanhoCarrinho.value = '';
+            if (tamanhoDisplay) tamanhoDisplay.textContent = 'Selecione o tamanho';
+            // Remove destaque de todos os botões
+            tamanhoButtons.forEach(btn => {
+                btn.classList.remove('active', 'btn-dark');
+                btn.classList.add('btn-outline-dark');
+            });
         }
-
-        tamanhoButtons.forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.tamanho === selected) {
-                btn.classList.add('active');
+        
+        // 🔥 Se só tem um tamanho disponível, seleciona automaticamente
+        if (tamanhosDisponiveis.length === 1) {
+            const unicoTamanho = tamanhosDisponiveis[0];
+            const btnUnico = Array.from(tamanhoButtons).find(btn => btn.dataset.tamanho === unicoTamanho);
+            if (btnUnico && !btnUnico.disabled) {
+                btnUnico.click();
             }
-        });
-
-        if (selected) {
-            inputTamanho.value = selected;
-            tamanhoDisplay.textContent = sizeLabels[selected] || selected;
-        } else {
-            inputTamanho.value = '';
-            tamanhoDisplay.textContent = '-';
         }
     }
 
+    // --- FUNÇÃO PARA DEFINIR COR (com atualização de tamanhos) ---
     function setColor(cor) {
-        const colorObj = colors.find(c => c.cor === cor) || colors[0];
-        if (!colorObj) return;
-
-        if (colorObj.imagem) {
-            mainImage.src = colorObj.imagem;
+        console.log('setColor chamado com cor:', cor);
+        
+        // Atualiza campos hidden
+        if (inputCorComprar) inputCorComprar.value = cor;
+        if (inputCorCarrinho) inputCorCarrinho.value = cor;
+        
+        // Atualiza display
+        if (corDisplay) corDisplay.textContent = cor;
+        
+        // Busca a imagem desta cor
+        const selectedBtn = Array.from(corButtons).find(btn => btn.dataset.cor === cor);
+        if (selectedBtn) {
+            const imagem = selectedBtn.dataset.imagem;
+            console.log('Imagem encontrada para cor', cor, ':', imagem);
+            if (imagem && mainImage) {
+                mainImage.src = imagem;
+                console.log('Imagem principal atualizada para:', imagem);
+            }
         }
-
-        corDisplay.textContent = colorObj.cor_display || cor;
-        inputCor.value = colorObj.cor || cor;
-
-        const preferTamanho = inputTamanho.value || null;
-        applySizesForColor(colorObj.cor, preferTamanho);
+        
+        // Remove destaque de outros botões
+        corButtons.forEach(btn => {
+            btn.classList.remove('border-primary', 'border-2');
+        });
+        
+        // Destaca botão selecionado
+        if (selectedBtn) {
+            selectedBtn.classList.add('border-primary', 'border-2');
+        }
+        
+        // 🔥 ATUALIZA OS TAMANHOS DISPONÍVEIS PARA ESTA COR
+        atualizarTamanhos(cor);
     }
 
-    const initialColor = inputCor ? inputCor.value : (colors[0] ? colors[0].cor : null);
-    const initialSize = inputTamanho ? inputTamanho.value : null;
-    if (initialColor) {
-        setColor(initialColor);
-        if (initialSize) {
-            applySizesForColor(initialColor, initialSize);
+    // --- FUNÇÃO PARA DEFINIR TAMANHO ---
+    function setTamanho(tamanho, label) {
+        if (inputTamanhoComprar) inputTamanhoComprar.value = tamanho;
+        if (inputTamanhoCarrinho) inputTamanhoCarrinho.value = tamanho;
+        if (tamanhoDisplay) tamanhoDisplay.textContent = label || tamanho;
+        
+        tamanhoButtons.forEach(btn => {
+            btn.classList.remove('active', 'btn-dark');
+            btn.classList.add('btn-outline-dark');
+        });
+        
+        const selectedBtn = Array.from(tamanhoButtons).find(btn => btn.dataset.tamanho === tamanho);
+        if (selectedBtn && !selectedBtn.disabled) {
+            selectedBtn.classList.remove('btn-outline-dark');
+            selectedBtn.classList.add('active', 'btn-dark');
         }
-    } else if (colors.length) {
-        setColor(colors[0].cor);
     }
 
+    // --- EVENTOS DAS CORES ---
     corButtons.forEach(btn => {
         btn.addEventListener('click', function() {
             const cor = this.dataset.cor;
+            const imagem = this.dataset.imagem;
+            const corDisplayName = this.dataset.corDisplay;
+            
+            console.log('Clique na cor:', cor, 'Imagem:', imagem);
+            
+            if (imagem && mainImage) {
+                mainImage.src = imagem;
+                console.log('Imagem principal atualizada para:', imagem);
+            }
+            if (corDisplay) corDisplay.textContent = corDisplayName || cor;
+            
             setColor(cor);
         });
     });
 
+    // --- EVENTOS DOS TAMANHOS ---
     tamanhoButtons.forEach(btn => {
         btn.addEventListener('click', function() {
-            if (this.classList.contains('disabled')) return;
-            tamanhoButtons.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            const tam = this.dataset.tamanho;
-            inputTamanho.value = tam;
-            tamanhoDisplay.textContent = sizeLabels[tam] || tam;
+            if (this.disabled) return;
+            const tamanho = this.dataset.tamanho;
+            const label = this.textContent.trim();
+            setTamanho(tamanho, label);
         });
     });
-});
 
-// função calcular valor desconto
-function atualizarPrecos(){
-    const precoProduto = parseFloat("{{ produto.preco|floatformat:2 }}".replace(",", ".")) || 0;
-    const qtd = parseInt(document.getElementById("quantidade").value) || 1;
-    const total = precoProduto * qtd;
-
-    const precoPix = total * 0.90; // 10% desconto
-    const precoParcelado = total; // preço cheio
-
-    document.getElementById("preco-pix").textContent = formatBR(precoPix);
-    document.getElementById("preco-parcelado").textContent = formatBR(precoParcelado);
-}
-
-document.addEventListener("DOMContentLoaded", function() {
+    // --- CONFIGURAR CAMPO DE QUANTIDADE ---
+    const qtdInput = document.getElementById('quantidade-input-comprar');
+    if (qtdInput) {
+        qtdInput.addEventListener('input', atualizarPrecos);
+        qtdInput.addEventListener('change', atualizarPrecos);
+    }
+    
+    // --- INICIALIZAR PREÇOS ---
     atualizarPrecos();
-    document.getElementById("quantidade").addEventListener("input", atualizarPrecos);
+    
+    // --- CONFIGURAR FRETE COM ENTER ---
+    const cepFrete = document.getElementById('cep-frete');
+    if (cepFrete) {
+        cepFrete.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') calcularFrete();
+        });
+    }
+    
+    // --- INICIALIZAR: selecionar primeira cor e atualizar tamanhos ---
+    if (corButtons.length > 0) {
+        const primeiraCor = corButtons[0].dataset.cor;
+        console.log('Inicializando com primeira cor:', primeiraCor);
+        setColor(primeiraCor);
+        // Atualiza a imagem
+        if (corButtons[0].dataset.imagem && mainImage) {
+            mainImage.src = corButtons[0].dataset.imagem;
+        }
+    }
+    
+    console.log('Inicialização concluída');
 });
-
 </script>
 
 <style>
@@ -436,13 +532,25 @@ document.addEventListener("DOMContentLoaded", function() {
     padding-left: 10px;
     background-color: #f8f9ff;
 }
-.cor-btn.active {
-    border: 2px solid #007bff !important;
+.cor-btn {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.cor-btn:hover {
+    transform: scale(1.05);
 }
 .tamanho-btn.active {
     background-color: #007bff !important;
     color: white !important;
     border-color: #007bff !important;
+}
+.tamanho-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.tamanho-btn:not(.disabled):hover {
+    background-color: #007bff;
+    color: white;
 }
 </style>
 {% endblock %}

@@ -1,9 +1,35 @@
+/* ===== HERO MENU MIRNA BOUTIQUE ===== */
+.hero-logo {
+    text-align: center;
+    margin-bottom: 30px;
+}
 
+.hero-logo img {
+    max-width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+}
+
+.menu-container {
+    background: #fff;
+    border-radius: 50px;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+   
+}
+.menu-container {
+    position: relative;
+    z-index: 3;
+}
 .container-projetos {
     max-width: 1100px; /* ajuste conforme preferir: 1000px, 900px... */
     margin: 0 auto;   /* centraliza */
     background-color: #ffffff; /* opcional, para destaque */
-    
+    padding: 0 15px; /* 👈 adiciona isso */
     
 }
 
@@ -14,6 +40,128 @@
     .btn-close {
         z-index: 1060;
     }
+
+/* ===== AJUSTE DE MARGEM DA LOGO/BANNER ===== */
+.hero-banner {
+    width: 100%;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-top: -10px;     /* ← ADICIONE ESTA LINHA */
+    margin-bottom: 10px; /* 👈 Adiciona margem inferior */
+    border-radius: 20px; /* 👈 Arredonda as bordas */
+    overflow: hidden;    /* 👈 Garante que a imagem não vaze */
+}
+
+/* Margem do menu container */
+.hero-header {
+    background: linear-gradient(135deg, #16bcf9, #0cb6ea);
+    border-radius: 20px;
+    padding: 10px 15px;
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
+/* Espaçamento após o banner para o carousel/menu */
+.hero-banner + .carousel,
+.hero-banner + div:not(.carousel) {
+    margin-top: 10px;
+}
+
+/* Ajuste do container principal */
+.container-projetos {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+/* Ajuste fino para o conteúdo do banner */
+.hero-content {
+    position: relative;
+    color: #fff;
+    text-align: center;
+    z-index: 2;
+    padding: 20px;
+}
+
+.hero-content h1 {
+    font-size: 48px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.hero-content p {
+    font-size: 18px;
+    margin: 10px 0 20px 0;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.btn-hero {
+    background: #ff6600;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.btn-hero:hover {
+    background: #e05500;
+    transform: scale(1.05);
+    color: white;
+}
+/* Ajuste responsivo para mobile */
+@media (max-width: 768px) {
+    .hero-banner {
+        height: 250px;
+        margin-bottom: 20px;
+        margin-top: -5px;
+        border-radius: 12px;
+    }
+        .hero-header {
+        margin-bottom: 0px;   /* ← ADICIONE ESTA LINHA */
+        margin-top: 0px;
+    }
+    
+    .hero-content h1 {
+        font-size: 32px;
+    }
+    
+    .hero-content p {
+        font-size: 14px;
+    }
+    
+    .btn-hero {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+}
+
+/* Espaçamento após o banner para o carousel/menu */
+.hero-banner + .carousel,
+.hero-banner + div:not(.carousel) {
+    margin-top: 10px;
+}
+
+/* Ajuste do container principal */
+.container-projetos {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* Margem do menu container */
+.hero-header {
+    background: linear-gradient(135deg, #16bcf9, #0cb6ea);
+    border-radius: 20px;
+    padding: 15px;
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
 
 /* css para abrir imagens ao clicar, 
 ajustar tamanho das imagem da galeria */
@@ -73,70 +221,301 @@ ajustar tamanho das imagem da galeria */
         background-color: rgba(0, 0, 0, 0.9);
         color: white;
     }
+
+/* ===== AJUSTES DO CAROUSEL ===== */
+
+/* Container principal do carousel */
+#carouselProdutos {
+    max-width: 100%;
+    margin-bottom: 40px; /* Espaço após o carousel */
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+ /* Overlay do carousel */
+.carousel-overlay { 
+    position: absolute; 
+    inset: 0; 
+    background: linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+    pointer-events: none;
+}  
     
-    /* ESTILOS PARA AS SETAS DO CARROSSEL - EFEITO HOVER */
-    .carousel-control-btn {
+/* Conteúdo textual */
+.carousel-content { 
+    width: 45%; 
+    color: #fff; 
+    z-index: 2;
+    position: relative;
+    animation: fadeInLeft 0.8s ease;
+}
+    
+    /* Tags e textos */
+.carousel-tag {
+    font-size: 32px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #facc15;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.carousel-title {
+    font-size: 42px;
+    font-weight: 800;
+    margin: 15px 0;
+    line-height: 1.2;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+    
+    .carousel-price {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #facc15;
+}
+    .carousel-parcelado {
+    font-size: 16px;
+    margin-bottom: 25px;
+    opacity: 0.9;
+}
+
+   /* Botão do carousel */
+.btn-carousel {
+    background: #fff;
+    color: #000;
+    padding: 12px 28px;
+    border-radius: 40px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+    border: none;
+    cursor: pointer;
+}
+    
+    .btn-carousel:hover {
+    background: #facc15;
+    color: #000;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+/* Imagem do carousel */
+.carousel-img {
+    height: 100%;
+    width: 50%;
+    object-fit: cover;
+    border-radius: 15px;
+    z-index: 1;
+    position: relative;
+    animation: fadeInRight 0.8s ease;
+}
+/* Setas de navegação personalizadas */
+.carousel-control-prev,
+.carousel-control-next {
+    width: 50px;
+    height: 50px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+#carouselProdutos:hover .carousel-control-prev,
+#carouselProdutos:hover .carousel-control-next {
+    opacity: 1;
+}
+
+.carousel-control-prev {
+    left: 20px;
+}
+
+.carousel-control-next {
+    right: 20px;
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+    background: rgba(255,255,255,0.4);
+}
+
+/* Indicadores (bolinhas) */
+.carousel-indicators {
+    bottom: 20px;
+}
+
+.carousel-indicators button {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 5px;
+}
+
+/* Animações */
+@keyframes fadeInLeft {
+    from {
         opacity: 0;
-        transition: opacity 0.3s ease;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Ajuste do banner do carousel */
+.carousel-banner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 420px;
+    padding: 0 5%;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+}
+    
+    
+    .carousel {
+        border-radius: 12px;
+        overflow: hidden;
     }
     
-    .carousel-container:hover .carousel-control-btn {
-        opacity: 0.8;
+    .carousel-item {
+        transition: transform 0.6s ease-in-out;
     }
     
-    .carousel-control-btn:hover {
-        opacity: 1 !important;
+    .carousel-fade .active.carousel-item-start,
+    .carousel-fade .active.carousel-item-end {
+        transition: opacity 0s 0.6s;
+    }
+    /* ===== RESPONSIVIDADE DO CAROUSEL ===== */
+@media (max-width: 992px) {
+    .carousel-title {
+        font-size: 32px;
+    }
+    
+    .carousel-price {
+        font-size: 24px;
+    }
+    
+    .btn-carousel {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+    .carousel-banner {
+        flex-direction: column-reverse;
+        height: auto;
+        padding: 30px 20px;
+    }
+    
+    .carousel-content {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    
+    .carousel-img {
+        width: 100%;
+        height: 220px;
+        margin-bottom: 20px;
+    }
+    
+    .carousel-title {
+        font-size: 28px;
+    }
+    
+    .carousel-price {
+        font-size: 22px;
+    }
+    
+    .carousel-tag {
+        font-size: 12px;
     }
     
     .carousel-control-prev,
     .carousel-control-next {
-        z-index: 1050;
-        width: 50px;
-        height: 50px;
-        top: 50%;
-        transform: translateY(-50%);
-        background-color: rgba(0, 0, 0, 0.5);
-        border-radius: 50%;
-    }
-    
-    .carousel-control-prev {
-        left: 15px;
-    }
-    
-    .carousel-control-next {
-        right: 15px;
-    }
-    
-    .modal-body {
-        overflow: hidden;
-    }
-    
-    #imagemModalSrc {
-        max-height: 80vh;
-        object-fit: contain;
-        transition: transform 0.3s ease;
-    }
-
-    .carousel-indicators [data-bs-target] {
-    width: 8px;              /* tamanho da bolinha */
-    height: 8px;
-    border-radius: 50%;       /* deixa redonda */
-    background-color: #703701; /* cor da bolinha */
-    border: 2px solid #fff;   /* borda branca para contraste */
-    margin: 0 6px;            /* espaçamento entre elas */
-    opacity: 0.6;
-    transition: all 0.3s ease;
-    }
-
-    .carousel-indicators .active {
-        background-color: #bd4b00;  /* cor da bolinha ativa */
         opacity: 1;
-        transform: scale(1.2);      /* destaque quando ativa */
+        width: 35px;
+        height: 35px;
     }
+}
+
+@media (max-width: 480px) {
+    .carousel-title {
+        font-size: 22px;
+    }
+    
+    .carousel-price {
+        font-size: 18px;
+    }
+    
+    .carousel-parcelado {
+        font-size: 14px;
+    }
+    
+    .btn-carousel {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+}
+/* ===== AJUSTE DO TÍTULO APÓS CAROUSEL ===== */
+/* Título "Todos os Produtos" ou categoria */
+.text-center.fw-bold.mb-4 {
+    margin-top: 20px;
+    margin-bottom: 30px !important;
+    font-size: 2.2rem;
+    position: relative;
+    padding-bottom: 15px;
+}
+
+/* Linha decorativa no título */
+.text-center.fw-bold.mb-4::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, #facc15, #ff6600);
+    border-radius: 3px;
+}
+
+/* Ajuste para mobile do título */
+@media (max-width: 768px) {
+    .text-center.fw-bold.mb-4 {
+        font-size: 1.8rem;
+        margin-top: 15px;
+        margin-bottom: 25px !important;
+    }
+}
+
 
     /* Efeito de zoom suave ao passar o mouse na imagem do modal */
     .modal-image:hover {
         transform: scale(1.02);
+    }
+    .carousel-item {
+        transition: transform 0.6s ease, opacity 0.6s ease;
     }
     
     /* Novos estilos para a galeria */
@@ -193,20 +572,8 @@ ajustar tamanho das imagem da galeria */
         box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
     }
     
-    /* Estilos para o carrossel */
-    .carousel {
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    
-    .carousel-item {
-        transition: transform 0.6s ease-in-out;
-    }
-    
-    .carousel-fade .active.carousel-item-start,
-    .carousel-fade .active.carousel-item-end {
-        transition: opacity 0s 0.6s;
-    }
+   
+
 
 /*img-fluid imagem slid*/
 .img-fluid {
@@ -246,11 +613,326 @@ hr.w-25 {
     opacity: 1;
 }
 
+/*LISTA DE PRODUTOS overflow-x + flex */
 
+/* ===== LISTA DE PRODUTOS MELHORADA ===== */
+
+/* Container principal */
+.produtos-scroll-container {
+    position: relative;
+    padding: 0 45px;
+    margin: 40px 0;
+}
+
+/* Área de scroll */
+.produtos-scroll {
+    display: flex;
+    gap: 25px;
+    overflow-x: auto;
+    padding: 15px 5px 25px 5px;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    cursor: grab;
+}
+
+.produtos-scroll:active {
+    cursor: grabbing;
+}
+
+/* Esconde a barra de rolagem */
+.produtos-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.produtos-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.produtos-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #16bcf9, #0cb6ea);
+    border-radius: 10px;
+}
+
+.produtos-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, #0cb6ea, #0891b2);
+}
+
+/* Card do produto - versão melhorada */
+.produto-card {
+    flex: 0 0 260px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 0;
+    text-align: center;
+    scroll-snap-align: start;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    overflow: hidden;
+    position: relative;
+}
+
+.produto-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 35px rgba(0,0,0,0.15);
+}
+
+/* Badge de destaque */
+.produto-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #16bcf9, #facc15, #ff6600);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+    z-index: 2;
+}
+
+.produto-card:hover::before {
+    transform: scaleX(1);
+}
+
+/* Container da imagem */
+.produto-card a {
+    display: block;
+    overflow: hidden;
+    position: relative;
+}
+
+.produto-card img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.produto-card:hover img {
+    transform: scale(1.08);
+}
+
+/* Overlay na imagem ao hover */
+.produto-card a::after {
+    content: '🔍 Ver detalhes';
+    position: absolute;
+    bottom: -40px;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-size: 12px;
+    transition: bottom 0.3s ease;
+    z-index: 1;
+}
+
+.produto-card:hover a::after {
+    bottom: 0;
+}
+
+/* Informações do produto */
+.produto-info {
+    padding: 16px;
+    background: white;
+}
+
+.produto-info h6 {
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 0 0 10px 0;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Preços */
+.old-price {
+    text-decoration: line-through;
+    color: #9ca3af;
+    font-size: 13px;
+    margin: 5px 0;
+}
+
+.price {
+    color: #16a34a;
+    font-weight: 800;
+    font-size: 1.2rem;
+    margin: 5px 0;
+}
+
+.parcelado {
+    font-size: 11px;
+    color: #6b7280;
+    margin: 5px 0 0;
+}
+
+/* Botões de scroll melhorados */
+.scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    background: white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #16bcf9;
+    font-size: 1.2rem;
+}
+
+.scroll-btn.left {
+    left: 0;
+}
+
+.scroll-btn.right {
+    right: 0;
+}
+
+.scroll-btn:hover {
+    background: linear-gradient(135deg, #16bcf9, #0cb6ea);
+    color: white;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 8px 20px rgba(22,188,249,0.3);
+}
+
+.scroll-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+/* Indicador de scroll (opcional) */
+.scroll-indicator {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.scroll-indicator i {
+    animation: bounce 1s infinite;
+    display: inline-block;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    50% {
+        transform: translateX(5px);
+    }
+}
+/* Skeleton loading para produtos efeito de carregamento*/
+.produto-card.skeleton {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.produto-card.skeleton img {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+/* Contador de produtos */
+.produtos-count {
+    text-align: right;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 10px;
+    padding-right: 10px;
+}
+
+/* ===== RESPONSIVIDADE ===== */
+@media (max-width: 768px) {
+    .produtos-scroll-container {
+        padding: 0 35px;
+        margin: 25px 0;
+    }
+    
+    .produto-card {
+        flex: 0 0 200px;
+    }
+    
+    .produto-card img {
+        height: 200px;
+    }
+    
+    .produto-info {
+        padding: 12px;
+    }
+    
+    .produto-info h6 {
+        font-size: 0.85rem;
+    }
+    
+    .price {
+        font-size: 1rem;
+    }
+    
+    .old-price {
+        font-size: 11px;
+    }
+    
+    .scroll-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .produtos-scroll-container {
+        padding: 0 25px;
+    }
+    
+    .produto-card {
+        flex: 0 0 170px;
+    }
+    
+    .produto-card img {
+        height: 170px;
+    }
+    
+    .produto-info h6 {
+        font-size: 0.75rem;
+    }
+    
+    .scroll-btn {
+        width: 30px;
+        height: 30px;
+    }
+}
+/*LISTA DE PRODUTOS */
  
     /* ESTILOS PERSONALIZADOS PARA OS FILTROS */
     .filters-container {
-        background: url('/static/img/Banner.jpg') no-repeat center center;
+        background: url('/static/img/logo1.png') no-repeat center center;
         background-size: cover;   /* Faz a imagem ocupar toda a área */
         background-position: center; /* Centraliza */
         background-repeat: no-repeat; /* Garante que não repete */

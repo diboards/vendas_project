@@ -1,150 +1,115 @@
+# vendas/forms.py
 from django import forms
-from .models import Venda, Produto
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import EnderecoEntrega
+from .models import Produto, ProdutoVariacao, Venda, EnderecoEntrega, Perfil
 
 
 class ProdutoForm(forms.ModelForm):
     class Meta:
         model = Produto
-        fields = ['nome', 'descricao', 'preco', 'quantidade_estoque', 'cor', 'tamanho', 'categoria', 'imagem']
+        fields = ['nome', 'descricao', 'categoria', 'ativo']
         widgets = {
-            'nome': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Digite o nome do produto'
-            }),
-            'descricao': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Digite a descrição do produto'
-            }),
-            'preco': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0.01',
-                'placeholder': '0.00'
-            }),
-            'quantidade_estoque': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '0',
-                'placeholder': '0'
-            }),
-            'cor': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'tamanho': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'categoria': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'imagem': forms.FileInput(attrs={
-                'class': 'form-control',
-                'accept': 'image/*'
-            })
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'categoria': forms.Select(attrs={'class': 'form-control'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-        labels = {
-            'nome': 'Nome do Produto',
-            'descricao': 'Descrição',
-            'preco': 'Preço (R$)',
-            'quantidade_estoque': 'Quantidade em Estoque',
-            'cor': 'Cor',
-            'tamanho': 'Tamanho',
-            'categoria': 'Categoria',
-            'imagem': 'Imagem do Produto'
+
+
+class ProdutoVariacaoForm(forms.ModelForm):
+    class Meta:
+        model = ProdutoVariacao
+        fields = ['cor', 'tamanho', 'preco', 'quantidade_estoque', 'imagem']
+        widgets = {
+            'cor': forms.Select(attrs={'class': 'form-control'}),
+            'tamanho': forms.Select(attrs={'class': 'form-control'}),
+            'preco': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'quantidade_estoque': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'imagem': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
         }
-    
-    def clean_preco(self):
-        preco = self.cleaned_data.get('preco')
-        if preco <= 0:
-            raise forms.ValidationError("O preço deve ser maior que zero.")
-        return preco
-    
-    def clean_quantidade_estoque(self):
-        quantidade = self.cleaned_data.get('quantidade_estoque')
-        if quantidade < 0:
-            raise forms.ValidationError("A quantidade em estoque não pode ser negativa.")
-        return quantidade
-    
-    def clean_imagem(self):
-        imagem = self.cleaned_data.get('imagem')
 
-        # Se não enviou nova imagem → mantém a atual
-        if not imagem:
-            return imagem
 
-        # 🔥 Se for upload novo (arquivo mesmo)
-        if hasattr(imagem, 'size'):
-            if imagem.size > 2 * 1024 * 1024:
-                raise forms.ValidationError("Imagem muito grande (máx 2MB).")
+class ProdutoVariacaoInlineFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        combinacoes = []
+        for form in self.forms:
+            if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                cor = form.cleaned_data.get('cor')
+                tamanho = form.cleaned_data.get('tamanho')
+                if cor and tamanho:
+                    combinacao = f"{cor}_{tamanho}"
+                    if combinacao in combinacoes:
+                        raise forms.ValidationError(f"Combinação {cor}/{tamanho} já foi adicionada.")
+                    combinacoes.append(combinacao)
 
-        # 🔥 Se for Cloudinary (edição de produto)
-        elif hasattr(imagem, 'public_id'):
-            # objeto do Cloudinary → NÃO tem size
-            return imagem
-
-        return imagem   
 
 class VendaForm(forms.ModelForm):
     class Meta:
         model = Venda
         fields = ['produto', 'quantidade', 'observacoes', 'status']
-        widgets = {
-            'produto': forms.Select(attrs={'class': 'form-control'}),
-            'quantidade': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1',
-                'placeholder': 'Quantidade'
-            }),
-            'observacoes': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Observações adicionais'
-            }),
-            'status': forms.Select(attrs={'class': 'form-control'})
-        }
 
-# forms.py - mantenha apenas este
+
 class UsuarioComEnderecoForm(forms.Form):
-    # Dados do usuário
-    nome = forms.CharField(max_length=100, required=True, label='Nome Completo')
-    email = forms.EmailField(required=True, label='E-mail')
-    cpf = forms.CharField(max_length=14, required=True, label='CPF')
-    celular = forms.CharField(max_length=15, required=True, label='Celular')
-    password1 = forms.CharField(
-        widget=forms.PasswordInput,
-        min_length=6,
-        required=True,
-        label='Senha'
-    )
-    password2 = forms.CharField(
-        widget=forms.PasswordInput,
-        min_length=6,
-        required=True,
-        label='Confirmar Senha'
-    )
+    nome = forms.CharField(max_length=100, required=True)
+    email = forms.EmailField(required=True)
+    cpf = forms.CharField(max_length=14, required=True)
+    celular = forms.CharField(max_length=15, required=True)
+    password1 = forms.CharField(widget=forms.PasswordInput, min_length=6, required=True)
+    password2 = forms.CharField(widget=forms.PasswordInput, min_length=6, required=True)
+    cep = forms.CharField(max_length=9, required=True)
+    rua = forms.CharField(max_length=100, required=True)
+    numero = forms.CharField(max_length=10, required=True)
+    complemento = forms.CharField(max_length=50, required=False)
+    bairro = forms.CharField(max_length=50, required=True)
+    cidade = forms.CharField(max_length=50, required=True)
+    estado = forms.CharField(max_length=2, required=True)
+    principal = forms.BooleanField(required=False, initial=True)
+
+
+class EnderecoEntregaForm(forms.ModelForm):
+    class Meta:
+        model = EnderecoEntrega
+        fields = ['rua', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep', 'principal']
+
+
+# 🔥 ADICIONAR ESTA CLASSE
+class PerfilForm(forms.ModelForm):
+    first_name = forms.CharField(max_length=30, required=False, label="Nome")
+    last_name = forms.CharField(max_length=30, required=False, label="Sobrenome")
+    email = forms.EmailField(required=True, label="E-mail")
     
-    # Dados do endereço
-    cep = forms.CharField(max_length=9, required=True, label='CEP')
-    rua = forms.CharField(max_length=100, required=True, label='Rua')
-    numero = forms.CharField(max_length=10, required=True, label='Número')
-    complemento = forms.CharField(max_length=50, required=False, label='Complemento')
-    bairro = forms.CharField(max_length=50, required=True, label='Bairro')
-    cidade = forms.CharField(max_length=50, required=True, label='Cidade')
-    estado = forms.CharField(max_length=2, required=True, label='Estado')
-    principal = forms.BooleanField(required=False, initial=True, label='Endereço principal')
+    class Meta:
+        model = Perfil
+        fields = ['telefone', 'cpf', 'data_nascimento', 'bio']
+        widgets = {
+            'data_nascimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
+            'cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000.000.000-00'}),
+            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
     
-    def clean(self):
-        cleaned_data = super().clean()
-        password1 = cleaned_data.get('password1')
-        password2 = cleaned_data.get('password2')
-        
-        if password1 and password2 and password1 != password2:
-            raise forms.ValidationError('As senhas não coincidem')
-        
-        return cleaned_data  
-        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and hasattr(self.instance, 'usuario') and self.instance.usuario:
+            self.fields['first_name'].initial = self.instance.usuario.first_name
+            self.fields['last_name'].initial = self.instance.usuario.last_name
+            self.fields['email'].initial = self.instance.usuario.email
+    
+    def save(self, commit=True):
+        perfil = super().save(commit=False)
+        if commit:
+            perfil.save()
+            usuario = perfil.usuario
+            usuario.first_name = self.cleaned_data.get('first_name', '')
+            usuario.last_name = self.cleaned_data.get('last_name', '')
+            usuario.email = self.cleaned_data.get('email', '')
+            usuario.save()
+        return perfil
+
+# vendas/forms.py
+
 class OrcamentoForm(forms.Form):
     AMBIENTE_CHOICES = [
         ('', 'Escolha uma opção'),

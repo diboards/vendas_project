@@ -1,95 +1,138 @@
 {% extends 'vendas/base.html' %}
 {% load static %}
-{% load extras %}
-{%load widget_tweaks%}
+{% load widget_tweaks %}
 
 {% block content %}
 <div class="container mt-1">
 
-    <!-- Fundo cinza claro -->
     <div class="p-1" style="background-color: #f8f9fa; border-radius: 8px;">
         
-        <!-- Card com relevo -->
         <div class="card shadow-lg mb-0 rounded-2">
             <div class="card-header bg-dark text-white">
                 <strong>Cadastro de Novo Produto</strong>
             </div>
             
-            <!-- Formulário -->
             <div class="card-body bg-light rounded-bottom-4">
                 <form method="POST" id="form-cadastrar-produto" enctype="multipart/form-data">
                     {% csrf_token %}
                     
-                    {% if form.errors %}
-                    <div class="alert alert-danger">
-                        <strong>Erro!</strong> Por favor, corrija os seguintes problemas:
-                        <ul>
-                        {% for field in form %}
-                            {% for error in field.errors %}
-                                <li>{{ field.label }}: {{ error }}</li>
-                            {% endfor %}
+                    <!-- MENSAGENS -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
                         {% endfor %}
-                        </ul>
-                    </div>
                     {% endif %}
                     
+                    <!-- ========================================== -->
+                    <!-- INFORMAÇÕES BÁSICAS DO PRODUTO -->
+                    <!-- ========================================== -->
+                    <h5 class="mb-3">Informações Básicas</h5>
                     <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="id_nome" class="form-label">Nome do Produto:</label>
-                            {{ form.nome|add_class:"form-control input-cinza interactive-border" }}
+                        <div class="col-md-6">
+                            <label for="id_nome" class="form-label">Nome do Produto *</label>
+                            <input type="text" name="nome" id="id_nome" class="form-control" required>
                         </div>
                         
-                        <div class="col-md-4">
-                            <label for="id_quantidade_estoque" class="form-label">Quantidade em Estoque:</label>
-                            {{ form.quantidade_estoque|add_class:"form-control input-cinza interactive-border" }}
-                        </div>
-
-                        <div class="col-md-4">
-                            <label for="id_preco" class="form-label">Preço (R$):</label>
-                            {{ form.preco|add_class:"form-control input-cinza interactive-border" }}
+                        <div class="col-md-6">
+                            <label for="id_categoria" class="form-label">Categoria *</label>
+                            <select name="categoria" id="id_categoria" class="form-control" required>
+                                <option value="lancamentos">Lançamentos</option>
+                                <option value="promocoes">Promoções</option>
+                                <option value="conjuntos">Conjuntos</option>
+                                <option value="outros" selected>Outros</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="row mb-3">
-                        <div class="col-md-3">
-                            <label for="id_cor" class="form-label">Cor:</label>
-                            {{ form.cor|add_class:"form-control input-cinza interactive-border" }}
-                        </div>
-
-                        <div class="col-md-3">
-                            <label for="id_tamanho" class="form-label">Tamanho:</label>
-                            {{ form.tamanho|add_class:"form-control input-cinza interactive-border" }}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="id_imagem" class="form-label">Imagem do Produto:</label>
-                            {{ form.imagem|add_class:"form-control input-cinza interactive-border" }}
-                            <div class="form-text">Formatos suportados: JPG, PNG, GIF. Tamanho máximo: 5MB.</div>
+                        <div class="col-md-12">
+                            <label for="id_descricao" class="form-label">Descrição</label>
+                            <textarea name="descricao" id="id_descricao" class="form-control" rows="3"></textarea>
                         </div>
                     </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="id_descricao" class="form-label">Descrição:</label>
-                            {{ form.descricao|add_class:"form-control input-cinza interactive-border small-textarea" }}
-                        </div>
-                        <div class="col-md-3">
-                        <label for="id_categoria" class="form-label">Categoria:</label>
-                        {{ form.categoria|add_class:"form-control input-cinza interactive-border" }}
-                        </div>
-                        <div class="col-md-6">
-                            <div class="image-preview-container mt-4 text-center">
-                                <img id="image-preview" src="{% static 'vendas/images/default-product.png' %}" 
-                                     alt="Preview da imagem" class="img-thumbnail" style="max-height: 180px;">
-                                <div class="form-text mt-2">Pré-visualização da imagem</div>
+                    <!-- ========================================== -->
+                    <!-- VARIAÇÕES DO PRODUTO -->
+                    <!-- ========================================== -->
+                    <hr>
+                    <h5 class="mb-3">Variações do Produto</h5>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Adicione pelo menos uma variação com <strong>cor, tamanho, preço e estoque</strong>.
+                    </div>
+                    
+                    <div id="variacoes-container">
+                        <!-- Variação 1 (sempre presente) -->
+                        <div class="card mb-3 variacao-card">
+                            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                                <span>Variação 1</span>
+                                <button type="button" class="btn btn-danger btn-sm remover-variacao" style="display: none;">
+                                    <i class="bi bi-trash"></i> Remover
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Cor *</label>
+                                        <select name="cor[]" class="form-control" required>
+                                            <option value="Vermelho">Vermelho</option>
+                                            <option value="Azul">Azul</option>
+                                            <option value="Verde">Verde</option>
+                                            <option value="Amarelo">Amarelo</option>
+                                            <option value="Preto" selected>Preto</option>
+                                            <option value="Branco">Branco</option>
+                                            <option value="Rosa">Rosa</option>
+                                            <option value="Roxo">Roxo</option>
+                                            <option value="Laranja">Laranja</option>
+                                            <option value="Cinza">Cinza</option>
+                                            <option value="Marrom">Marrom</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Tamanho *</label>
+                                        <select name="tamanho[]" class="form-control" required>
+                                            <option value="PP">PP</option>
+                                            <option value="P">P</option>
+                                            <option value="M" selected>M</option>
+                                            <option value="G">G</option>
+                                            <option value="GG">GG</option>
+                                            <option value="U">Único</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Preço (R$) *</label>
+                                        <input type="number" name="preco[]" class="form-control" step="0.01" min="0.01" placeholder="0.00" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Estoque *</label>
+                                        <input type="number" name="quantidade_estoque[]" class="form-control" min="0" value="10" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Imagem da Variação</label>
+                                        <input type="file" name="imagem_variacao[]" class="form-control" accept="image/*">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <button type="button" id="add-variacao" class="btn btn-outline-success btn-sm mb-3">
+                        <i class="bi bi-plus-circle"></i> Adicionar Variação
+                    </button>
 
+                    <!-- ========================================== -->
+                    <!-- BOTÕES DE AÇÃO -->
+                    <!-- ========================================== -->
                     <div class="row">
                         <div class="col text-start">
-                            <button type="submit" class="btn btn-primary btn-sm" id="btn-submit">Gravar</button>
-                            <a href="{% url 'lista_vendas' %}" class="btn btn-secondary btn-sm">Cancelar</a>
+                            <button type="submit" class="btn btn-primary btn-sm" id="btn-submit">
+                                <i class="bi bi-save"></i> Gravar
+                            </button>
+                            <a href="{% url 'estoque' %}" class="btn btn-secondary btn-sm">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
                         </div>
                     </div>
                 </form>
@@ -100,49 +143,109 @@
 
 </div>
 
-<!-- Estilos customizados -->
 <style>
-    .interactive-border {
-        border: 1px solid #ced4da;
-        transition: border-color 0.3s, box-shadow 0.3s, background-color 0.3s;
-    }
-    .interactive-border:hover, .interactive-border:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 8px rgba(13, 110, 253, 0.4);
-        background-color: #ffffff;
-    }
-    .input-cinza {
-        background-color: #d1d1d1;
-    }
-    .small-textarea {
-        height: 100px;
-    }
-    .image-preview-container {
-        border: 2px dashed #ccc;
+    .variacao-card {
+        border: 1px solid #dee2e6;
         border-radius: 8px;
-        padding: 15px;
-        background-color: #f9f9f9;
+        margin-bottom: 15px;
+    }
+    .variacao-card .card-header {
+        background-color: #6c757d;
+        color: white;
+    }
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
     }
 </style>
 
-<!-- Script para pré-visualização de imagem e bloquear botão após envio -->
 <script>
-    // Pré-visualização da imagem
-    document.getElementById('id_imagem').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('image-preview').src = e.target.result;
-            }
-            reader.readAsDataURL(file);
-        }
+    // ==========================================
+    // ADICIONAR NOVA VARIAÇÃO
+    // ==========================================
+    let formIndex = 1;
+    const container = document.getElementById('variacoes-container');
+    const addButton = document.getElementById('add-variacao');
+    
+    addButton.addEventListener('click', function() {
+        formIndex++;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'card mb-3 variacao-card';
+        wrapper.innerHTML = `
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <span>Variação ${formIndex}</span>
+                <button type="button" class="btn btn-danger btn-sm remover-variacao">
+                    <i class="bi bi-trash"></i> Remover
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Cor *</label>
+                        <select name="cor[]" class="form-control" required>
+                            <option value="Vermelho">Vermelho</option>
+                            <option value="Azul">Azul</option>
+                            <option value="Verde">Verde</option>
+                            <option value="Amarelo">Amarelo</option>
+                            <option value="Preto" selected>Preto</option>
+                            <option value="Branco">Branco</option>
+                            <option value="Rosa">Rosa</option>
+                            <option value="Roxo">Roxo</option>
+                            <option value="Laranja">Laranja</option>
+                            <option value="Cinza">Cinza</option>
+                            <option value="Marrom">Marrom</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tamanho *</label>
+                        <select name="tamanho[]" class="form-control" required>
+                            <option value="PP">PP</option>
+                            <option value="P">P</option>
+                            <option value="M" selected>M</option>
+                            <option value="G">G</option>
+                            <option value="GG">GG</option>
+                            <option value="U">Único</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Preço (R$) *</label>
+                        <input type="number" name="preco[]" class="form-control" step="0.01" min="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Estoque *</label>
+                        <input type="number" name="quantidade_estoque[]" class="form-control" min="0" value="10" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Imagem da Variação</label>
+                        <input type="file" name="imagem_variacao[]" class="form-control" accept="image/*">
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(wrapper);
+        
+        // Adicionar evento de remover à nova variação
+        wrapper.querySelector('.remover-variacao').addEventListener('click', function() {
+            wrapper.remove();
+        });
     });
     
-    // Bloquear botão após envio
+    // ==========================================
+    // REMOVER VARIAÇÃO (para as já existentes)
+    // ==========================================
+    document.querySelectorAll('.remover-variacao').forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.closest('.variacao-card').remove();
+        });
+    });
+    
+    // ==========================================
+    // BLOQUEAR BOTÃO APÓS ENVIO
+    // ==========================================
     document.getElementById('form-cadastrar-produto').addEventListener('submit', function() {
-        document.getElementById('btn-submit').disabled = true;
-        document.getElementById('btn-submit').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Gravando...';
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Gravando...';
     });
 </script>
 {% endblock %}

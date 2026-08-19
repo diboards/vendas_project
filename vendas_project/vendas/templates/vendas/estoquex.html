@@ -1,0 +1,813 @@
+{% extends 'vendas/base.html' %}
+{% load static %}
+{% load variacao_filters %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if user.is_authenticated and user.is_superuser %}
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-box-seam"></i> Estoque</h2>
+            <div class="d-flex gap-2">
+                <a href="{% url 'cadastrar_produto' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Novo Produto
+                </a>
+                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#filtrosModal">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+        </div>
+
+        <!-- Cards de estatísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center bg-light">
+                    <div class="card-body">
+                        <h3>{{ total_produtos }}</h3>
+                        <p>Total de Produtos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-success text-white">
+                    <div class="card-body">
+                        <h3>{{ produtos_ativos }}</h3>
+                        <p>Produtos Ativos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-warning">
+                    <div class="card-body">
+                        <h3>{{ produtos_inativos }}</h3>
+                        <p>Produtos Inativos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-info text-white">
+                    <div class="card-body">
+                        <h3>{{ total_estoque }}</h3>
+                        <p>Unidades em Estoque</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de produtos -->
+        <div class="row">
+            {% for produto in produtos %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 {% if not produto.ativo %}border-danger{% endif %}">
+                    <!-- Imagem -->
+                    <img src="{{ produto.imagem }}" class="card-img-top" alt="{{ produto.nome }}" 
+                         style="height: 200px; object-fit: cover;"
+                         onerror="this.src='https://placehold.co/300x200?text=Sem+Imagem'">
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">{{ produto.nome }}</h5>
+                        <p class="card-text">
+                            <strong>Preço:</strong> R$ {{ produto.preco|floatformat:2 }}<br>
+                            <strong>Estoque:</strong> 
+                            <span class="{% if produto.quantidade_estoque <= 5 %}text-danger fw-bold{% endif %}">
+                                {{ produto.quantidade_estoque }} unidades
+                            </span><br>
+                            <strong>Cor:</strong> {{ produto.cor }}<br>
+                            <strong>Tamanho:</strong> {{ produto.tamanho }}<br>
+                            <strong>Categoria:</strong> {{ produto.categoria }}<br>
+                            <strong>Status:</strong> 
+                            <span class="badge {% if produto.ativo %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if produto.ativo %}Ativo{% else %}Inativo{% endif %}
+                            </span>
+                        </p>
+                    </div>
+                    
+                    <!-- Botões de ação -->
+                    <div class="card-footer">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-warning btn-sm flex-fill" data-bs-toggle="modal" data-bs-target="#editarModal{{ produto.produto_obj.id }}">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                            <button type="button" class="btn btn-info btn-sm flex-fill" data-bs-toggle="modal" data-bs-target="#detalhesModal{{ produto.produto_obj.id }}">
+                                <i class="bi bi-eye"></i> Detalhes
+                            </button>
+                            <form method="POST" action="{% url 'deletar_produto' produto.produto_obj.id %}" onsubmit="return confirm('Tem certeza que deseja excluir este produto?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash"></i> Excluir
+                                </button>
+                            </form>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="bi bi-calendar"></i> {{ produto.data_cadastro|date:"d/m/Y" }}
+                            {% if produto.quantidade_estoque <= 5 %}
+                            <span class="badge bg-danger float-end">
+                                <i class="bi bi-exclamation-triangle"></i> Baixo Estoque
+                            </span>
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- MODAL DE EDIÇÃO                                             -->
+            <!-- ========================================================== -->
+            <div class="modal fade" id="editarModal{{ produto.produto_obj.id }}" tabindex="-1" aria-labelledby="editarModalLabel{{ produto.produto_obj.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editarModalLabel{{ produto.produto_obj.id }}">
+                                <i class="bi bi-pencil"></i> Editar Produto: {{ produto.nome }}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="POST" action="{% url 'editar_produto' produto.produto_obj.id %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <h6 class="border-bottom pb-2">Informações Básicas</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Nome do Produto *</label>
+                                            <input type="text" class="form-control" name="nome" value="{{ produto.nome }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Categoria *</label>
+                                            <select class="form-select" name="categoria" required>
+                                                <option value="lancamentos" {% if produto.categoria == 'Lançamentos' %}selected{% endif %}>Lançamentos</option>
+                                                <option value="promocoes" {% if produto.categoria == 'Promoções' %}selected{% endif %}>Promoções</option>
+                                                <option value="conjuntos" {% if produto.categoria == 'Conjuntos' %}selected{% endif %}>Conjuntos</option>
+                                                <option value="outros" {% if produto.categoria == 'Outros' %}selected{% endif %}>Outros</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Descrição</label>
+                                    <textarea class="form-control" name="descricao" rows="2">{{ produto.descricao }}</textarea>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Status</label>
+                                            <select class="form-select" name="ativo">
+                                                <option value="1" {% if produto.ativo %}selected{% endif %}>Ativo</option>
+                                                <option value="0" {% if not produto.ativo %}selected{% endif %}>Inativo</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Variações Existentes -->
+                                <h6 class="border-bottom pb-2 mt-3">
+                                    <i class="bi bi-grid"></i> Variações Existentes
+                                    <span class="badge bg-secondary ms-2">{{ produto.produto_obj.variacoes.count }}</span>
+                                </h6>
+
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm text-center" id="tabela-variacoes-{{ produto.produto_obj.id }}">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="min-width: 100px;">Cor</th>
+                                                <th>Tamanhos</th>
+                                                <th>Preço</th>
+                                                <th>Estoque</th>
+                                                <th>Imagem</th>
+                                                <th>Ação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% regroup produto.produto_obj.variacoes.all by cor as variacoes_por_cor %}
+                                            {% for grupo in variacoes_por_cor %}
+                                            <tr data-cor="{{ grupo.grouper }}">
+                                                <td>
+                                                    <input type="hidden" name="cor_nome[]" value="{{ grupo.grouper }}">
+                                                    <strong>{{ grupo.grouper }}</strong>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                                        {% for variacao in grupo.list %}
+                                                        <span class="badge bg-secondary tamanho-badge" 
+                                                              data-variacao-id="{{ variacao.id }}"
+                                                              data-cor="{{ grupo.grouper }}"
+                                                              data-tamanho="{{ variacao.tamanho }}"
+                                                              data-preco="{{ variacao.preco }}"
+                                                              data-estoque="{{ variacao.quantidade_estoque }}"
+                                                              onclick="selecionarTamanho(this)">
+                                                            {{ variacao.tamanho }}
+                                                        </span>
+                                                        {% endfor %}
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                                onclick="abrirModalTamanho('{{ grupo.grouper }}', {{ produto.produto_obj.id }})">
+                                                            <i class="bi bi-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control form-control-sm preco-input" 
+                                                           name="preco_{{ grupo.grouper }}" 
+                                                           value="{{ grupo.list.0.preco|default:0 }}" 
+                                                           step="0.01" min="0" placeholder="Preço">
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control form-control-sm estoque-input" 
+                                                           name="estoque_{{ grupo.grouper }}" 
+                                                           value="{{ grupo.list.0.quantidade_estoque|default:0 }}" 
+                                                           min="0" placeholder="Estoque">
+                                                </td>
+                                                <td>
+                                                    <input type="file" class="form-control form-control-sm" 
+                                                           name="imagem_cor_{{ grupo.grouper }}" accept="image/*">
+                                                    {% with primeira=grupo.list|first %}
+                                                    {% if primeira.imagem %}
+                                                    <img src="{{ primeira.imagem.url }}" style="max-height: 30px; margin-top: 4px;">
+                                                    {% endif %}
+                                                    {% endwith %}
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                            onclick="removerCor({{ produto.produto_obj.id }}, '{{ grupo.grouper }}', this)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="6">
+                                                    <div class="alert alert-warning mb-0">
+                                                        <i class="bi bi-exclamation-triangle"></i> 
+                                                        Nenhuma variação cadastrada.
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Adicionar Nova Variação -->
+                                <div class="card mt-3 border">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0"><i class="bi bi-plus-circle"></i> Adicionar Nova Variação</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="variacoes-container-editar-{{ produto.produto_obj.id }}">
+                                            <div class="card mb-2 variacao-card-editar">
+                                                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center py-1">
+                                                    <span class="small">Variação 1</span>
+                                                    <button type="button" class="btn btn-danger btn-sm remover-variacao-editar" style="display: none;">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="card-body py-2">
+                                                    <div class="row g-2">
+                                                        <input type="hidden" name="variacao_id[]" value="">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small">Cor *</label>
+                                                            <select name="cor[]" class="form-select form-select-sm" required>
+                                                                <option value="Vermelho">Vermelho</option>
+                                                                <option value="Azul">Azul</option>
+                                                                <option value="Verde">Verde</option>
+                                                                <option value="Amarelo">Amarelo</option>
+                                                                <option value="Preto" selected>Preto</option>
+                                                                <option value="Branco">Branco</option>
+                                                                <option value="Rosa">Rosa</option>
+                                                                <option value="Roxo">Roxo</option>
+                                                                <option value="Laranja">Laranja</option>
+                                                                <option value="Cinza">Cinza</option>
+                                                                <option value="Marrom">Marrom</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <label class="form-label small">Tamanho *</label>
+                                                            <select name="tamanho[]" class="form-select form-select-sm" required>
+                                                                <option value="PP">PP</option>
+                                                                <option value="P">P</option>
+                                                                <option value="M" selected>M</option>
+                                                                <option value="G">G</option>
+                                                                <option value="GG">GG</option>
+                                                                <option value="U">Único</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <label class="form-label small">Preço (R$) *</label>
+                                                            <input type="number" name="preco[]" class="form-control form-control-sm" step="0.01" min="0.01" placeholder="0.00" required>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <label class="form-label small">Estoque *</label>
+                                                            <input type="number" name="quantidade_estoque[]" class="form-control form-control-sm" min="0" value="10" required>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small">Imagem</label>
+                                                            <input type="file" name="imagem_variacao[]" class="form-control form-control-sm" accept="image/*">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-success btn-sm mt-2" 
+                                                onclick="adicionarVariacaoEditar({{ produto.produto_obj.id }})">
+                                            <i class="bi bi-plus-circle"></i> Adicionar Variação
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Adicionar Cor -->
+                                <div class="row g-2 mt-3">
+                                    <div class="col-md-4">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">Adicionar Cor</span>
+                                            <select class="form-select" id="nova-cor-select-{{ produto.produto_obj.id }}">
+                                                <option value="">Selecione</option>
+                                                <option value="Vermelho">Vermelho</option>
+                                                <option value="Azul">Azul</option>
+                                                <option value="Preto">Preto</option>
+                                                <option value="Branco">Branco</option>
+                                                <option value="Cinza">Cinza</option>
+                                                <option value="Rosa">Rosa</option>
+                                                <option value="Verde">Verde</option>
+                                                <option value="Amarelo">Amarelo</option>
+                                                <option value="Laranja">Laranja</option>
+                                                <option value="Roxo">Roxo</option>
+                                                <option value="Marrom">Marrom</option>
+                                            </select>
+                                            <button class="btn btn-outline-success" type="button" onclick="adicionarCorGrade({{ produto.produto_obj.id }})">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="preencherGrade({{ produto.produto_obj.id }})">
+                                            <i class="bi bi-magic"></i> Preencher Grade
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Modal para adicionar tamanho -->
+                                <div class="modal fade" id="modalTamanho{{ produto.produto_obj.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-sm">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h6 class="modal-title">Adicionar Tamanho</h6>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <input type="hidden" id="cor-selecionada-tamanho-{{ produto.produto_obj.id }}">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Tamanho</label>
+                                                    <select class="form-select" id="novo-tamanho-select-{{ produto.produto_obj.id }}">
+                                                        <option value="">Selecione</option>
+                                                        <option value="PP">PP</option>
+                                                        <option value="P">P</option>
+                                                        <option value="M">M</option>
+                                                        <option value="G">G</option>
+                                                        <option value="GG">GG</option>
+                                                        <option value="U">Único</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Preço</label>
+                                                    <input type="number" class="form-control" id="novo-preco-{{ produto.produto_obj.id }}" step="0.01" min="0" placeholder="0.00">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Estoque</label>
+                                                    <input type="number" class="form-control" id="novo-estoque-{{ produto.produto_obj.id }}" min="0" value="0">
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="button" class="btn btn-primary" onclick="salvarNovoTamanho({{ produto.produto_obj.id }})">Adicionar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-circle"></i> Salvar
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL DE DETALHES -->
+            <div class="modal fade" id="detalhesModal{{ produto.produto_obj.id }}" tabindex="-1" aria-labelledby="detalhesModalLabel{{ produto.produto_obj.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="detalhesModalLabel{{ produto.produto_obj.id }}">
+                                <i class="bi bi-info-circle"></i> Detalhes do Produto
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <img src="{{ produto.imagem }}" class="img-fluid rounded" alt="{{ produto.nome }}"
+                                         onerror="this.src='https://placehold.co/300x200?text=Sem+Imagem'">
+                                </div>
+                                <div class="col-md-6">
+                                    <h4>{{ produto.nome }}</h4>
+                                    <p><strong>Descrição:</strong> {{ produto.descricao|default:"Nenhuma descrição" }}</p>
+                                    <p><strong>Preço:</strong> R$ {{ produto.preco|floatformat:2 }}</p>
+                                    <p><strong>Estoque:</strong> {{ produto.quantidade_estoque }} unidades</p>
+                                    <p><strong>Cor:</strong> {{ produto.cor }}</p>
+                                    <p><strong>Tamanho:</strong> {{ produto.tamanho }}</p>
+                                    <p><strong>Categoria:</strong> {{ produto.categoria }}</p>
+                                    <p><strong>Status:</strong> 
+                                        <span class="badge {% if produto.ativo %}bg-success{% else %}bg-danger{% endif %}">
+                                            {% if produto.ativo %}Ativo{% else %}Inativo{% endif %}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editarModal{{ produto.produto_obj.id }}">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-inbox"></i> Nenhum produto em estoque. 
+                    <a href="{% url 'cadastrar_produto' %}" class="alert-link">Cadastre o primeiro produto</a>.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning">Você não tem permissão para acessar esta página.</div>
+    {% endif %}
+</div>
+
+<!-- MODAL DE FILTROS -->
+<div class="modal fade" id="filtrosModal" tabindex="-1" aria-labelledby="filtrosModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filtrosModalLabel">
+                    <i class="bi bi-funnel"></i> Filtrar Estoque
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="GET" action="{% url 'estoque' %}">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status">
+                            <option value="">Todos</option>
+                            <option value="ativo" {% if request.GET.status == 'ativo' %}selected{% endif %}>Ativos</option>
+                            <option value="inativo" {% if request.GET.status == 'inativo' %}selected{% endif %}>Inativos</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Categoria</label>
+                        <select class="form-select" name="categoria">
+                            <option value="">Todas</option>
+                            <option value="lancamentos" {% if request.GET.categoria == 'lancamentos' %}selected{% endif %}>Lançamentos</option>
+                            <option value="promocoes" {% if request.GET.categoria == 'promocoes' %}selected{% endif %}>Promoções</option>
+                            <option value="conjuntos" {% if request.GET.categoria == 'conjuntos' %}selected{% endif %}>Conjuntos</option>
+                            <option value="outros" {% if request.GET.categoria == 'outros' %}selected{% endif %}>Outros</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estoque Baixo (< 5 unidades)</label>
+                        <select class="form-select" name="estoque_baixo">
+                            <option value="">Todos</option>
+                            <option value="sim" {% if request.GET.estoque_baixo == 'sim' %}selected{% endif %}>Sim</option>
+                            <option value="nao" {% if request.GET.estoque_baixo == 'nao' %}selected{% endif %}>Não</option>
+                        </select>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-filter"></i> Aplicar Filtros
+                        </button>
+                        <a href="{% url 'estoque' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Limpar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 10px;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.card.border-danger {
+    border: 2px solid #dc3545;
+}
+.variacao-card-editar {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+}
+.variacao-card-editar .card-header {
+    background-color: #6c757d;
+    color: white;
+}
+</style>
+
+<script>
+// ==========================================
+// SELECIONAR TAMANHO (destacar)
+// ==========================================
+function selecionarTamanho(element) {
+    const container = element.parentElement;
+    const badges = container.querySelectorAll('.tamanho-badge');
+    badges.forEach(b => b.classList.remove('bg-primary', 'text-white'));
+    element.classList.add('bg-primary', 'text-white');
+}
+
+// ==========================================
+// ADICIONAR VARIAÇÃO (IGUAL AO CADASTRO)
+// ==========================================
+let variacaoIndex = 1;
+
+function adicionarVariacaoEditar(produtoId) {
+    variacaoIndex++;
+    const container = document.getElementById(`variacoes-container-editar-${produtoId}`);
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'card mb-2 variacao-card-editar';
+    wrapper.innerHTML = `
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center py-1">
+            <span class="small">Variação ${variacaoIndex}</span>
+            <button type="button" class="btn btn-danger btn-sm remover-variacao-editar">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+        <div class="card-body py-2">
+            <div class="row g-2">
+                <input type="hidden" name="variacao_id[]" value="">
+                <div class="col-md-3">
+                    <label class="form-label small">Cor *</label>
+                    <select name="cor[]" class="form-select form-select-sm" required>
+                        <option value="Vermelho">Vermelho</option>
+                        <option value="Azul">Azul</option>
+                        <option value="Verde">Verde</option>
+                        <option value="Amarelo">Amarelo</option>
+                        <option value="Preto" selected>Preto</option>
+                        <option value="Branco">Branco</option>
+                        <option value="Rosa">Rosa</option>
+                        <option value="Roxo">Roxo</option>
+                        <option value="Laranja">Laranja</option>
+                        <option value="Cinza">Cinza</option>
+                        <option value="Marrom">Marrom</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Tamanho *</label>
+                    <select name="tamanho[]" class="form-select form-select-sm" required>
+                        <option value="PP">PP</option>
+                        <option value="P">P</option>
+                        <option value="M" selected>M</option>
+                        <option value="G">G</option>
+                        <option value="GG">GG</option>
+                        <option value="U">Único</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Preço (R$) *</label>
+                    <input type="number" name="preco[]" class="form-control form-control-sm" step="0.01" min="0.01" placeholder="0.00" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Estoque *</label>
+                    <input type="number" name="quantidade_estoque[]" class="form-control form-control-sm" min="0" value="10" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Imagem</label>
+                    <input type="file" name="imagem_variacao[]" class="form-control form-control-sm" accept="image/*">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(wrapper);
+    
+    wrapper.querySelector('.remover-variacao-editar').addEventListener('click', function() {
+        wrapper.remove();
+    });
+}
+
+// ==========================================
+// ABRIR MODAL PARA ADICIONAR TAMANHO
+// ==========================================
+function abrirModalTamanho(cor, produtoId) {
+    document.getElementById(`cor-selecionada-tamanho-${produtoId}`).value = cor;
+    document.getElementById(`novo-tamanho-select-${produtoId}`).value = '';
+    document.getElementById(`novo-preco-${produtoId}`).value = '';
+    document.getElementById(`novo-estoque-${produtoId}`).value = '0';
+    
+    const modal = new bootstrap.Modal(document.getElementById(`modalTamanho${produtoId}`));
+    modal.show();
+}
+
+// ==========================================
+// SALVAR NOVO TAMANHO
+// ==========================================
+function salvarNovoTamanho(produtoId) {
+    const cor = document.getElementById(`cor-selecionada-tamanho-${produtoId}`).value;
+    const tamanho = document.getElementById(`novo-tamanho-select-${produtoId}`).value;
+    const preco = document.getElementById(`novo-preco-${produtoId}`).value;
+    const estoque = document.getElementById(`novo-estoque-${produtoId}`).value;
+    
+    if (!tamanho) {
+        alert('Selecione um tamanho!');
+        return;
+    }
+    if (!preco || parseFloat(preco) <= 0) {
+        alert('Digite um preço válido!');
+        return;
+    }
+    
+    const tabela = document.getElementById(`tabela-variacoes-${produtoId}`);
+    const linhas = tabela.querySelectorAll('tbody tr');
+    let linhaCor = null;
+    for (let linha of linhas) {
+        if (linha.dataset.cor === cor) {
+            linhaCor = linha;
+            break;
+        }
+    }
+    
+    if (!linhaCor) {
+        alert('Cor não encontrada!');
+        return;
+    }
+    
+    const container = linhaCor.querySelector('td:nth-child(2) .d-flex');
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-secondary tamanho-badge';
+    badge.dataset.tamanho = tamanho;
+    badge.dataset.preco = preco;
+    badge.dataset.estoque = estoque;
+    badge.textContent = tamanho;
+    badge.onclick = function() { selecionarTamanho(this); };
+    
+    container.insertBefore(badge, container.lastElementChild);
+    
+    const precoInput = linhaCor.querySelector('.preco-input');
+    const estoqueInput = linhaCor.querySelector('.estoque-input');
+    if (precoInput) precoInput.value = preco;
+    if (estoqueInput) estoqueInput.value = estoque;
+    
+    const badgeContador = document.querySelector(`#editarModal${produtoId} .badge.bg-secondary.ms-2`);
+    if (badgeContador) {
+        badgeContador.textContent = parseInt(badgeContador.textContent) + 1;
+    }
+    
+    bootstrap.Modal.getInstance(document.getElementById(`modalTamanho${produtoId}`)).hide();
+}
+
+// ==========================================
+// ADICIONAR NOVA COR
+// ==========================================
+function adicionarCorGrade(produtoId) {
+    const select = document.getElementById(`nova-cor-select-${produtoId}`);
+    const cor = select.value;
+    if (!cor) {
+        alert('Selecione uma cor!');
+        return;
+    }
+    
+    const tabela = document.getElementById(`tabela-variacoes-${produtoId}`);
+    const coresExistentes = tabela.querySelectorAll('tbody tr td:first-child strong');
+    for (let td of coresExistentes) {
+        if (td.textContent === cor) {
+            alert('Esta cor já existe!');
+            return;
+        }
+    }
+    
+    const tbody = tabela.querySelector('tbody');
+    const novaLinha = document.createElement('tr');
+    novaLinha.dataset.cor = cor;
+    novaLinha.innerHTML = `
+        <td>
+            <input type="hidden" name="cor_nome[]" value="${cor}">
+            <strong>${cor}</strong>
+        </td>
+        <td>
+            <div class="d-flex flex-wrap gap-1 justify-content-center">
+                <button type="button" class="btn btn-sm btn-outline-primary" 
+                        onclick="abrirModalTamanho('${cor}', ${produtoId})">
+                    <i class="bi bi-plus"></i> Adicionar
+                </button>
+            </div>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm preco-input" 
+                   name="preco_${cor}" value="0" step="0.01" min="0" placeholder="Preço">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm estoque-input" 
+                   name="estoque_${cor}" value="0" min="0" placeholder="Estoque">
+        </td>
+        <td>
+            <input type="file" class="form-control form-control-sm" 
+                   name="imagem_cor_${cor}" accept="image/*">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" 
+                    onclick="removerCor(${produtoId}, '${cor}', this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(novaLinha);
+    
+    const badgeContador = document.querySelector(`#editarModal${produtoId} .badge.bg-secondary.ms-2`);
+    if (badgeContador) {
+        badgeContador.textContent = parseInt(badgeContador.textContent) + 1;
+    }
+    
+    select.value = '';
+}
+
+// ==========================================
+// REMOVER COR
+// ==========================================
+function removerCor(produtoId, cor, button) {
+    if (confirm(`Remover a cor "${cor}" e todas suas variações?`)) {
+        const linha = button.closest('tr');
+        const form = linha.closest('form');
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'excluir_cor[]';
+        input.value = cor;
+        form.appendChild(input);
+        
+        linha.remove();
+        
+        const badgeContador = document.querySelector(`#editarModal${produtoId} .badge.bg-secondary.ms-2`);
+        if (badgeContador) {
+            badgeContador.textContent = parseInt(badgeContador.textContent) - 1;
+        }
+    }
+}
+
+// ==========================================
+// PREENCHER GRADE COM VALORES PADRÃO
+// ==========================================
+function preencherGrade(produtoId) {
+    const tabela = document.getElementById(`tabela-variacoes-${produtoId}`);
+    if (!tabela) return;
+    
+    const linhas = tabela.querySelectorAll('tbody tr');
+    if (linhas.length === 0) {
+        alert('Nenhuma variação para preencher!');
+        return;
+    }
+    
+    const valorPreco = prompt('Digite o preço padrão para todas as variações (ex: 49.90):', '0.00');
+    if (valorPreco === null) return;
+    const precoPadrao = parseFloat(valorPreco) || 0;
+    
+    const valorEstoque = prompt('Digite o estoque padrão para todas as variações:', '10');
+    if (valorEstoque === null) return;
+    const estoquePadrao = parseInt(valorEstoque) || 0;
+    
+    linhas.forEach(linha => {
+        const precoInput = linha.querySelector('.preco-input');
+        const estoqueInput = linha.querySelector('.estoque-input');
+        if (precoInput) precoInput.value = precoPadrao;
+        if (estoqueInput) estoqueInput.value = estoquePadrao;
+    });
+    
+    alert(`✅ Grade preenchida com Preço: R$ ${precoPadrao.toFixed(2)} e Estoque: ${estoquePadrao}`);
+}
+
+// ==========================================
+// INICIALIZAR REMOÇÃO DAS VARIAÇÕES
+// ==========================================
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.remover-variacao-editar').forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.closest('.variacao-card-editar').remove();
+        });
+    });
+});
+</script>
+{% endblock %}

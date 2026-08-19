@@ -2,16 +2,11 @@
 {% load static %}
 
 {% block content %}
-<div class="container my-5">
-    <!-- Adicionar um indicador visual de que o JS está funcionando -->
-    <div id="js-status-indicator" class="alert alert-dark alert-dismissible fade show">
-        <strong>JavaScript Status:</strong> <span id="js-status">Carregando...</span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    
+<div class="container my-3 my-md-5">
     <div class="row">
-        <div class="col-md-8">
-            <h3>Detalhes do Pedido #{{ pedido.id }}</h3>
+        <!-- CONTEÚDO PRINCIPAL -->
+        <div class="col-12 col-md-8">
+            <h3 class="mb-3">Detalhes do Pedido #{{ pedido.id }}</h3>
             
             <!-- Status atual -->
             <div class="alert 
@@ -21,7 +16,7 @@
                 {% elif pedido.status == 'processando' %}alert-primary
                 {% elif pedido.status == 'cancelado' %}alert-danger
                 {% else %}alert-secondary{% endif %}">
-                <h5 class="d-flex align-items-center">
+                <h5 class="d-flex align-items-center flex-wrap">
                     {% if pedido.status == 'pendente' %}
                         ⏳ Aguardando pagamento
                     {% elif pedido.status == 'aguardando_aprovacao' %}
@@ -42,100 +37,76 @@
                 </h5>
                 
                 {% if pedido.status == 'pendente' %}
-                <p class="mb-0">
+                <p class="mb-0 small">
                     Aguardando confirmação do pagamento. 
                     <strong>Esta página será atualizada automaticamente</strong> quando o pagamento for confirmado.
                 </p>
                 {% elif pedido.status == 'aprovado' and pedido.data_pagamento %}
-                <p class="mb-0">
+                <p class="mb-0 small">
                     Pagamento confirmado em <strong>{{ pedido.data_pagamento|date:"d/m/Y H:i" }}</strong>
                 </p>
                 {% endif %}
             </div>
 
-            <!-- Informações de Pagamento REAL -->
-            <div class="card mb-4">
+            <!-- Informações de Pagamento -->
+            <div class="card mb-3">
                 <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-credit-card"></i> Informações do Pagamento
-                    </h6>
+                    <h6 class="mb-0"><i class="bi bi-credit-card"></i> Informações do Pagamento</h6>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Método de Pagamento:</strong> 
+                        <div class="col-12 col-md-6">
+                            <p><strong>Método:</strong> 
                                 {% if pedido.metodo_pagamento == 'pix' %}
                                     <span class="badge bg-success">PIX</span>
                                     {% if pedido.status == 'aprovado' %}
-                                        <small class="text-success">(10% de desconto aplicado)</small>
+                                        <small class="text-success d-block d-md-inline">(10% de desconto)</small>
                                     {% endif %}
                                 {% elif pedido.metodo_pagamento == 'cartao' %}
-                                    <span class="badge bg-info">Cartão de Crédito</span>
+                                    <span class="badge bg-info">Cartão</span>
                                 {% else %}
                                     {{ pedido.metodo_pagamento|title }}
                                 {% endif %}
                             </p>
-                            
                             <p><strong>Total:</strong> 
                                 <span class="fs-5 fw-bold text-success">R$ {{ pedido.total|floatformat:2 }}</span>
                             </p>
-                            
                             {% if pedido.frete %}
                             <p><strong>Frete:</strong> R$ {{ pedido.frete|floatformat:2 }}</p>
                             {% endif %}
                         </div>
-                        
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             {% if pedido.id_mercado_pago %}
-                            <p><strong>ID Mercado Pago:</strong> 
-                                <code class="small">{{ pedido.id_mercado_pago }}</code>
-                                {% if "simulated" in pedido.id_mercado_pago %}
-                                    <span class="badge bg-warning ms-1">Teste</span>
-                                {% else %}
-                                    <span class="badge bg-success ms-1">Real</span>
-                                {% endif %}
+                            <p><strong>ID MP:</strong> 
+                                <code class="small">{{ pedido.id_mercado_pago|truncatechars:15 }}</code>
                             </p>
                             {% endif %}
-                            
-                            <p><strong>Data do Pedido:</strong> {{ pedido.criado_em|date:"d/m/Y H:i" }}</p>
-                            
+                            <p><strong>Data:</strong> {{ pedido.criado_em|date:"d/m/Y H:i" }}</p>
                             {% if pedido.tipo_entrega %}
-                            <p><strong>Tipo de Entrega:</strong> 
+                            <p><strong>Entrega:</strong> 
                                 {% if pedido.tipo_entrega == 'retirada' %}
-                                    <span class="badge bg-secondary">Retirada na Loja</span>
+                                    <span class="badge bg-secondary">Retirada</span>
                                 {% else %}
-                                    <span class="badge bg-primary">Entrega em Casa</span>
+                                    <span class="badge bg-primary">Entrega</span>
                                 {% endif %}
                             </p>
                             {% endif %}
                         </div>
                     </div>
-                    
-                    <!-- Status detalhado do Mercado Pago -->
-                    {% if pedido.id_mercado_pago and not "simulated" in pedido.id_mercado_pago %}
-                    <div class="mt-3 p-3 bg-light rounded">
-                        <small class="text-muted">
-                            <i class="bi bi-shield-check"></i> 
-                            <strong>Pagamento processado com segurança via Mercado Pago</strong><br>
-                            ID da transação: {{ pedido.id_mercado_pago }}
-                        </small>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
 
             <!-- Informações de Entrega -->
-            <div class="card mb-4">
+            <div class="card mb-3">
                 <div class="card-header bg-info text-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-truck"></i> Informações de Entrega
-                    </h6>
+                    <h6 class="mb-0"><i class="bi bi-truck"></i> Informações de Entrega</h6>
                 </div>
                 <div class="card-body">
                     {% if pedido.endereco_entrega %}
                     <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Endereço:</strong><br>
+                        <div class="col-12 col-md-6">
+                            <p class="small mb-0">
+                                <strong>Endereço:</strong><br>
                                 {{ pedido.endereco_entrega.rua }}, {{ pedido.endereco_entrega.numero }}<br>
                                 {% if pedido.endereco_entrega.complemento %}
                                     {{ pedido.endereco_entrega.complemento }}<br>
@@ -145,26 +116,24 @@
                                 CEP: {{ pedido.endereco_entrega.cep }}
                             </p>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             {% if pedido.tipo_entrega == 'retirada' %}
-                            <div class="alert alert-warning">
+                            <div class="alert alert-warning small mb-0">
                                 <i class="bi bi-shop"></i>
                                 <strong>Retirada na Loja</strong><br>
-                                <small>Av. Principal, 123 - Centro<br>
-                                Horário: Seg-Sex, 9h-18h</small>
+                                <small>Av. Principal, 123 - Centro</small>
                             </div>
                             {% else %}
-                            <div class="alert alert-info">
+                            <div class="alert alert-info small mb-0">
                                 <i class="bi bi-house-door"></i>
                                 <strong>Entrega em Domicílio</strong><br>
-                                <small>Prazo: 3-7 dias úteis<br>
-                                Entregamos em toda região</small>
+                                <small>Prazo: 3-7 dias úteis</small>
                             </div>
                             {% endif %}
                         </div>
                     </div>
                     {% else %}
-                    <p class="text-muted">Retirada na loja</p>
+                    <p class="text-muted small mb-0">Retirada na loja</p>
                     {% endif %}
                 </div>
             </div>
@@ -172,20 +141,17 @@
             <!-- Itens do Pedido -->
             <div class="card">
                 <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-box"></i> Itens do Pedido
-                    </h6>
+                    <h6 class="mb-0"><i class="bi bi-box"></i> Itens do Pedido</h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if pedido.itens.all %}
                     <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Produto</th>
-                                    <th>Quantidade</th>
-                                    <th>Preço Unit.</th>
-                                    <th>Subtotal</th>
+                                    <th class="text-center">Qtd</th>
+                                    <th class="text-end">Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -193,19 +159,13 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            {% if item.produto.imagem %}
-                                                <img src="{{ item.produto.imagem.url }}" 
-                                                     alt="{{ item.produto.nome }}"
-                                                     class="rounded me-2" 
-                                                     style="width: 50px; height: 50px; object-fit: cover;">
-                                            {% else %}
-                                                <img src="{% static 'vendas/images/default-product.png' %}" 
-                                                     alt="{{ item.produto.nome }}"
-                                                     class="rounded me-2" 
-                                                     style="width: 50px; height: 50px; object-fit: cover;">
-                                            {% endif %}
+                                            <img src="{% if item.produto.imagem %}{{ item.produto.imagem.url }}{% else %}{% static 'vendas/images/default-product.png' %}{% endif %}" 
+                                                 alt="{{ item.produto.nome }}"
+                                                 class="rounded me-2" 
+                                                 style="width: 40px; height: 40px; object-fit: cover;">
                                             <div>
-                                                <strong>{{ item.produto.nome }}</strong><br>
+                                                <strong class="small">{{ item.produto.nome }}</strong>
+                                                <br>
                                                 <small class="text-muted">
                                                     {{ item.cor_selecionada|default:"Branco" }}, 
                                                     {{ item.tamanho_selecionado|default:"M" }}
@@ -213,29 +173,28 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>{{ item.quantidade }}</td>
-                                    <td>R$ {{ item.preco_unitario|floatformat:2 }}</td>
-                                    <td><strong>R$ {{ item.subtotal|floatformat:2 }}</strong></td>
+                                    <td class="text-center">{{ item.quantidade }}</td>
+                                    <td class="text-end"><strong>R$ {{ item.subtotal|floatformat:2 }}</strong></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                             <tfoot class="table-group-divider">
                                 <tr>
-                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                                    <td><strong class="text-success fs-5">R$ {{ pedido.total|floatformat:2 }}</strong></td>
+                                    <td colspan="2" class="text-end"><strong>Total:</strong></td>
+                                    <td class="text-end"><strong class="text-success fs-5">R$ {{ pedido.total|floatformat:2 }}</strong></td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-muted">Nenhum item encontrado neste pedido.</p>
+                    <p class="text-muted text-center py-3 mb-0">Nenhum item encontrado.</p>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar com Ações Rápidas -->
-        <div class="col-md-4">
+        <!-- SIDEBAR - Ações Rápidas -->
+        <div class="col-12 col-md-4 mt-3 mt-md-0">
             <div class="sticky-top" style="top: 100px;">
                 <div class="card">
                     <div class="card-header bg-light">
@@ -254,27 +213,23 @@
                             {% endif %}
                         {% endif %}
                         
-                        <!-- Botão de teste manual -->
-                        <button onclick="testarVerificacaoManual()" class="btn btn-warning w-100 mb-2">
+                        <button onclick="testarVerificacaoManual()" class="btn btn-outline-warning w-100 mb-2 btn-sm">
                             🧪 Testar Verificação
                         </button>
                         
-                        <a href="{% url 'meus_pedidos' %}" class="btn btn-outline-secondary w-100 mb-2">
-                            <i class="bi bi-list-ul"></i> Ver Todos os Pedidos
+                        <a href="{% url 'meus_pedidos' %}" class="btn btn-outline-secondary w-100 mb-2 btn-sm">
+                            <i class="bi bi-list-ul"></i> Ver Todos
                         </a>
                         
-                        <a href="{% url 'pagina_inicial' %}" class="btn btn-outline-primary w-100">
+                        <a href="{% url 'pagina_inicial' %}" class="btn btn-outline-primary w-100 btn-sm">
                             <i class="bi bi-house"></i> Continuar Comprando
                         </a>
 
-                        <!-- Informações de Debug -->
-                        <div class="mt-3 p-2 bg-light rounded small">
+                        <!-- Debug Info (oculto para usuário comum) -->
+                        <div class="mt-3 p-2 bg-light rounded small d-none d-md-block">
                             <strong>Debug Info:</strong><br>
                             <span id="last-check">Última verificação: Agora</span><br>
-                            <span>Status: {{ pedido.status }}</span><br>
-                            {% if pedido.id_mercado_pago %}
-                            <span>MP ID: {{ pedido.id_mercado_pago|truncatechars:20 }}</span>
-                            {% endif %}
+                            <span>Status: {{ pedido.status }}</span>
                         </div>
                     </div>
                 </div>
@@ -283,32 +238,18 @@
     </div>
 </div>
 
-<!-- JAVASCRIPT DIRETO NO FINAL DO CONTENT -->
 <script>
 console.log('=== 🚨 SISTEMA DE VERIFICAÇÃO - Pedido #{{ pedido.id }} ===');
 
-// Configurações
 const PEDIDO_ID = {{ pedido.id }};
 const URL_VERIFICACAO = `/pedido/${PEDIDO_ID}/verificar-status/`;
-const METODO_PAGAMENTO = '{{ pedido.metodo_pagamento }}';
-const STATUS_ATUAL = '{{ pedido.status }}';
-const ID_MERCADO_PAGO = '{{ pedido.id_mercado_pago }}';
 
-console.log('📋 Configuração:');
-console.log('- Pedido ID:', PEDIDO_ID);
-console.log('- URL:', URL_VERIFICACAO);
-console.log('- Status atual:', STATUS_ATUAL);
-console.log('- Método pagamento:', METODO_PAGAMENTO);
-console.log('- ID Mercado Pago:', ID_MERCADO_PAGO);
-
-// FUNÇÃO GLOBAL GARANTIDA
 window.testarVerificacaoManual = function() {
     console.log('🧪 TESTE MANUAL INICIADO...');
     updateLastCheck();
     verificarStatusPagamento();
 };
 
-// Atualizar timestamp da última verificação
 function updateLastCheck() {
     const now = new Date();
     const timestamp = now.toLocaleTimeString();
@@ -318,7 +259,6 @@ function updateLastCheck() {
     }
 }
 
-// Verificar status do pagamento automaticamente
 async function verificarStatusPagamento() {
     console.log(`🔄 Verificando pedido #${PEDIDO_ID}...`);
     updateLastCheck();
@@ -337,125 +277,49 @@ async function verificarStatusPagamento() {
         if (data.status === 'success') {
             if (data.atualizado) {
                 console.log('🎉 STATUS ATUALIZADO!');
-                showStatusMessage('✅ Status atualizado! Recarregando página...', 'success');
+                showStatusMessage('✅ Status atualizado! Recarregando...', 'success');
                 setTimeout(() => location.reload(), 1500);
-                
             } else {
                 console.log('ℹ️ Status não mudou:', data.pedido_status);
-                showVerificationMessage();
-                
-                // Continuar verificando se ainda está pendente
                 if (data.pedido_status === 'pendente' || data.pedido_status === 'aguardando_aprovacao') {
                     console.log('⏰ Verificando novamente em 15 segundos...');
                     setTimeout(verificarStatusPagamento, 15000);
                 } else {
                     console.log('✅ Status final:', data.pedido_status);
-                    showStatusMessage(`✅ Pedido ${data.pedido_status} - Verificações finalizadas`, 'success');
+                    showStatusMessage(`✅ Pedido ${data.pedido_status}`, 'success');
                 }
             }
         } else {
             console.error('❌ Erro:', data.message);
-            if (!data.message.includes('sem ID do Mercado Pago')) {
-                setTimeout(verificarStatusPagamento, 30000);
-            }
+            setTimeout(verificarStatusPagamento, 30000);
         }
-        
     } catch (error) {
         console.error('💥 Erro na requisição:', error);
-        showStatusMessage('❌ Erro na verificação - Tentando novamente em 30s', 'warning');
         setTimeout(verificarStatusPagamento, 30000);
     }
 }
 
-// Funções auxiliares
 function showStatusMessage(message, type) {
     const alertClass = type === 'success' ? 'alert-success' : 'alert-warning';
     const messageDiv = document.createElement('div');
     messageDiv.className = `alert ${alertClass} alert-dismissible fade show`;
-    messageDiv.innerHTML = `
-        <strong>${message}</strong>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+    messageDiv.innerHTML = `<strong>${message}</strong><button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
     
     const container = document.querySelector('.container');
     if (container) container.insertBefore(messageDiv, container.firstChild);
-}
-
-function showVerificationMessage() {
-    const timestamp = new Date().toLocaleTimeString();
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'alert alert-secondary alert-dismissible fade show';
-    messageDiv.innerHTML = `
-        🔄 Verificado em ${timestamp} - Status mantém
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
     
-    const container = document.querySelector('.container');
-    if (container) {
-        const statusAlert = container.querySelector('.alert');
-        if (statusAlert) {
-            container.insertBefore(messageDiv, statusAlert.nextSibling);
-            
-            setTimeout(() => {
-                if (messageDiv.parentNode) messageDiv.remove();
-            }, 3000);
-        }
-    }
+    setTimeout(() => { if (messageDiv.parentNode) messageDiv.remove(); }, 5000);
 }
 
-// Função global para teste via console
-window.testarPedido = function(pedidoId = PEDIDO_ID) {
-    console.log(`🧪 TESTE MANUAL PEDIDO #${pedidoId}`);
-    fetch(`/pedido/${pedidoId}/verificar-status/`)
-        .then(r => r.json())
-        .then(data => console.log('✅ Resposta:', data))
-        .catch(err => console.error('❌ Erro:', err));
-}
-
-// Iniciar automaticamente
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Sistema iniciado');
     
-    // Atualizar indicador de status do JS
-    const indicator = document.getElementById('js-status');
-    if (indicator) {
-        indicator.textContent = '✅ Funcionando - Verificações automáticas ativas';
-        indicator.className = 'text-success';
-    }
-    
     {% if pedido.status in 'pendente,aguardando_aprovacao' %}
     console.log('🔄 STATUS PENDENTE - Ativando verificações automáticas');
-    
-    // Adicionar indicador visual
-    const statusAlert = document.querySelector('.alert');
-    if (statusAlert) {
-        const indicator = document.createElement('span');
-        indicator.className = 'badge bg-info ms-2';
-        indicator.textContent = 'Verificação automática ativa';
-        indicator.title = 'Verificando status a cada 15 segundos';
-        
-        const testButton = document.createElement('button');
-        testButton.className = 'btn btn-sm btn-outline-warning ms-2';
-        testButton.innerHTML = '🧪 Testar Agora';
-        testButton.onclick = testarVerificacaoManual;
-        
-        const header = statusAlert.querySelector('h5');
-        if (header) {
-            header.appendChild(indicator);
-            header.appendChild(testButton);
-        }
-    }
-    
-    // Primeira verificação em 2 segundos
     setTimeout(verificarStatusPagamento, 2000);
-    
     {% else %}
-    console.log('✅ Status final - Sem verificações automáticas necessárias');
-    showStatusMessage(`Status atual: {{ pedido.status }}`, 'info');
+    console.log('✅ Status final - Verificações finalizadas');
     {% endif %}
 });
-
-console.log('✅ Sistema configurado - Aguardando DOM...');
-console.log('testarVerificacaoManual definido:', typeof testarVerificacaoManual);
 </script>
 {% endblock %}

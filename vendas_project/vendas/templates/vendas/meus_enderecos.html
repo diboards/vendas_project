@@ -1,0 +1,435 @@
+{% extends 'vendas/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-geo-alt"></i> Meus Endereços
+                    </h4>
+                    <button type="button" id="btn-novo-endereco" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#enderecoModal">
+                        <i class="bi bi-plus-circle"></i> Novo Endereço
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% if enderecos %}
+                        <div class="row" id="enderecos-container">
+                            {% for endereco in enderecos %}
+                            <div class="col-md-6 mb-3 endereco-item" data-endereco-id="{{ endereco.id }}">
+                                <div class="card h-100 border-2 {% if endereco.principal %}border-primary bg-light{% endif %}">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="mb-0">
+                                                <strong>{{ endereco.rua }}, {{ endereco.numero }}</strong>
+                                                {% if endereco.principal %}
+                                                    <span class="badge bg-primary ms-2">Principal</span>
+                                                {% endif %}
+                                            </h6>
+                                            <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary editar-endereco-btn" 
+                                                    data-endereco-id="{{ endereco.id }}"
+                                                    data-action="editar"
+                                                    data-cep="{{ endereco.cep }}"
+                                                    data-rua="{{ endereco.rua }}"
+                                                    data-numero="{{ endereco.numero }}"
+                                                    data-complemento="{{ endereco.complemento|default:'' }}"
+                                                    data-bairro="{{ endereco.bairro }}"
+                                                    data-cidade="{{ endereco.cidade }}"
+                                                    data-estado="{{ endereco.estado }}"
+                                                    data-principal="{{ endereco.principal|yesno:'true,false' }}">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger deletar-endereco-btn" 
+                                                    data-endereco-id="{{ endereco.id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        </div>
+                                        {% if endereco.complemento %}
+                                            <p class="mb-1 small">Complemento: {{ endereco.complemento }}</p>
+                                        {% endif %}
+                                        <p class="mb-1 small">{{ endereco.bairro }}</p>
+                                        <p class="mb-1 small">{{ endereco.cidade }}/{{ endereco.estado }}</p>
+                                        <p class="mb-0 small">CEP: {{ endereco.cep }}</p>
+                                        
+                                        {% if not endereco.principal %}
+                                            <button class="btn btn-sm btn-outline-secondary mt-2 definir-principal-btn" 
+                                                    data-endereco-id="{{ endereco.id }}">
+                                                <i class="bi bi-star"></i> Definir como Principal
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning text-center">
+                            <i class="bi bi-exclamation-triangle fs-1 d-block mb-3"></i>
+                            <h5>Nenhum endereço cadastrado!</h5>
+                            <p>Clique em "Novo Endereço" para adicionar.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL para Adicionar/Editar Endereço -->
+<div class="modal fade" id="enderecoModal" tabindex="-1" aria-labelledby="enderecoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="enderecoModalLabel">
+                    <i class="bi bi-geo-alt"></i> <span id="modal-title">Adicionar</span> Endereço
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-endereco" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" id="endereco-id" name="endereco_id" value="">
+                    <input type="hidden" id="form-action" name="action" value="adicionar">
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Rua *</label>
+                            <input type="text" class="form-control" id="rua" name="rua" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Número *</label>
+                            <input type="text" class="form-control" id="numero" name="numero" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Complemento</label>
+                            <input type="text" class="form-control" id="complemento" name="complemento">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Bairro *</label>
+                            <input type="text" class="form-control" id="bairro" name="bairro" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cidade *</label>
+                            <input type="text" class="form-control" id="cidade" name="cidade" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estado *</label>
+                            <select class="form-select" id="estado" name="estado" required>
+                                <option value="">Selecione...</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="GO">Goiás</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="BA">Bahia</option>
+                                <option value="PR">Paraná</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="CE">Ceará</option>
+                                <option value="ES">Espírito Santo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">CEP *</label>
+                            <input type="text" class="form-control" id="cep" name="cep" 
+                                   placeholder="00000-000" maxlength="9" required
+                                   oninput="formatarCEP(this)">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="principal" name="principal">
+                                <label class="form-check-label" for="principal">
+                                    Definir como endereço principal
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="modal-alert"></div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success" id="btn-submit">
+                            <i class="bi bi-save"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function formatarCEP(input) {
+    let cep = input.value.replace(/\D/g, '');
+    if (cep.length > 5) {
+        cep = cep.substring(0, 5) + '-' + cep.substring(5, 8);
+    }
+    input.value = cep;
+}
+
+function showAlert(message, type = 'success') {
+    const alertDiv = document.getElementById('modal-alert');
+    if (!alertDiv) return;
+    
+    alertDiv.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                            ${message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                          </div>`;
+    setTimeout(() => {
+        const alert = alertDiv.querySelector('.alert');
+        if (alert) alert.remove();
+    }, 3000);
+}
+
+// Forçar reload da página
+function forceReload() {
+    window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
+}
+
+// ===== GARANTIR QUE O DOM ESTÁ CARREGADO =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM carregado - Inicializando scripts de endereço");
+    
+    // ===== ABRIR MODAL PARA EDITAR =====
+    const botoesEditar = document.querySelectorAll('.editar-endereco-btn');
+    console.log("Botões de editar encontrados:", botoesEditar.length);
+    
+    botoesEditar.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Preenche o formulário com os dados
+            document.getElementById('modal-title').textContent = 'Editar Endereço';
+            document.getElementById('endereco-id').value = this.dataset.enderecoId;
+            document.getElementById('rua').value = this.dataset.rua || '';
+            document.getElementById('numero').value = this.dataset.numero || '';
+            document.getElementById('complemento').value = this.dataset.complemento || '';
+            document.getElementById('bairro').value = this.dataset.bairro || '';
+            document.getElementById('cidade').value = this.dataset.cidade || '';
+            document.getElementById('estado').value = this.dataset.estado || '';
+            document.getElementById('cep').value = this.dataset.cep || '';
+            document.getElementById('principal').checked = this.dataset.principal === 'true';
+            
+            // Abre o modal manualmente
+            const modal = new bootstrap.Modal(document.getElementById('enderecoModal'));
+            modal.show();
+        });
+    });
+    
+    // ===== RESETAR MODAL PARA NOVO ENDEREÇO =====
+    const btnNovoEndereco = document.getElementById('btn-novo-endereco');
+    if (btnNovoEndereco) {
+        btnNovoEndereco.addEventListener('click', function() {
+            document.getElementById('modal-title').textContent = 'Adicionar Endereço';
+            document.getElementById('endereco-id').value = '';
+            document.getElementById('form-endereco').reset();
+            document.getElementById('principal').checked = false;
+        });
+    }
+    
+    // ===== SUBMETER FORMULÁRIO =====
+    const formEndereco = document.getElementById('form-endereco');
+    if (formEndereco) {
+        formEndereco.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = document.getElementById('btn-submit');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-arrow-repeat spinner"></i> Salvando...';
+            
+            try {
+                const response = await fetch("{% url 'salvar_endereco' %}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    // Fecha o modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('enderecoModal'));
+                    if (modal) modal.hide();
+                    // Recarrega com força
+                    setTimeout(() => {
+                        forceReload();
+                    }, 800);
+                } else {
+                    showAlert(data.error || 'Erro ao salvar endereço', 'danger');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showAlert('Erro ao processar requisição', 'danger');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+    }
+    
+    // ===== DELETAR ENDEREÇO =====
+    const botoesDeletar = document.querySelectorAll('.deletar-endereco-btn');
+    console.log("Botões de deletar encontrados:", botoesDeletar.length);
+    
+    botoesDeletar.forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const enderecoId = this.dataset.enderecoId;
+            
+            if (!confirm('Tem certeza que deseja excluir este endereço?')) return;
+            
+            // Mostra loading
+            const originalHtml = this.innerHTML;
+            this.innerHTML = '<i class="bi bi-arrow-repeat spinner"></i>';
+            this.disabled = true;
+            
+            try {
+                const response = await fetch(`/endereco/deletar/${enderecoId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    setTimeout(() => {
+                        forceReload();
+                    }, 800);
+                } else {
+                    showAlert(data.error || 'Erro ao excluir endereço', 'danger');
+                    this.innerHTML = originalHtml;
+                    this.disabled = false;
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showAlert('Erro ao excluir endereço', 'danger');
+                this.innerHTML = originalHtml;
+                this.disabled = false;
+            }
+        });
+    });
+    
+    // ===== DEFINIR ENDEREÇO PRINCIPAL =====
+    const botoesDefinirPrincipal = document.querySelectorAll('.definir-principal-btn');
+    console.log("Botões definir principal encontrados:", botoesDefinirPrincipal.length);
+    
+    botoesDefinirPrincipal.forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const enderecoId = this.dataset.enderecoId;
+            
+            console.log("Definir principal - ID:", enderecoId);
+            
+            if (!confirm('Deseja definir este endereço como principal?')) return;
+            
+            // Mostrar loading no botão
+            const originalHtml = this.innerHTML;
+            this.innerHTML = '<i class="bi bi-arrow-repeat spinner"></i>';
+            this.disabled = true;
+            
+            try {
+                const response = await fetch(`/endereco/principal/${enderecoId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+                
+                const data = await response.json();
+                console.log("Resposta:", data);
+                
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    // RECARREGA A PÁGINA FORÇADAMENTE
+                    setTimeout(() => {
+                        forceReload();
+                    }, 500);
+                } else {
+                    showAlert(data.error || 'Erro ao definir endereço principal', 'danger');
+                    this.innerHTML = originalHtml;
+                    this.disabled = false;
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showAlert('Erro ao definir endereço principal', 'danger');
+                this.innerHTML = originalHtml;
+                this.disabled = false;
+            }
+        });
+    });
+    
+    // ===== LIMPAR ALERTA AO FECHAR MODAL =====
+    const enderecoModal = document.getElementById('enderecoModal');
+    if (enderecoModal) {
+        enderecoModal.addEventListener('hidden.bs.modal', function() {
+            document.getElementById('modal-alert').innerHTML = '';
+        });
+    }
+});
+
+// Função de reload com cache buster
+function forceReload() {
+    window.location.reload(true);
+}
+</script>
+
+<style>
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.endereco-item {
+    transition: all 0.3s ease;
+}
+
+.endereco-item:hover {
+    transform: translateY(-2px);
+}
+
+.border-primary {
+    border-width: 2px !important;
+}
+
+.btn-group {
+    gap: 5px;
+}
+
+.btn-group .btn {
+    border-radius: 5px !important;
+}
+</style>
+{% endblock %}

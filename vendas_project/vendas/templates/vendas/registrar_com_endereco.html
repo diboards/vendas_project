@@ -1,6 +1,6 @@
 <!-- vendas/registrar_com_endereco.html -->
 {% extends 'vendas/base.html' %}
-{% block title %}Cadastro - Mirna Boutique{% endblock %}
+{% block title %}Cadastro - Distrito Fitness{% endblock %}
 
 {% block content %}
 <div class="container my-5">
@@ -11,7 +11,16 @@
                     <h4 class="mb-0">📝 Complete seu cadastro</h4>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">E-mail: <strong>{{ email }}</strong></p>
+                    
+                    <!-- 🔥 MOSTRA MENSAGENS DE ERRO -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
                     
                     <form method="post">
                         {% csrf_token %}
@@ -21,12 +30,12 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nome Completo*</label>
-                                <input type="text" name="nome" class="form-control" required>
+                                <input type="text" name="nome" class="form-control" required value="{{ nome|default:'' }}">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">CPF*</label>
                                 <input type="text" name="cpf" class="form-control" 
-                                       placeholder="000.000.000-00" required>
+                                       placeholder="000.000.000-00" required value="{{ cpf|default:'' }}">
                             </div>
                         </div>
                         
@@ -47,7 +56,12 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Celular*</label>
                                 <input type="tel" name="celular" class="form-control" 
-                                       placeholder="(11) 99999-9999" required>
+                                       placeholder="(11) 99999-9999" required value="{{ celular|default:'' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">E-mail</label>
+                                <input type="email" class="form-control" value="{{ email|default:'' }}" disabled>
+                                <input type="hidden" name="email" value="{{ email|default:'' }}">
                             </div>
                         </div>
                         
@@ -59,57 +73,49 @@
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">CEP*</label>
                                 <input type="text" name="cep" class="form-control" 
-                                       placeholder="00000-000" required>
+                                       placeholder="00000-000" required value="{{ cep|default:'' }}">
                             </div>
                             <div class="col-md-8 mb-3">
                                 <label class="form-label">Rua*</label>
-                                <input type="text" name="rua" class="form-control" required>
+                                <input type="text" name="rua" class="form-control" required value="{{ rua|default:'' }}">
                             </div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-3 mb-3">
                                 <label class="form-label">Número*</label>
-                                <input type="text" name="numero" class="form-control" required>
+                                <input type="text" name="numero" class="form-control" required value="{{ numero|default:'' }}">
                             </div>
                             <div class="col-md-5 mb-3">
                                 <label class="form-label">Complemento</label>
                                 <input type="text" name="complemento" class="form-control" 
-                                       placeholder="Ap, Bloco, etc.">
+                                       placeholder="Ap, Bloco, etc." value="{{ complemento|default:'' }}">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Bairro*</label>
-                                <input type="text" name="bairro" class="form-control" required>
+                                <input type="text" name="bairro" class="form-control" required value="{{ bairro|default:'' }}">
                             </div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Cidade*</label>
-                                <input type="text" name="cidade" class="form-control" required>
+                                <input type="text" name="cidade" class="form-control" required value="{{ cidade|default:'' }}">
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label class="form-label">Estado*</label>
                                 <select name="estado" class="form-select" required>
                                     <option value="">Selecione</option>
-                                    <option value="SP">SP</option>
-                                    <option value="RJ">RJ</option>
-                                    <option value="MG">MG</option>
-                                    <option value="ES">ES</option>
-                                    <option value="RS">RS</option>
-                                    <option value="PR">PR</option>
-                                    <option value="SC">SC</option>
-                                    <option value="SC">DF</option>
-                                    <!-- outros estados -->
+                                    <option value="SP" {% if estado == 'SP' %}selected{% endif %}>SP</option>
+                                    <option value="RJ" {% if estado == 'RJ' %}selected{% endif %}>RJ</option>
+                                    <option value="MG" {% if estado == 'MG' %}selected{% endif %}>MG</option>
+                                    <option value="ES" {% if estado == 'ES' %}selected{% endif %}>ES</option>
+                                    <option value="RS" {% if estado == 'RS' %}selected{% endif %}>RS</option>
+                                    <option value="PR" {% if estado == 'PR' %}selected{% endif %}>PR</option>
+                                    <option value="SC" {% if estado == 'SC' %}selected{% endif %}>SC</option>
+                                    <option value="DF" {% if estado == 'DF' %}selected{% endif %}>DF</option>
                                 </select>
                             </div>
-                        </div>
-                        
-                        <div class="form-check mb-4">
-                            <input type="checkbox" name="newsletter" class="form-check-input" id="newsletter" checked>
-                            <label class="form-check-label" for="newsletter">
-                                Receber novidades e promoções por e-mail
-                            </label>
                         </div>
                         
                         <div class="d-grid">
@@ -123,4 +129,52 @@
         </div>
     </div>
 </div>
+
+<!-- 🔥 SCRIPT PARA MÁSCARAS DE CAMPOS -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Máscara para CPF
+    const cpfInput = document.querySelector('input[name="cpf"]');
+    if (cpfInput) {
+        cpfInput.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                this.value = value;
+            }
+        });
+    }
+    
+    // Máscara para Telefone
+    const celularInput = document.querySelector('input[name="celular"]');
+    if (celularInput) {
+        celularInput.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                if (value.length > 2) {
+                    value = value.replace(/^(\d{2})(\d)/, '($1) $2');
+                }
+                if (value.length > 7) {
+                    value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                }
+                this.value = value;
+            }
+        });
+    }
+    
+    // Máscara para CEP
+    const cepInput = document.querySelector('input[name="cep"]');
+    if (cepInput) {
+        cepInput.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length > 5) {
+                value = value.substring(0, 5) + '-' + value.substring(5, 8);
+                this.value = value;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
