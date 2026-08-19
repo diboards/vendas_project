@@ -19,7 +19,6 @@ with connection.cursor() as cursor:
     
     if not exists:
         print("⚠️ Tabela vendas_produtovariacao não existe! Criando...")
-        # 🔥 CRIA A TABELA MANUALMENTE
         cursor.execute("""
             CREATE TABLE vendas_produtovariacao (
                 id SERIAL PRIMARY KEY,
@@ -32,8 +31,6 @@ with connection.cursor() as cursor:
             );
         """)
         print("✅ Tabela vendas_produtovariacao criada!")
-    else:
-        print("✅ Tabela vendas_produtovariacao já existe!")
 
 print("🔄 Verificando se a coluna variacao_id existe...")
 with connection.cursor() as cursor:
@@ -71,9 +68,32 @@ variacao, created = ProdutoVariacao.objects.get_or_create(
 )
 print(f"✅ Variação padrão criada com ID: {variacao.id}")
 
+# ============================================================
+# 🔥 CRIAÇÃO FORÇADA DO SUPERUSUÁRIO
+# ============================================================
 print("👤 Criando superusuário...")
 from django.contrib.auth import get_user_model
 User = get_user_model()
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@admin.com', 'admin123')
-    print("✅ Superusuário criado: admin / admin123")
+
+# Tenta criar o superusuário com tratamento de erro
+try:
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser('admin', 'admin@admin.com', 'admin123')
+        print("✅ Superusuário criado: admin / admin123")
+    else:
+        # Se já existe, verifica se a senha está correta
+        user = User.objects.get(username='admin')
+        if not user.check_password('admin123'):
+            user.set_password('admin123')
+            user.save()
+            print("✅ Senha do admin resetada para admin123")
+        else:
+            print("ℹ️ Superusuário já existe com a senha correta")
+except Exception as e:
+    print(f"⚠️ Erro ao criar superusuário: {e}")
+    # Tenta criar novamente com um método alternativo
+    try:
+        User.objects.create_superuser('admin', 'admin@admin.com', 'admin123')
+        print("✅ Superusuário criado (tentativa 2): admin / admin123")
+    except Exception as e2:
+        print(f"❌ Falha ao criar superusuário: {e2}")
