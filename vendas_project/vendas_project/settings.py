@@ -147,15 +147,14 @@ PASSWORD_RESET_TIMEOUT = 3600  # 1 hora
 
 # Recuperação de senha
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'dionne.fernandes1gmail.com'
+EMAIL_HOST_PASSWORD = 'uynx qmks brya uxqq'  # ← SENHA DE APP (sem espaços)
+DEFAULT_FROM_EMAIL = 'Mirna Boutique <dionne.fernandes1@gmail.com>'
+PASSWORD_RESET_TIMEOUT = 3600
 
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-
-DEFAULT_FROM_EMAIL = 'distritofitness@gmail.com'
 
 # 💳 Mercado Pago (NUNCA hardcoded)
 MERCADOPAGO_ACCESS_TOKEN = os.getenv('MP_ACCESS_TOKEN')
