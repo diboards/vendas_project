@@ -7,32 +7,31 @@ from decimal import Decimal
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vendas_project.settings')
 django.setup()
 
-print("🔄 Verificando e criando coluna variacao_id em vendas_itempedido...")
+print("🔄 Verificando se a tabela vendas_perfil existe...")
 with connection.cursor() as cursor:
-    # Verifica se a coluna existe
     cursor.execute("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='vendas_itempedido' AND column_name='variacao_id';
+        SELECT EXISTS (
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_name='vendas_perfil'
+        );
     """)
-    exists = cursor.fetchone()
+    exists = cursor.fetchone()[0]
     
     if not exists:
-        cursor.execute("ALTER TABLE vendas_itempedido ADD COLUMN variacao_id integer;")
-        print("✅ Coluna variacao_id criada em vendas_itempedido!")
-        
-        # Tenta criar a chave estrangeira
-        try:
-            cursor.execute("""
-                ALTER TABLE vendas_itempedido 
-                ADD CONSTRAINT fk_itempedido_variacao 
-                FOREIGN KEY (variacao_id) REFERENCES vendas_produtovariacao(id);
-            """)
-            print("✅ Chave estrangeira criada!")
-        except Exception as e:
-            print(f"⚠️ Chave estrangeira não criada: {e}")
-    else:
-        print("✅ Coluna variacao_id já existe em vendas_itempedido!")
+        print("⚠️ Tabela vendas_perfil não existe! Criando...")
+        cursor.execute("""
+            CREATE TABLE vendas_perfil (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER NOT NULL REFERENCES auth_user(id),
+                telefone VARCHAR(15),
+                cpf VARCHAR(14),
+                data_nascimento DATE,
+                bio TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+        """)
+        print("✅ Tabela vendas_perfil criada!")
 
 print("🔄 Verificando se a tabela vendas_produtovariacao existe...")
 with connection.cursor() as cursor:
@@ -58,6 +57,30 @@ with connection.cursor() as cursor:
             );
         """)
         print("✅ Tabela vendas_produtovariacao criada!")
+
+print("🔄 Verificando se a coluna variacao_id existe...")
+with connection.cursor() as cursor:
+    cursor.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='vendas_carrinhoitem' AND column_name='variacao_id';
+    """)
+    exists = cursor.fetchone()
+    if not exists:
+        cursor.execute("ALTER TABLE vendas_carrinhoitem ADD COLUMN variacao_id integer;")
+        print("✅ Coluna variacao_id criada!")
+
+print("🔄 Verificando se a coluna variacao_id existe em itempedido...")
+with connection.cursor() as cursor:
+    cursor.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='vendas_itempedido' AND column_name='variacao_id';
+    """)
+    exists = cursor.fetchone()
+    if not exists:
+        cursor.execute("ALTER TABLE vendas_itempedido ADD COLUMN variacao_id integer;")
+        print("✅ Coluna variacao_id criada em itempedido!")
 
 print("🔄 Criando variação padrão...")
 from vendas.models import Produto, ProdutoVariacao
