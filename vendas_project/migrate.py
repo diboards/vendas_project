@@ -7,6 +7,33 @@ from decimal import Decimal
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vendas_project.settings')
 django.setup()
 
+print("🔄 Verificando e criando coluna variacao_id em vendas_itempedido...")
+with connection.cursor() as cursor:
+    # Verifica se a coluna existe
+    cursor.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='vendas_itempedido' AND column_name='variacao_id';
+    """)
+    exists = cursor.fetchone()
+    
+    if not exists:
+        cursor.execute("ALTER TABLE vendas_itempedido ADD COLUMN variacao_id integer;")
+        print("✅ Coluna variacao_id criada em vendas_itempedido!")
+        
+        # Tenta criar a chave estrangeira
+        try:
+            cursor.execute("""
+                ALTER TABLE vendas_itempedido 
+                ADD CONSTRAINT fk_itempedido_variacao 
+                FOREIGN KEY (variacao_id) REFERENCES vendas_produtovariacao(id);
+            """)
+            print("✅ Chave estrangeira criada!")
+        except Exception as e:
+            print(f"⚠️ Chave estrangeira não criada: {e}")
+    else:
+        print("✅ Coluna variacao_id já existe em vendas_itempedido!")
+
 print("🔄 Verificando se a tabela vendas_produtovariacao existe...")
 with connection.cursor() as cursor:
     cursor.execute("""
@@ -32,18 +59,6 @@ with connection.cursor() as cursor:
         """)
         print("✅ Tabela vendas_produtovariacao criada!")
 
-print("🔄 Verificando se a coluna variacao_id existe...")
-with connection.cursor() as cursor:
-    cursor.execute("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='vendas_carrinhoitem' AND column_name='variacao_id';
-    """)
-    exists = cursor.fetchone()
-    if not exists:
-        cursor.execute("ALTER TABLE vendas_carrinhoitem ADD COLUMN variacao_id integer;")
-        print("✅ Coluna variacao_id criada!")
-
 print("🔄 Criando variação padrão...")
 from vendas.models import Produto, ProdutoVariacao
 
@@ -68,20 +83,15 @@ variacao, created = ProdutoVariacao.objects.get_or_create(
 )
 print(f"✅ Variação padrão criada com ID: {variacao.id}")
 
-# ============================================================
-# 🔥 CRIAÇÃO FORÇADA DO SUPERUSUÁRIO
-# ============================================================
 print("👤 Criando superusuário...")
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
-# Tenta criar o superusuário com tratamento de erro
 try:
     if not User.objects.filter(username='admin').exists():
         User.objects.create_superuser('admin', 'admin@admin.com', 'admin123')
         print("✅ Superusuário criado: admin / admin123")
     else:
-        # Se já existe, verifica se a senha está correta
         user = User.objects.get(username='admin')
         if not user.check_password('admin123'):
             user.set_password('admin123')
@@ -91,9 +101,3 @@ try:
             print("ℹ️ Superusuário já existe com a senha correta")
 except Exception as e:
     print(f"⚠️ Erro ao criar superusuário: {e}")
-    # Tenta criar novamente com um método alternativo
-    try:
-        User.objects.create_superuser('admin', 'admin@admin.com', 'admin123')
-        print("✅ Superusuário criado (tentativa 2): admin / admin123")
-    except Exception as e2:
-        print(f"❌ Falha ao criar superusuário: {e2}")
