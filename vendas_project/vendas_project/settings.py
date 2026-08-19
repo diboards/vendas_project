@@ -59,7 +59,7 @@ cloudinary.config(
 )
 CLOUDINARY_STORAGE = {
     'UPLOAD_OPTIONS': {
-        'folder': 'distrito_fitness/produtos'
+        'folder': 'vendas_project/produtos'
     }
 }
 
