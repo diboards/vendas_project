@@ -101,7 +101,7 @@ TEMPLATES = [
 ]
 
 
-WSGI_APPLICATION = 'distrito_fitness.wsgi.application'
+WSGI_APPLICATION = 'vendas_project.wsgi.application'
 
 # 🗄️ Banco (NEON)
 DATABASES = {
