@@ -77,7 +77,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'distrito_fitness.urls'
+ROOT_URLCONF = 'vendas_project.urls'
 
 TEMPLATES = [
     {
