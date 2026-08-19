@@ -4,7 +4,7 @@ import django
 from django.core.management import call_command
 from django.contrib.auth import get_user_model
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'distrito_fitness.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vendas_project.settings')
 django.setup()
 
 print("🔄 Criando variação padrão...")
