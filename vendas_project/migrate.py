@@ -7,9 +7,23 @@ from decimal import Decimal
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vendas_project.settings')
 django.setup()
 
+print("🔄 Verificando e removendo coluna preco...")
+with connection.cursor() as cursor:
+    # 🔥 REMOVE A COLUNA PRECO SE ELA EXISTIR
+    cursor.execute("""
+        DO $$ 
+        BEGIN 
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='vendas_produto' AND column_name='preco') THEN
+                ALTER TABLE vendas_produto DROP COLUMN preco;
+                RAISE NOTICE 'Coluna preco removida';
+            END IF;
+        END $$;
+    """)
+    print("✅ Coluna preco removida (se existia)")
+
 print("🔄 Verificando e criando coluna variacao_id...")
 with connection.cursor() as cursor:
-    # Verifica se a coluna existe
     cursor.execute("""
         SELECT column_name 
         FROM information_schema.columns 
@@ -18,26 +32,15 @@ with connection.cursor() as cursor:
     exists = cursor.fetchone()
     
     if not exists:
-        # 🔥 CRIA A COLUNA PRIMEIRO
         cursor.execute("ALTER TABLE vendas_carrinhoitem ADD COLUMN variacao_id integer;")
         print("✅ Coluna variacao_id criada!")
-        
-        # 🔥 CRIA A CHAVE ESTRANGEIRA DEPOIS
-        try:
-            cursor.execute("""
-                ALTER TABLE vendas_carrinhoitem 
-                ADD CONSTRAINT fk_carrinho_variacao 
-                FOREIGN KEY (variacao_id) REFERENCES vendas_produtovariacao(id);
-            """)
-            print("✅ Chave estrangeira criada!")
-        except Exception as e:
-            print(f"⚠️ Chave estrangeira não criada: {e}")
     else:
         print("✅ Coluna variacao_id já existe!")
 
 print("🔄 Criando variação padrão...")
 from vendas.models import Produto, ProdutoVariacao
 
+# 🔥 CRIA O PRODUTO SEM O CAMPO PRECO
 produto, created = Produto.objects.get_or_create(
     nome='Produto Padrão',
     defaults={
@@ -46,6 +49,7 @@ produto, created = Produto.objects.get_or_create(
         'ativo': True
     }
 )
+print(f"✅ Produto criado: {produto.nome} (ID: {produto.id})")
 
 variacao, created = ProdutoVariacao.objects.get_or_create(
     produto=produto,
@@ -59,8 +63,6 @@ variacao, created = ProdutoVariacao.objects.get_or_create(
 print(f"✅ Variação padrão criada com ID: {variacao.id}")
 
 print("🔄 Executando migrações...")
-# 🔥 PULA A MIGRAÇÃO PROBLEMÁTICA E APLICA O RESTANTE
-call_command('migrate', 'vendas', '--fake', '0007_inicial')
 call_command('migrate', interactive=False)
 print("✅ Migrações aplicadas!")
 
