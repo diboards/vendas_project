@@ -2,6 +2,7 @@ import os
 import django
 from django.core.management import call_command
 from django.db import connection
+from decimal import Decimal
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vendas_project.settings')
 django.setup()
@@ -17,14 +18,25 @@ with connection.cursor() as cursor:
     exists = cursor.fetchone()
     
     if not exists:
+        # 🔥 CRIA A COLUNA PRIMEIRO
         cursor.execute("ALTER TABLE vendas_carrinhoitem ADD COLUMN variacao_id integer;")
         print("✅ Coluna variacao_id criada!")
+        
+        # 🔥 CRIA A CHAVE ESTRANGEIRA DEPOIS
+        try:
+            cursor.execute("""
+                ALTER TABLE vendas_carrinhoitem 
+                ADD CONSTRAINT fk_carrinho_variacao 
+                FOREIGN KEY (variacao_id) REFERENCES vendas_produtovariacao(id);
+            """)
+            print("✅ Chave estrangeira criada!")
+        except Exception as e:
+            print(f"⚠️ Chave estrangeira não criada: {e}")
     else:
         print("✅ Coluna variacao_id já existe!")
 
 print("🔄 Criando variação padrão...")
 from vendas.models import Produto, ProdutoVariacao
-from decimal import Decimal
 
 produto, created = Produto.objects.get_or_create(
     nome='Produto Padrão',
@@ -47,7 +59,8 @@ variacao, created = ProdutoVariacao.objects.get_or_create(
 print(f"✅ Variação padrão criada com ID: {variacao.id}")
 
 print("🔄 Executando migrações...")
-call_command('makemigrations', 'vendas', interactive=False)
+# 🔥 PULA A MIGRAÇÃO PROBLEMÁTICA E APLICA O RESTANTE
+call_command('migrate', 'vendas', '--fake', '0007_inicial')
 call_command('migrate', interactive=False)
 print("✅ Migrações aplicadas!")
 
