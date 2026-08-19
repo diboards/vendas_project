@@ -7,20 +7,23 @@ from decimal import Decimal
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vendas_project.settings')
 django.setup()
 
-print("🔄 Verificando e removendo coluna preco...")
+print("🔄 Removendo colunas extras da tabela vendas_produto...")
 with connection.cursor() as cursor:
-    # 🔥 REMOVE A COLUNA PRECO SE ELA EXISTIR
-    cursor.execute("""
-        DO $$ 
-        BEGIN 
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
-                       WHERE table_name='vendas_produto' AND column_name='preco') THEN
-                ALTER TABLE vendas_produto DROP COLUMN preco;
-                RAISE NOTICE 'Coluna preco removida';
-            END IF;
-        END $$;
-    """)
-    print("✅ Coluna preco removida (se existia)")
+    # Lista de colunas que devem ser removidas
+    colunas_para_remover = ['preco', 'quantidade_estoque', 'cor', 'tamanho']
+    
+    for coluna in colunas_para_remover:
+        cursor.execute(f"""
+            DO $$ 
+            BEGIN 
+                IF EXISTS (SELECT 1 FROM information_schema.columns 
+                           WHERE table_name='vendas_produto' AND column_name='{coluna}') THEN
+                    ALTER TABLE vendas_produto DROP COLUMN {coluna};
+                    RAISE NOTICE 'Coluna {coluna} removida';
+                END IF;
+            END $$;
+        """)
+        print(f"✅ Coluna '{coluna}' removida (se existia)")
 
 print("🔄 Verificando e criando coluna variacao_id...")
 with connection.cursor() as cursor:
@@ -40,7 +43,7 @@ with connection.cursor() as cursor:
 print("🔄 Criando variação padrão...")
 from vendas.models import Produto, ProdutoVariacao
 
-# 🔥 CRIA O PRODUTO SEM O CAMPO PRECO
+# 🔥 CRIA O PRODUTO SEM CAMPOS EXTRAS
 produto, created = Produto.objects.get_or_create(
     nome='Produto Padrão',
     defaults={
@@ -51,6 +54,7 @@ produto, created = Produto.objects.get_or_create(
 )
 print(f"✅ Produto criado: {produto.nome} (ID: {produto.id})")
 
+# 🔥 CRIA A VARIAÇÃO COM OS CAMPOS CORRETOS
 variacao, created = ProdutoVariacao.objects.get_or_create(
     produto=produto,
     cor='Branco',
