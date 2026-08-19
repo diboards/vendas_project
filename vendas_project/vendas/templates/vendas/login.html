@@ -24,16 +24,23 @@
                             <input type="password" name="password" class="form-control" required>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <button type="submit" class="btn btn-primary w-100 mb-2">
                             Entrar
                         </button>
+                        
+                        <!-- 🔥 LINK PARA RECUPERAR SENHA -->
+                        <div class="text-center mb-3">
+                            <a href="{% url 'password_reset' %}" class="text-decoration-none text-muted small">
+                                <i class="bi bi-key"></i> Esqueceu sua senha?
+                            </a>
+                        </div>
                     </form>
 
                     <hr>
                     
                     <h5 class="text-center mb-3">Não tem conta ainda?</h5>
                     
-                    <!-- Formulário SEPARADO para cadastro -->
+                    <!-- Formulário para cadastro -->
                     <form method="post">
                         {% csrf_token %}
                         <input type="hidden" name="form_type" value="cadastro">
