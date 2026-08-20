@@ -27,40 +27,50 @@
     </div>
 </section>
 
-    <!-- CAROUSEL -->
-    {% if not categoria_selecionada %}
-    <div id="carouselProdutos" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
-        <div class="carousel-inner">
-            {% for produto in produtos_destaque|slice:":3" %}
-            <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                <div class="carousel-banner">
-                    <div class="carousel-content">
-                        <p class="carousel-tag">⭐ Destaque</p>
-                        <h2 class="carousel-title">{{ produto.nome }}</h2>
-                        <p class="carousel-price">💰 R$ {{ produto.preco_pix }} no PIX</p>
-                        <p class="carousel-parcelado">ou 3x de R$ {{ produto.preco_parcela }} sem juros</p>
-                        <a href="{% url 'detalhes_produto' produto.id %}" class="btn-carousel">🛒 Comprar agora →</a>
-                    </div>
-                    <img src="{{ produto.imagem }}" class="carousel-img" alt="{{ produto.nome }}"
-                         onerror="this.src='https://placehold.co/400x300?text=Sem+Imagem'">
-                    <div class="carousel-overlay"></div>
+    <!-- CAROUSEL - PRODUTOS EM DESTAQUE -->
+{% if not categoria_selecionada %}
+<div id="carouselProdutos" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
+    <div class="carousel-inner">
+        {% for produto in produtos_destaque|slice:":3" %}
+        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+            <div class="carousel-banner">
+                <div class="carousel-content">
+                    <p class="carousel-tag">⭐ Destaque</p>
+                    <h2 class="carousel-title">{{ produto.nome }}</h2>
+                    <p class="carousel-price">💰 R$ {{ produto.preco_pix }} no PIX</p>
+                    <p class="carousel-parcelado">ou 3x de R$ {{ produto.preco_parcela }} sem juros</p>
+                    <a href="{% url 'detalhes_produto' produto.id %}" class="btn-carousel">🛒 Comprar agora →</a>
+                </div>
+                <img src="{{ produto.imagem }}" class="carousel-img" alt="{{ produto.nome }}"
+                     onerror="this.src='https://placehold.co/400x300?text=Sem+Imagem'">
+                <div class="carousel-overlay"></div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="carousel-item active">
+            <div class="carousel-banner" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
+                <div class="carousel-content text-center" style="width: 100%;">
+                    <p class="carousel-tag">📢</p>
+                    <h2 class="carousel-title">Nenhum produto em destaque</h2>
+                    <p class="carousel-parcelado">Cadastre produtos com a categoria "Destaque" para aparecerem aqui.</p>
                 </div>
             </div>
-            {% endfor %}
         </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#carouselProdutos" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#carouselProdutos" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-        </button>
-        <div class="carousel-indicators">
-            {% for produto in produtos_destaque|slice:":3" %}
-            <button type="button" data-bs-target="#carouselProdutos" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></button>
-            {% endfor %}
-        </div>
+        {% endfor %}
     </div>
-    {% endif %}
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselProdutos" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselProdutos" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    </button>
+    <div class="carousel-indicators">
+        {% for produto in produtos_destaque|slice:":3" %}
+        <button type="button" data-bs-target="#carouselProdutos" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></button>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
     <!-- SEÇÃO: LANÇAMENTOS -->
     {% if not categoria_selecionada or categoria_selecionada == 'lancamentos' %}
