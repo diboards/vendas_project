@@ -530,7 +530,8 @@
          <a class="cat-link {% if categoria_selecionada == 'lancamentos' %}active{% endif %}" href="?categoria=lancamentos">Lançamentos</a>
          <a class="cat-link {% if categoria_selecionada == 'promocoes' %}active{% endif %}" href="?categoria=promocoes">Promoções</a>
          <a class="cat-link {% if categoria_selecionada == 'conjuntos' %}active{% endif %}" href="?categoria=conjuntos">Conjuntos</a>
-         <a class="cat-link" href="{% url 'orcamento' %}"><i class="bi bi-card-list"></i> Orçamento</a>
+         <a class="cat-link {% if categoria_selecionada == 'destaque' %}active{% endif %}" href="?categoria=destaque">destaque</a>
+         
          <a class="cat-link {% if categoria_selecionada == 'outros' %}active{% endif %}" href="?categoria=outros">Outros</a>
          <a class="cat-link" href="https://instagram.com/boutiquemirna7" target="_blank" style="color: #f59e0b !important;">
            <i class="bi bi-instagram"></i> @Mirna Boutique
