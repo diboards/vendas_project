@@ -16,6 +16,7 @@ CATEGORIA_CHOICES = [
     ('lancamentos', 'Lançamentos'),
     ('promocoes', 'Promoções'),
     ('conjuntos', 'Conjuntos'),
+    ('destaque', 'Destaque'),  # 🔥 NOVA OPÇÃO
     ('outros', 'Outros'),
 ]
 
