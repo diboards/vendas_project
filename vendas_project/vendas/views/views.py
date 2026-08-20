@@ -84,7 +84,7 @@ def pagina_inicial(request):
     produtos_promocoes = produtos_query.filter(categoria='promocoes')[:12]
     produtos_conjuntos = produtos_query.filter(categoria='conjuntos')[:12]
     produtos_outros = produtos_query.filter(categoria='outros')[:12]
-    produtos_destaque = produtos_query.order_by('-data_cadastro')[:6]
+    produtos_destaque = produtos_query.filter(categoria='destaque')[:6]  # 🔥 BUSCA POR CATEGORIA
     
     # Calcular preços a partir da primeira variação
     def calcular_precos(produto_list):
@@ -135,7 +135,6 @@ def pagina_inicial(request):
     
     return render(request, 'vendas/index.html', context)
 
-#teste
 
 @login_required
 def testar_conexao_mp(request):
