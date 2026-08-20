@@ -153,7 +153,7 @@ EMAIL_PORT = 465
 EMAIL_USE_SSL = False
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'mirnaboutique851@gmail.com'
-EMAIL_HOST_PASSWORD = 'uhbkbiongyoqqclx'  # ← SENHA DE APP (sem espaços)
+EMAIL_HOST_PASSWORD = 'dbbaaca2133676e0a7ec6a9a76f5a4de'  # ← SENHA DE APP (sem espaços)
 DEFAULT_FROM_EMAIL = 'Mirna Boutique <mirnaboutique851@gmail.com>'
 PASSWORD_RESET_TIMEOUT = 3600
 
