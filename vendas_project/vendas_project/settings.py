@@ -149,13 +149,13 @@ PASSWORD_RESET_TIMEOUT = 3600  # 1 hora
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp-relay.brevo.com'
-EMAIL_PORT = 587
+EMAIL_PORT = 2525
 EMAIL_USE_SSL = False
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'b64349001@smtp-brevo.com'
 EMAIL_HOST_PASSWORD = 'xsmtpsib-2693fdff08235ba60e9b1fabdb51c996203e1bc025feb6970a801cae8e0773ec-2frQISdYVLjWFxbr'  # ← SENHA DE APP (brevo)
 #EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = 'Mirna Boutique <mirnaboutique851@gmail.com>'
+DEFAULT_FROM_EMAIL = 'Mirna Boutique <mirnaboutique@mirnaboutique.com>'
 PASSWORD_RESET_TIMEOUT = 3600
 
 
