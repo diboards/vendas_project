@@ -153,7 +153,7 @@ EMAIL_PORT = 587
 EMAIL_USE_SSL = False
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'postmaster@sandboxf2550a971c134fe3b5196561c20ad8d0.mailgun.org'
-EMAIL_HOST_PASSWORD = '6648d8d0-53d4f18c'  # ← SENHA DE APP (sem espaços)
+EMAIL_HOST_PASSWORD = 'django@sandboxf2550a971c134fe3b5196561c20ad8d0.mailgun.org'  # ← SENHA DE APP (sem espaços)
 DEFAULT_FROM_EMAIL = 'Mirna Boutique <postmaster@sandboxf2550a971c134fe3b5196561c20ad8d0.mailgun.org>'
 PASSWORD_RESET_TIMEOUT = 3600
 
