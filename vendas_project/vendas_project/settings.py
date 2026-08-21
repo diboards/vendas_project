@@ -148,13 +148,13 @@ PASSWORD_RESET_TIMEOUT = 3600  # 1 hora
 # Recuperação de senha
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.mailgun.org'
+EMAIL_HOST = 'smtp-relay.brevo.com'
 EMAIL_PORT = 587
 EMAIL_USE_SSL = False
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'postmaster@sandboxf2550a971c134fe3b5196561c20ad8d0.mailgun.org'
-EMAIL_HOST_PASSWORD = 'f2550a971c134fe3b5196561c20ad8d0'  # ← SENHA DE APP (sem espaços)
-DEFAULT_FROM_EMAIL = 'Mirna Boutique <postmaster@sandboxf2550a971c134fe3b5196561c20ad8d0.mailgun.org>'
+EMAIL_HOST_USER = 'b64349001@smtp-brevo.com'
+EMAIL_HOST_PASSWORD = 'xsmtpsib-2693fdff08235ba60e9b1fabdb51c996203e1bc025feb6970a801cae8e0773ec-2frQISdYVLjWFxbr'  # ← SENHA DE APP (brevo)
+DEFAULT_FROM_EMAIL = 'Mirna Boutique <mirnaboutique851@gmail.com>'
 PASSWORD_RESET_TIMEOUT = 3600
 
 
