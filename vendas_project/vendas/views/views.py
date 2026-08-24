@@ -335,7 +335,6 @@ def adicionar_carrinho(request, produto_id):
         item, created = CarrinhoItem.objects.get_or_create(
             usuario=request.user,
             variacao=variacao,
-            produto=produto,  # 🔥 ADICIONE ISSO AQUI!
             defaults={'quantidade': quantidade}
         )
         
@@ -576,7 +575,6 @@ def comprar_agora(request, produto_id):
         CarrinhoItem.objects.create(
             usuario=request.user,
             variacao=variacao,  # ← USA A VARIAÇÃO!
-            produto=produto,    # 🔥 ADICIONE ESSA LINHA AQUI!
             quantidade=quantidade
         )
         
