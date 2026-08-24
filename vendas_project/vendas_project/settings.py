@@ -153,7 +153,7 @@ EMAIL_PORT = 2525
 EMAIL_USE_SSL = False
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'b64349001@smtp-brevo.com'
-EMAIL_HOST_PASSWORD = 'bskARCJ2q0dNpge'  # ← SENHA DE APP (brevo)
+EMAIL_HOST_PASSWORD = 'bskTOoBSUdEHrFQ'  # ← SENHA DE APP (brevo)
 DEFAULT_FROM_EMAIL = 'Mirna Boutique <mirnaboutique@mirnaboutique.com>'
 PASSWORD_RESET_TIMEOUT = 3600
 
