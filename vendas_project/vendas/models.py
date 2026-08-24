@@ -84,7 +84,6 @@ class CarrinhoItem(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     # 🔥 ADICIONAR null=True, blank=True
     variacao = models.ForeignKey(ProdutoVariacao, on_delete=models.CASCADE, null=True, blank=True)
-    produto = models.ForeignKey(Produto, ...)  # <-- Esse campo existe e é obrigatório
     quantidade = models.PositiveIntegerField(default=1)
     data_adicionado = models.DateTimeField(auto_now_add=True)
     
