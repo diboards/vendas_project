@@ -545,7 +545,6 @@ def calcular_frete_ajax(request):
 
 
 @login_required
-@login_required
 def comprar_agora(request, produto_id):
     if request.method == 'POST':
         produto = get_object_or_404(Produto, id=produto_id, ativo=True)
@@ -577,6 +576,7 @@ def comprar_agora(request, produto_id):
         CarrinhoItem.objects.create(
             usuario=request.user,
             variacao=variacao,  # ← USA A VARIAÇÃO!
+            produto=produto,    # 🔥 ADICIONE ESSA LINHA AQUI!
             quantidade=quantidade
         )
         
