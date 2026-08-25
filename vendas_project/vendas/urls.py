@@ -25,7 +25,7 @@ urlpatterns = [
     path('deletar/<int:produto_id>/', views_principais.deletar_produto, name='deletar_produto'),
     path('venda/atualizar/<int:venda_id>/', views_principais.atualizar_venda, name='atualizar_venda'),
     # views de cache
-    path('admin/limpar-cache/', views.limpar_cache, name='limpar_cache'),
+    path('admin/limpar-cache/', views_principais.limpar_cache, name='limpar_cache'),
     
     # CORRIGIDO: use views_principais em vez de vendas_views
     path('login/', views_principais.login_view, name='login'),
