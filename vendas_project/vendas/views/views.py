@@ -1464,6 +1464,9 @@ def pagamento_sucesso(request, pedido_id):
         pedido.status_entrega = 'preparando'
         pedido.save()
 
+        # 🔥 ENVIA NOTIFICAÇÃO
+        enviar_notificacao_status(pedido, status_antigo)
+
     CarrinhoItem.objects.filter(usuario=request.user).delete()
 
     return render(request, 'vendas/pagamento_sucesso.html', {'pedido': pedido})
