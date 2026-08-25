@@ -17,12 +17,14 @@ urlpatterns = [
     # ===== VIEWS PRINCIPAIS (pasta views/views.py) =====
     path('', views_principais.pagina_inicial, name='pagina_inicial'),
     path('index/', views_principais.pagina_inicial, name='index'),
-    path('lista_vendas/', views_principais.lista_vendas, name='lista_vendas'),
+   
     path('cadastrar_produto/', views_principais.cadastrar_produto, name='cadastrar_produto'),
     #path('vendas/nova/', views_principais.nova_venda, name='nova_venda'),
     path('relatorios-pedidos/', views_principais.relatorios_pedidos, name='relatorios_pedidos'),
-    path('editar/<int:venda_id>/', views_principais.editar_venda, name='editar_venda'),
-    path('deletar/<int:produto_id>/', views_principais.deletar_produto, name='deletar_produto'),
+    #Funções de Registro de vendas
+    path('vendas/editar/<int:venda_id>/', views_principais.editar_venda, name='editar_venda'),
+    path('vendas/deletar/<int:venda_id>/', views_principais.deletar_venda, name='deletar_venda'),  # 🔥 ADICIONE ESTA
+    path('lista_vendas/', views_principais.lista_vendas, name='lista_vendas'),  
     path('venda/atualizar/<int:venda_id>/', views_principais.atualizar_venda, name='atualizar_venda'),
     # views de cache
     path('admin/limpar-cache/', views_principais.limpar_cache, name='limpar_cache'),
