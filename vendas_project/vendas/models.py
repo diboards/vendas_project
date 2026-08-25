@@ -208,7 +208,7 @@ class Venda(models.Model):
         ('cancelada', 'Cancelada'),
     ]
     
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # 🔥 ADICIONE
+    vendedor = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # 🔥 ADICIONE
     produto = models.ForeignKey(Produto, on_delete=models.CASCADE)
     variacao = models.ForeignKey(ProdutoVariacao, on_delete=models.CASCADE, null=True, blank=True)
     quantidade = models.PositiveIntegerField()
