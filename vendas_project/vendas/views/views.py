@@ -78,7 +78,6 @@ def calcular_precos(produto_list):
 
 # 🔥 PÁGINA INICIAL - 10 minutos
 @cache_page(60 * 10)
-@vary_on_headers('Cookie', 'User-Agent')
 def pagina_inicial(request):
     categoria_selecionada = request.GET.get('categoria', '')
     
@@ -1687,9 +1686,7 @@ def superuser_required(view_func):
 
 # 🔥 ESTOQUE / LISTA DE PRODUTOS - 10 minutos
 @cache_page(60 * 10)
-@vary_on_headers('Cookie', 'User-Agent')
 @superuser_required
-# vendas/views/views.py
 def estoque(request):
     """View para gerenciamento de estoque com filtros e paginação"""
     
@@ -1945,7 +1942,6 @@ def editar_produto(request, produto_id):
 
 # 🔥 DETALHES DO PRODUTO - 1 hora
 @cache_page(60 * 60)
-@vary_on_headers('Cookie', 'User-Agent')
 @superuser_required
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -2036,7 +2032,6 @@ def meus_pedidos(request):
 
 # 🔥 LISTA DE VENDAS - 10 minutos (apenas para admin)
 @cache_page(60 * 10)
-@vary_on_headers('Cookie', 'User-Agent')
 @login_required
 def lista_vendas(request):
     vendas = Venda.objects.all().order_by('-data_venda')
@@ -2062,7 +2057,6 @@ def nova_venda(request):
 
 # 🔥 RELATÓRIOS - 30 minutos (apenas para admin)
 @cache_page(60 * 30)
-@vary_on_headers('Cookie', 'User-Agent')
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def relatorios_pedidos(request):
