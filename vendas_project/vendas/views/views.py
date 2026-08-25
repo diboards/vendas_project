@@ -805,6 +805,9 @@ def checkout(request):
             # Limpar carrinho
             itens_carrinho.delete()
             
+            # 🔥 ENVIA E-MAIL DE CONFIRMAÇÃO
+            enviar_email_confirmacao_pedido(pedido)
+            
             if metodo_pagamento == 'pix':
                 if is_ajax:
                     return JsonResponse({
