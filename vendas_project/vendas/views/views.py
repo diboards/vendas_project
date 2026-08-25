@@ -2077,7 +2077,7 @@ def nova_venda(request):
         
         # 🔥 CRIA A VENDA COM USUÁRIO
         venda = Venda.objects.create(
-            usuario=request.user,  # ← ADICIONADO
+            vendedor=request.user,  # ← ADICIONADO
             produto=variacao.produto,
             variacao=variacao,
             quantidade=quantidade,
