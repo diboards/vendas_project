@@ -18,7 +18,11 @@ from django.views.generic import TemplateView
 from django.http import JsonResponse
 from django.utils import timezone
 from django.contrib.admin.views.decorators import staff_member_required
-
+# E-mail de confirmação
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+#
 from django.forms import inlineformset_factory
 
 from collections import OrderedDict
@@ -36,6 +40,7 @@ from django.core.paginator import Paginator # Estoque com filtros e paginação
 from django.db.models import Q # Estoque com filtros e paginação
 
 from vendas.utils import get_itens_carrinho
+
 
 
 
@@ -695,6 +700,36 @@ def meus_pedidos(request):
     return render(request, 'vendas/meus_pedidos.html', {
         'pedidos': pedidos
     })
+
+def enviar_email_confirmacao_pedido(pedido):
+    """Envia e-mail de confirmação de pedido para o cliente"""
+    try:
+        subject = f'Mirna Boutique - Pedido #{pedido.id} confirmado!'
+        
+        # Renderizar template HTML
+        html_message = render_to_string('vendas/emails/pedido_confirmado.html', {
+            'pedido': pedido,
+        })
+        
+        # Versão em texto simples (fallback)
+        plain_message = strip_tags(html_message)
+        
+        # Enviar e-mail
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email='Mirna Boutique <mirnaboutique851@gmail.com>',
+            recipient_list=[pedido.usuario.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        print(f"✅ E-mail de confirmação enviado para {pedido.usuario.email}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erro ao enviar e-mail: {str(e)}")
+        return False
 
 # Views Checkout 
 @login_required
