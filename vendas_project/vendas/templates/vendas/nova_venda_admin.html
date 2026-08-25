@@ -1,0 +1,144 @@
+{% extends 'vendas/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-cart-plus"></i> Nova Venda Manual
+                    </h4>
+                    <small>Registre uma venda diretamente pelo sistema</small>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- MENSAGENS -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <!-- PRODUTO -->
+                        <div class="mb-3">
+                            <label class="form-label">Produto *</label>
+                            <select name="produto" class="form-select" required>
+                                <option value="">Selecione um produto...</option>
+                                {% for produto in produtos %}
+                                <option value="{{ produto.id }}" data-variacao="{{ produto.variacoes.first.id }}">
+                                    {{ produto.nome }} 
+                                    {% with variacao=produto.variacoes.first %}
+                                        - R$ {{ variacao.preco|floatformat:2 }}
+                                    {% endwith %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Selecione o produto que será vendido</small>
+                        </div>
+                        
+                        <!-- VARIAÇÃO -->
+                        <div class="mb-3">
+                            <label class="form-label">Cor / Tamanho</label>
+                            <select name="variacao" class="form-select" id="id_variacao" required>
+                                <option value="">Selecione a variação...</option>
+                            </select>
+                            <small class="text-muted">Selecione a cor e tamanho disponíveis</small>
+                        </div>
+                        
+                        <!-- QUANTIDADE -->
+                        <div class="mb-3">
+                            <label class="form-label">Quantidade *</label>
+                            <input type="number" name="quantidade" class="form-control" min="1" value="1" required>
+                            <small class="text-muted">Quantidade de itens a serem vendidos</small>
+                        </div>
+                        
+                        <!-- OBSERVAÇÕES -->
+                        <div class="mb-3">
+                            <label class="form-label">Observações</label>
+                            <textarea name="observacoes" class="form-control" rows="3"></textarea>
+                            <small class="text-muted">Informações adicionais sobre a venda</small>
+                        </div>
+                        
+                        <!-- STATUS -->
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="concluida">Concluída</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                            <small class="text-muted">Status atual da venda</small>
+                        </div>
+                        
+                        <!-- BOTÕES -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Registrar Venda
+                            </button>
+                            <a href="{% url 'lista_vendas' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 🔥 Busca as variações quando o produto é selecionado
+document.querySelector('select[name="produto"]').addEventListener('change', function() {
+    const produtoId = this.value;
+    const variacaoSelect = document.getElementById('id_variacao');
+    
+    // Limpa as opções atuais
+    variacaoSelect.innerHTML = '<option value="">Selecione a variação...</option>';
+    
+    if (produtoId) {
+        // Busca as variações via AJAX
+        fetch(`/api/produto/${produtoId}/variacoes/`)
+            .then(response => response.json())
+            .then(data => {
+                data.variacoes.forEach(variacao => {
+                    const option = document.createElement('option');
+                    option.value = variacao.id;
+                    option.textContent = `${variacao.cor} / ${variacao.tamanho} - R$ ${variacao.preco} (Estoque: ${variacao.estoque})`;
+                    variacaoSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Erro ao buscar variações:', error);
+            });
+    }
+});
+
+// 🔥 Preço dinâmico (opcional)
+document.querySelector('select[name="produto"]').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    // Você pode adicionar lógica de preço aqui se quiser
+});
+</script>
+
+<style>
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+}
+.card-header {
+    border-radius: 0;
+}
+.btn {
+    border-radius: 8px;
+    padding: 10px 20px;
+}
+</style>
+{% endblock %}
