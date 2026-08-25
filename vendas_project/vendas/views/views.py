@@ -2049,7 +2049,7 @@ def lista_vendas(request):
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
-def nova_venda_admin(request):
+def nova_venda(request):
     """View para admin criar uma venda manual"""
     
     # 🔥 Cria um formulário para a venda
@@ -2084,7 +2084,7 @@ def nova_venda_admin(request):
         'produtos': produtos,
         'titulo': 'Nova Venda Manual',
     }
-    return render(request, 'vendas/nova_venda_admin.html', context)
+    return render(request, 'vendas/nova_venda.html', context)
     
 #api para buscar variações da nova venda
 @login_required
