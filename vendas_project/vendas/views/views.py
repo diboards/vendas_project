@@ -45,6 +45,8 @@ from vendas.utils import get_itens_carrinho
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_headers
 from django.conf import settings
+from django.core.cache import cache
+from django.contrib.admin.views.decorators import staff_member_required
 
 
 
@@ -2324,3 +2326,37 @@ Por favor, entre em contato para discutir este projeto."""
     else:
         form = OrcamentoForm()
     return render(request, 'vendas/orcamento.html', {'form': form})
+    
+# controle de cache
+def get_produtos_destaque():
+    """Busca produtos em destaque com cache"""
+    cache_key = 'produtos_destaque_cache'
+    produtos = cache.get(cache_key)
+    
+    if not produtos:
+        produtos = Produto.objects.filter(ativo=True, categoria='destaque')[:6]
+        cache.set(cache_key, produtos, 60 * 10)  # 10 minutos
+    
+    return produtos
+
+def get_categorias():
+    """Busca categorias com cache"""
+    cache_key = 'categorias_cache'
+    categorias = cache.get(cache_key)
+    
+    if not categorias:
+        categorias = Produto.objects.values_list('categoria', flat=True).distinct()
+        cache.set(cache_key, categorias, 60 * 60)  # 1 hora
+    
+    return categorias
+    
+@staff_member_required
+def limpar_cache(request):
+    """Limpa todo o cache do sistema (apenas admin)"""
+    try:
+        cache.clear()
+        messages.success(request, '✅ Cache limpo com sucesso!')
+    except Exception as e:
+        messages.error(request, f'❌ Erro ao limpar cache: {str(e)}')
+    
+    return redirect('pagina_inicial')    
