@@ -40,11 +40,11 @@ class ProdutoVariacaoAdmin(admin.ModelAdmin):
 
 @admin.register(Venda)
 class VendaAdmin(admin.ModelAdmin):
-    list_display = ['id', 'produto', 'quantidade', 'total', 'data_venda', 'status']
+    list_display = ['id', 'produto', 'quantidade', 'total', 'data_criacao', 'status']
     list_filter = ['status', 'data_venda']
     search_fields = ['produto__nome']
     readonly_fields = ['total']
-
+    
 
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
