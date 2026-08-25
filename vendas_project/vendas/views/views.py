@@ -1560,7 +1560,9 @@ def admin_atualizar_status(request, pedido_id):
         status_validos = ['aguardando', 'preparando', 'enviado', 'entregue', 'retirado', 'cancelado']
         
         if novo_status in status_validos:
-            # 🔥 ATUALIZA O STATUS DE ENTREGA
+            # 🔥 GUARDA O STATUS ANTIGO - DEFINIDO CORRETAMENTE
+            status_antigo = pedido.status_entrega
+            
             pedido.status_entrega = novo_status
             
             # Atualiza o status principal
