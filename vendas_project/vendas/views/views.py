@@ -2034,9 +2034,18 @@ def meus_pedidos(request):
 @cache_page(60 * 10)
 @login_required
 def lista_vendas(request):
-    vendas = Venda.objects.all().order_by('-data_venda')
-    produtos = Produto.objects.all()
-    return render(request, 'vendas/lista_vendas.html', {'vendas': vendas, 'produtos': produtos})
+    vendas = Venda.objects.all().order_by('-data_criacao')
+    
+    # 🔥 Estatísticas
+    total_vendas = vendas.count()
+    total_valor = sum(v.total for v in vendas)
+    
+    context = {
+        'vendas': vendas,
+        'total_vendas': total_vendas,
+        'total_valor': total_valor,
+    }
+    return render(request, 'vendas/lista_vendas.html', context)
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
