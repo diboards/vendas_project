@@ -731,6 +731,35 @@ def enviar_email_confirmacao_pedido(pedido):
         print(f"❌ Erro ao enviar e-mail: {str(e)}")
         return False
 
+def enviar_notificacao_status(pedido, status_antigo=None):
+    """Envia e-mail de notificação de mudança de status do pedido"""
+    try:
+        subject = f'Mirna Boutique - Pedido #{pedido.id} - Status atualizado!'
+        
+        html_message = render_to_string('vendas/emails/status_atualizado.html', {
+            'pedido': pedido,
+            'status_antigo': status_antigo,
+        })
+        
+        plain_message = strip_tags(html_message)
+        
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email='Mirna Boutique <mirnaboutique851@gmail.com>',
+            recipient_list=[pedido.usuario.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        print(f"✅ Notificação de status enviada para {pedido.usuario.email}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erro ao enviar notificação: {str(e)}")
+        return False
+        
+
 # Views Checkout 
 @login_required
 def checkout(request):
