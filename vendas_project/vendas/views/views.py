@@ -1570,6 +1570,11 @@ def admin_atualizar_status(request, pedido_id):
                 pedido.status = 'entregue'
             
             pedido.save()
+
+            # 🔥 ENVIA NOTIFICAÇÃO PARA O CLIENTE
+            if status_antigo != novo_status:
+                enviar_notificacao_status(pedido, status_antigo)
+            
             messages.success(request, f'✅ Status do pedido #{pedido.id} atualizado para {pedido.get_status_entrega_display()}')
         else:
             messages.error(request, '❌ Status inválido.')
