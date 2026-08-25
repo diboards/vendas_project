@@ -2039,22 +2039,44 @@ def lista_vendas(request):
     return render(request, 'vendas/lista_vendas.html', {'vendas': vendas, 'produtos': produtos})
 
 @login_required
-def nova_venda(request):
+@user_passes_test(lambda u: u.is_superuser)
+def nova_venda_admin(request):
+    """View para admin criar uma venda manual"""
+    
+    # 🔥 Cria um formulário para a venda
     if request.method == 'POST':
         form = VendaForm(request.POST)
+        
         if form.is_valid():
             venda = form.save(commit=False)
-            venda.vendedor = request.user
-            venda.preco_unitario = venda.produto.preco
+            venda.usuario = request.user
             venda.save()
-            messages.success(request, 'Venda registrada com sucesso!')
+            
+            # 🔥 Atualiza o estoque
+            produto = venda.produto
+            variacao = ProdutoVariacao.objects.filter(produto=produto).first()
+            if variacao and variacao.quantidade_estoque >= venda.quantidade:
+                variacao.quantidade_estoque -= venda.quantidade
+                variacao.save()
+            
+            messages.success(request, f'✅ Venda #{venda.id} criada com sucesso!')
             return redirect('lista_vendas')
+        else:
+            messages.error(request, '❌ Erro ao criar venda. Verifique os dados.')
+    
     else:
         form = VendaForm()
-
-    produtos = Produto.objects.all()
-    return render(request, 'vendas/nova_venda.html', {'form': form, 'produtos': produtos})
-
+    
+    # 🔥 Busca produtos para o dropdown
+    produtos = Produto.objects.filter(ativo=True)
+    
+    context = {
+        'form': form,
+        'produtos': produtos,
+        'titulo': 'Nova Venda Manual',
+    }
+    return render(request, 'vendas/nova_venda_admin.html', context)
+    
 # 🔥 RELATÓRIOS - 30 minutos (apenas para admin)
 @cache_page(60 * 30)
 @login_required
