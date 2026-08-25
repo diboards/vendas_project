@@ -2268,6 +2268,19 @@ def editar_venda(request, venda_id):
     return render(request, 'vendas/editar_venda.html', {'form': form})
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
+def deletar_venda(request, venda_id):
+    """Deleta uma venda (apenas admin)"""
+    venda = get_object_or_404(Venda, id=venda_id)
+    
+    if request.method == 'POST':
+        venda.delete()
+        messages.success(request, f'✅ Venda #{venda.id} excluída com sucesso!')
+        return redirect('lista_vendas')
+    
+    return redirect('lista_vendas')
+
+@login_required
 def atualizar_venda(request, venda_id):
     if request.method == 'POST':
         venda = get_object_or_404(Venda, id=venda_id)
