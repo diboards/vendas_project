@@ -42,11 +42,8 @@
                                     <select name="produto" class="form-select" id="id_produto" required>
                                         <option value="">Selecione...</option>
                                         {% for produto in produtos %}
-                                        <option value="{{ produto.id }}" data-preco="{{ produto.variacoes.first.preco|default:0 }}">
+                                        <option value="{{ produto.id }}">
                                             {{ produto.nome }}
-                                            {% with variacao=produto.variacoes.first %}
-                                                - R$ {{ variacao.preco|floatformat:2 }}
-                                            {% endwith %}
                                         </option>
                                         {% endfor %}
                                     </select>
@@ -59,8 +56,23 @@
                                 </div>
                             </div>
                             
+                            <!-- VARIAÇÃO -->
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select name="variacao" class="form-select" id="id_variacao" required>
+                                        <option value="">Selecione o produto primeiro...</option>
+                                    </select>
+                                    <label for="id_variacao">
+                                        <i class="bi bi-palette me-1"></i> Cor / Tamanho *
+                                    </label>
+                                </div>
+                                <div class="form-text mt-1">
+                                    <i class="bi bi-info-circle"></i> Selecione a cor e tamanho disponíveis
+                                </div>
+                            </div>
+                            
                             <!-- QUANTIDADE -->
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="form-floating">
                                     <input type="number" name="quantidade" class="form-control" id="id_quantidade" min="1" value="1" required>
                                     <label for="id_quantidade">
@@ -72,16 +84,29 @@
                                 </div>
                             </div>
                             
-                            <!-- PREÇO (automático) -->
-                            <div class="col-md-3">
+                            <!-- PREÇO (editável) -->
+                            <div class="col-md-4">
                                 <div class="form-floating">
-                                    <input type="text" class="form-control" id="id_preco" value="R$ 0,00" readonly>
+                                    <input type="number" name="preco" class="form-control" id="id_preco" step="0.01" min="0.01" value="0.00" required>
                                     <label for="id_preco">
-                                        <i class="bi bi-currency-dollar me-1"></i> Preço Unitário
+                                        <i class="bi bi-currency-dollar me-1"></i> Preço Unitário (R$) *
                                     </label>
                                 </div>
                                 <div class="form-text mt-1">
-                                    <i class="bi bi-info-circle"></i> Preço do produto selecionado
+                                    <i class="bi bi-pencil"></i> Você pode alterar o preço manualmente
+                                </div>
+                            </div>
+                            
+                            <!-- ESTOQUE (informativo) -->
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="id_estoque" value="-" readonly>
+                                    <label for="id_estoque">
+                                        <i class="bi bi-box-seam me-1"></i> Estoque Disponível
+                                    </label>
+                                </div>
+                                <div class="form-text mt-1">
+                                    <i class="bi bi-info-circle"></i> Quantidade disponível em estoque
                                 </div>
                             </div>
                             
@@ -103,15 +128,15 @@
                             </div>
                             
                             <!-- OBSERVAÇÕES -->
-                            <div class="col-12">
+                            <div class="col-md-6">
                                 <div class="form-floating">
-                                    <textarea name="observacoes" class="form-control" id="id_observacoes" rows="3" style="height: 100px;"></textarea>
+                                    <textarea name="observacoes" class="form-control" id="id_observacoes" rows="1" style="height: 58px;"></textarea>
                                     <label for="id_observacoes">
                                         <i class="bi bi-chat me-1"></i> Observações
                                     </label>
                                 </div>
                                 <div class="form-text mt-1">
-                                    <i class="bi bi-info-circle"></i> Informações adicionais sobre a venda (opcional)
+                                    <i class="bi bi-info-circle"></i> Informações adicionais (opcional)
                                 </div>
                             </div>
                             
@@ -132,6 +157,14 @@
                                             <span class="fs-3 fw-bold text-success ms-2" id="total-resumo">R$ 0,00</span>
                                         </div>
                                     </div>
+                                    <div class="row mt-2 pt-2 border-top">
+                                        <div class="col-12">
+                                            <small class="text-muted">
+                                                <i class="bi bi-info-circle"></i>
+                                                <span id="estoque-info">Nenhuma variação selecionada</span>
+                                            </small>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -139,7 +172,7 @@
                             <div class="col-12">
                                 <hr>
                                 <div class="d-flex gap-2 flex-wrap">
-                                    <button type="submit" class="btn btn-success btn-lg px-5" id="btn-submit">
+                                    <button type="submit" class="btn btn-success btn-lg px-5" id="btn-submit" disabled>
                                         <i class="bi bi-check-circle me-2"></i> Registrar Venda
                                     </button>
                                     <a href="{% url 'lista_vendas' %}" class="btn btn-outline-secondary btn-lg px-4">
@@ -158,37 +191,113 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const produtoSelect = document.getElementById('id_produto');
+    const variacaoSelect = document.getElementById('id_variacao');
     const quantidadeInput = document.getElementById('id_quantidade');
     const precoInput = document.getElementById('id_preco');
+    const estoqueInput = document.getElementById('id_estoque');
     const totalResumo = document.getElementById('total-resumo');
     const resumoTexto = document.getElementById('resumo-texto');
+    const estoqueInfo = document.getElementById('estoque-info');
     const submitBtn = document.getElementById('btn-submit');
     
+    // 🔥 Busca variações quando o produto é selecionado
+    produtoSelect.addEventListener('change', function() {
+        const produtoId = this.value;
+        
+        // Limpa as opções de variação
+        variacaoSelect.innerHTML = '<option value="">Selecione uma variação...</option>';
+        precoInput.value = '0.00';
+        estoqueInput.value = '-';
+        estoqueInfo.textContent = 'Nenhuma variação selecionada';
+        submitBtn.disabled = true;
+        
+        if (produtoId) {
+            fetch(`/api/produto/${produtoId}/variacoes/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.variacoes && data.variacoes.length > 0) {
+                        data.variacoes.forEach(variacao => {
+                            const option = document.createElement('option');
+                            option.value = variacao.id;
+                            option.dataset.preco = variacao.preco;
+                            option.dataset.estoque = variacao.estoque;
+                            option.textContent = `${variacao.cor} / ${variacao.tamanho} - R$ ${variacao.preco}`;
+                            variacaoSelect.appendChild(option);
+                        });
+                        variacaoSelect.disabled = false;
+                    } else {
+                        variacaoSelect.innerHTML = '<option value="">Nenhuma variação disponível</option>';
+                        variacaoSelect.disabled = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar variações:', error);
+                    variacaoSelect.innerHTML = '<option value="">Erro ao carregar variações</option>';
+                });
+        } else {
+            variacaoSelect.disabled = true;
+        }
+        
+        atualizarResumo();
+    });
+    
+    // 🔥 Atualiza preço e estoque quando variação é selecionada
+    variacaoSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.dataset.preco) {
+            precoInput.value = parseFloat(selectedOption.dataset.preco).toFixed(2);
+            estoqueInput.value = selectedOption.dataset.estoque || '-';
+            estoqueInfo.textContent = `Estoque disponível: ${selectedOption.dataset.estoque || 0} unidades`;
+            submitBtn.disabled = false;
+        } else {
+            precoInput.value = '0.00';
+            estoqueInput.value = '-';
+            estoqueInfo.textContent = 'Nenhuma variação selecionada';
+            submitBtn.disabled = true;
+        }
+        atualizarResumo();
+    });
+    
+    // 🔥 Permite editar o preço manualmente
+    precoInput.addEventListener('input', function() {
+        const value = parseFloat(this.value) || 0;
+        if (value > 0 && variacaoSelect.value) {
+            submitBtn.disabled = false;
+        }
+        atualizarResumo();
+    });
+    
+    // 🔥 Atualiza quantidade
+    quantidadeInput.addEventListener('input', atualizarResumo);
+    
+    // 🔥 Função para atualizar resumo
     function atualizarResumo() {
-        const selectedOption = produtoSelect.options[produtoSelect.selectedIndex];
-        const preco = parseFloat(selectedOption?.dataset?.preco || 0);
+        const produtoNome = produtoSelect.options[produtoSelect.selectedIndex]?.text || 'Nenhum produto';
+        const variacaoTexto = variacaoSelect.options[variacaoSelect.selectedIndex]?.text || '';
         const quantidade = parseInt(quantidadeInput.value) || 1;
-        const produtoNome = selectedOption?.text?.split(' - ')[0] || 'Nenhum produto selecionado';
+        const preco = parseFloat(precoInput.value) || 0;
         const total = preco * quantidade;
         
-        // Atualiza preço
-        precoInput.value = `R$ ${preco.toFixed(2)}`;
-        
         // Atualiza resumo
-        resumoTexto.textContent = `${produtoNome} × ${quantidade} unidade(s)`;
+        let texto = `${produtoNome}`;
+        if (variacaoTexto && !variacaoTexto.includes('Selecione')) {
+            texto += ` - ${variacaoTexto}`;
+        }
+        texto += ` × ${quantidade} unidade(s)`;
+        resumoTexto.textContent = texto;
         
         // Atualiza total
         totalResumo.textContent = `R$ ${total.toFixed(2)}`;
         
-        // Habilita/desabilita botão
-        submitBtn.disabled = !produtoSelect.value;
+        // Valida se pode habilitar o botão
+        if (variacaoSelect.value && preco > 0 && quantidade > 0) {
+            submitBtn.disabled = false;
+        } else {
+            submitBtn.disabled = true;
+        }
     }
     
-    // Eventos
-    produtoSelect.addEventListener('change', atualizarResumo);
-    quantidadeInput.addEventListener('input', atualizarResumo);
-    
-    // Inicializar
+    // 🔥 Inicializar
     atualizarResumo();
 });
 </script>
