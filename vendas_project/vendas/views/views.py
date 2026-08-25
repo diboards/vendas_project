@@ -2033,17 +2033,30 @@ def meus_pedidos(request):
 # 🔥 LISTA DE VENDAS - 10 minutos (apenas para admin)
 @cache_page(60 * 10)
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def lista_vendas(request):
+    """Lista todas as vendas com filtros"""
+    
     vendas = Venda.objects.all().order_by('-data_criacao')
     
-    # 🔥 Estatísticas
+    # 🔥 FILTRO POR BUSCA
+    busca = request.GET.get('busca', '').strip()
+    if busca:
+        vendas = vendas.filter(produto__nome__icontains=busca)
+    
+    # 🔥 ESTATÍSTICAS
     total_vendas = vendas.count()
     total_valor = sum(v.total for v in vendas)
+    total_concluidas = vendas.filter(status='concluida').count()
+    total_pendentes = vendas.filter(status='pendente').count()
     
     context = {
         'vendas': vendas,
         'total_vendas': total_vendas,
         'total_valor': total_valor,
+        'total_concluidas': total_concluidas,
+        'total_pendentes': total_pendentes,
+        'busca': busca,
     }
     return render(request, 'vendas/lista_vendas.html', context)
 
