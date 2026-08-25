@@ -443,7 +443,7 @@
          <!-- Links da esquerda -->
          <ul class="navbar-nav me-auto">
            {% if user.is_authenticated and user.is_superuser %}
-           <a class="nav-link" href="{% url 'nova_venda' %}"><i class="bi bi-cart-plus"></i> Nova Venda</a>
+           <!--a class="nav-link" href="{% url 'nova_venda' %}"><i class="bi bi-cart-plus"></i> Nova Venda</a-->
            <li class="nav-item"><a class="nav-link" href="{% url 'estoque' %}">Estoque</a></li>
            <li class="nav-item"><a class="nav-link" href="{% url 'relatorios_pedidos' %}">Relatórios</a></li>
            <li class="nav-item"><a class="nav-link" href="{% url 'cadastrar_produto' %}">Cadastrar Produto</a></li>
