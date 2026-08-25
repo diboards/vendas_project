@@ -27,7 +27,7 @@ urlpatterns = [
     # views de cache
     path('admin/limpar-cache/', views_principais.limpar_cache, name='limpar_cache'),
     # 🔥 NOVA VENDA (ADMIN)
-    path('admin/nova-venda/', views_principais.nova_venda_admin, name='nova_venda_admin'),
+    path('vendas/nova-venda/', views_principais.nova_venda_admin, name='nova_venda_admin'),
     path('api/produto/<int:produto_id>/variacoes/', views_principais.api_produto_variacoes, name='api_produto_variacoes'),
     
     # CORRIGIDO: use views_principais em vez de vendas_views
