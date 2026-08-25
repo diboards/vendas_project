@@ -215,7 +215,7 @@ class Venda(models.Model):
     preco_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='concluida')
     observacoes = models.TextField(blank=True, null=True)
-    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_criacao = models.DateTimeField(auto_now_add=True, default=timezone.now)  # 🔥 ADICIONE default
     
     @property
     def total(self):
