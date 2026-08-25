@@ -1530,6 +1530,11 @@ def atualizar_status_pedido(pedido):
                     pedido.status = 'cancelado'
 
                 pedido.save()
+
+                 # 🔥 ENVIA NOTIFICAÇÃO PARA O CLIENTE
+                if status_antigo != novo_status_pagamento:
+                    enviar_notificacao_status(pedido, status_antigo)
+                
                 return True
 
         return False
