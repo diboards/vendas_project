@@ -41,7 +41,10 @@ from django.db.models import Q # Estoque com filtros e paginação
 
 from vendas.utils import get_itens_carrinho
 
-
+# configuração de cache
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_headers
+from django.conf import settings
 
 
 
@@ -71,8 +74,9 @@ def calcular_precos(produto_list):
     return resultado
 
 
-# vendas/views/views.py
-
+# 🔥 PÁGINA INICIAL - 10 minutos
+@cache_page(60 * 10)
+@vary_on_headers('Cookie', 'User-Agent')
 def pagina_inicial(request):
     categoria_selecionada = request.GET.get('categoria', '')
     
@@ -1679,7 +1683,9 @@ def superuser_required(view_func):
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
-
+# 🔥 ESTOQUE / LISTA DE PRODUTOS - 10 minutos
+@cache_page(60 * 10)
+@vary_on_headers('Cookie', 'User-Agent')
 @superuser_required
 # vendas/views/views.py
 def estoque(request):
@@ -1934,7 +1940,10 @@ def editar_produto(request, produto_id):
         return redirect('estoque')
     
     return redirect('estoque')
-    
+
+# 🔥 DETALHES DO PRODUTO - 1 hora
+@cache_page(60 * 60)
+@vary_on_headers('Cookie', 'User-Agent')
 @superuser_required
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
