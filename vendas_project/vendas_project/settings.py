@@ -102,14 +102,14 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # ⚙️ Middleware correto
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # importante no Render
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',  # ← CSRF VEM ANTES
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'vendas.middleware.DynamicCacheMiddleware',  # 🔥 ADICIONE ESTE
+    'vendas.middleware.DynamicCacheMiddleware',  # ← DEPOIS DO CSRF
 ]
 
 ROOT_URLCONF = 'vendas_project.urls'
