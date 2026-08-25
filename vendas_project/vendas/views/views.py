@@ -2077,6 +2077,26 @@ def nova_venda_admin(request):
     }
     return render(request, 'vendas/nova_venda_admin.html', context)
     
+#api para buscar variações da nova venda
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def api_produto_variacoes(request, produto_id):
+    """API para buscar variações de um produto"""
+    produto = get_object_or_404(Produto, id=produto_id, ativo=True)
+    variacoes = produto.variacoes.all()
+    
+    data = {
+        'variacoes': [{
+            'id': v.id,
+            'cor': v.cor,
+            'tamanho': v.tamanho,
+            'preco': float(v.preco),
+            'estoque': v.quantidade_estoque,
+        } for v in variacoes]
+    }
+    
+    return JsonResponse(data)
+    
 # 🔥 RELATÓRIOS - 30 minutos (apenas para admin)
 @cache_page(60 * 30)
 @login_required
