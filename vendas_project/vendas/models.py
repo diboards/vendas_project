@@ -202,18 +202,27 @@ class Pedido(models.Model):
 
 #Nova venda A ser implementada!
 class Venda(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    STATUS_CHOICES = [
+        ('concluida', 'Concluída'),
+        ('pendente', 'Pendente'),
+        ('cancelada', 'Cancelada'),
+    ]
+    
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # 🔥 ADICIONE
     produto = models.ForeignKey(Produto, on_delete=models.CASCADE)
-    variacao = models.ForeignKey(ProdutoVariacao, on_delete=models.CASCADE, null=True, blank=True)  # ← ADICIONE
+    variacao = models.ForeignKey(ProdutoVariacao, on_delete=models.CASCADE, null=True, blank=True)
     quantidade = models.PositiveIntegerField()
     preco_unitario = models.DecimalField(max_digits=10, decimal_places=2)
-    data_criacao = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='concluida')
     observacoes = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, default='concluida')
+    data_criacao = models.DateTimeField(auto_now_add=True)
     
     @property
     def total(self):
-        return self.quantidade * self.preco_unitario  # ← USA O PREÇO UNITÁRIO
+        return self.quantidade * self.preco_unitario
+    
+    def __str__(self):
+        return f"Venda #{self.id} - {self.produto.nome}"
 
 
 class Perfil(models.Model):
