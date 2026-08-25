@@ -29,6 +29,7 @@
 
     <!-- CAROUSEL - PRODUTOS EM DESTAQUE -->
 {% if not categoria_selecionada %}
+{% cache 600 carousel_produtos %}    
 <div id="carouselProdutos" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
     <div class="carousel-inner">
         {% for produto in produtos_destaque|slice:":3" %}
@@ -46,6 +47,7 @@
                 <div class="carousel-overlay"></div>
             </div>
         </div>
+        
         {% empty %}
         <div class="carousel-item active">
             <div class="carousel-banner" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
@@ -56,6 +58,7 @@
                 </div>
             </div>
         </div>
+        {% endcache %}
         {% endfor %}
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#carouselProdutos" data-bs-slide="prev">
@@ -84,6 +87,8 @@
         </div>
         
         <div class="produtos-scroll-container">
+            <!-- Cache da lista de produtos por 5 minutos -->
+            {% cache 300 produtos_lancamentos %}    
             <div class="produtos-scroll" id="scrollLancamentos">
                 {% for produto in produtos_lancamentos %}
                 <div class="produto-card">
@@ -109,6 +114,7 @@
                 <div class="text-center py-5">Nenhum lançamento disponível no momento.</div>
                 {% endfor %}
             </div>
+            {% endcache %}
             <button class="scroll-btn left" onclick="scrollProdutos('scrollLancamentos', -1)"><i class="bi bi-chevron-left"></i></button>
             <button class="scroll-btn right" onclick="scrollProdutos('scrollLancamentos', 1)"><i class="bi bi-chevron-right"></i></button>
         </div>
