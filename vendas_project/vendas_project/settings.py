@@ -23,6 +23,40 @@ CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com',
                        ]
 
 
+# ========================================== #
+# CACHE CONFIGURATION                        #
+# ========================================== #
+
+# 🔥 Configuração de cache (armazenamento em memória)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'mirna-boutique-cache',
+        'TIMEOUT': 300,  # 5 minutos
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    }
+}
+
+# 🔥 Tempo de cache por tipo de página (em segundos)
+CACHE_TIMEOUTS = {
+    'pagina_inicial': 600,      # 10 minutos
+    'detalhes_produto': 3600,   # 1 hora
+    'lista_produtos': 600,      # 10 minutos
+    'categorias': 3600,         # 1 hora
+}
+
+# 🔥 URLs que NÃO devem ter cache
+CACHE_EXCLUDED_URLS = [
+    '/carrinho/',
+    '/checkout/',
+    '/login/',
+    '/registrar/',
+    '/meus-pedidos/',
+    '/admin/',
+]
+#--------------------------------------------------------------
 # 🔐 Segurança HTTPS
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
