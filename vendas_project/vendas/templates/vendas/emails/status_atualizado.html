@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status do Pedido Atualizado - Mirna Boutique</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: #1a1a2e; padding: 20px; text-align: center; }
+        .header h1 { color: #f59e0b; margin: 0; font-size: 24px; }
+        .header p { color: #fff; margin: 5px 0 0; }
+        .content { padding: 30px; }
+        .content h2 { color: #1a1a2e; margin-top: 0; }
+        .status-box { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 15px 0;
+            text-align: center;
+            border-left: 5px solid #f59e0b;
+        }
+        .status-box .novo-status { 
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #1a1a2e;
+            display: block;
+            margin: 10px 0;
+        }
+        .status-box .status-badge { 
+            display: inline-block; 
+            padding: 8px 20px; 
+            border-radius: 25px; 
+            font-size: 18px; 
+            font-weight: bold; 
+        }
+        .status-pendente { background: #ffc107; color: #000; }
+        .status-aprovado { background: #28a745; color: #fff; }
+        .status-processando { background: #17a2b8; color: #fff; }
+        .status-enviado { background: #17a2b8; color: #fff; }
+        .status-entregue { background: #28a745; color: #fff; }
+        .status-cancelado { background: #dc3545; color: #fff; }
+        .pedido-info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .pedido-info p { margin: 5px 0; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; font-size: 12px; }
+        .btn { display: inline-block; background: #f59e0b; color: #1a1a2e; padding: 10px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; margin: 10px 0; }
+        .btn:hover { background: #d4a00a; }
+        .icone-status { font-size: 48px; display: block; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛍️ Mirna Boutique</h1>
+            <p>Status do seu pedido foi atualizado!</p>
+        </div>
+        
+        <div class="content">
+            <h2>Olá, {{ pedido.usuario.first_name|default:pedido.usuario.username }}! 👋</h2>
+            <p>O status do seu pedido <strong>#{{ pedido.id }}</strong> foi atualizado.</p>
+            
+            <div class="status-box">
+                <span class="icone-status">
+                    {% if pedido.status == 'pendente' %}⏳
+                    {% elif pedido.status == 'aprovado' %}✅
+                    {% elif pedido.status == 'processando' %}📦
+                    {% elif pedido.status == 'enviado' %}🚚
+                    {% elif pedido.status == 'entregue' %}🎉
+                    {% elif pedido.status == 'cancelado' %}❌
+                    {% else %}📋{% endif %}
+                </span>
+                <span class="novo-status">Novo status:</span>
+                <span class="status-badge status-{{ pedido.status }}">
+                    {{ pedido.get_status_display }}
+                </span>
+                
+                {% if pedido.status == 'entregue' %}
+                <p style="margin-top:15px; color:#28a745; font-weight:bold;">
+                    🎉 Seu pedido foi entregue! Esperamos que tenha gostado.
+                </p>
+                {% elif pedido.status == 'enviado' %}
+                <p style="margin-top:15px; color:#17a2b8;">
+                    📦 Seu pedido está a caminho! Fique de olho na entrega.
+                </p>
+                {% elif pedido.status == 'processando' %}
+                <p style="margin-top:15px; color:#17a2b8;">
+                    🔧 Estamos preparando seu pedido para envio.
+                </p>
+                {% elif pedido.status == 'aprovado' %}
+                <p style="margin-top:15px; color:#28a745;">
+                    ✅ Pagamento confirmado! Em breve seu pedido será separado.
+                </p>
+                {% elif pedido.status == 'cancelado' %}
+                <p style="margin-top:15px; color:#dc3545;">
+                    ❌ Seu pedido foi cancelado. Entre em contato para mais informações.
+                </p>
+                {% endif %}
+            </div>
+            
+            <div class="pedido-info">
+                <p><strong>Pedido:</strong> #{{ pedido.id }}</p>
+                <p><strong>Data:</strong> {{ pedido.data_criacao|date:"d/m/Y H:i" }}</p>
+                <p><strong>Total:</strong> R$ {{ pedido.total|floatformat:2 }}</p>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="https://www.mirnaboutique.com/meus-pedidos/" class="btn">Ver Meus Pedidos</a>
+            </div>
+            
+            <p style="text-align:center; color:#6c757d; font-size:14px; margin-top:20px;">
+                <strong>Dúvidas?</strong> Entre em contato pelo e-mail <a href="mailto:mirnaboutique@gmail.com" style="color:#f59e0b;">mirnaboutique@gmail.com</a>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>© {% now "Y" %} Mirna Boutique - Todos os direitos reservados</p>
+            <p>
+                <a href="https://www.mirnaboutique.com" style="color:#6c757d; text-decoration:none;">Site</a> | 
+                <a href="https://instagram.com/boutiquemirna7" style="color:#6c757d; text-decoration:none;">Instagram</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
