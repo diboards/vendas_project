@@ -2058,6 +2058,9 @@ def nova_venda(request):
     produtos = Produto.objects.all()
     return render(request, 'vendas/nova_venda.html', {'form': form, 'produtos': produtos})
 
+# 🔥 RELATÓRIOS - 30 minutos (apenas para admin)
+@cache_page(60 * 30)
+@vary_on_headers('Cookie', 'User-Agent')
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def relatorios_pedidos(request):
