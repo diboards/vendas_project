@@ -200,35 +200,20 @@ class Pedido(models.Model):
     class Meta:
         ordering = ['-data_criacao']
 
-
+#Nova venda A ser implementada!
 class Venda(models.Model):
-    STATUS_CHOICES = [
-        ('pendente', 'Pendente'),
-        ('processando', 'Processando'),
-        ('concluida', 'Concluída'),
-        ('cancelada', 'Cancelada'),
-    ]
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    produto = models.ForeignKey(Produto, on_delete=models.CASCADE)
+    variacao = models.ForeignKey(ProdutoVariacao, on_delete=models.CASCADE, null=True, blank=True)  # ← ADICIONE
+    quantidade = models.PositiveIntegerField()
+    preco_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    observacoes = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, default='concluida')
     
-    produto = models.ForeignKey(Produto, on_delete=models.CASCADE, verbose_name="Produto")
-    quantidade = models.PositiveIntegerField(validators=[MinValueValidator(1)], verbose_name="Quantidade")
-    preco_unitario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Preço Unitário")
-    total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Total")
-    data_venda = models.DateTimeField(default=timezone.now, verbose_name="Data da Venda")
-    vendedor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Vendedor")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente', verbose_name="Status")
-    observacoes = models.TextField(blank=True, null=True, verbose_name="Observações")
-    
-    class Meta:
-        verbose_name = "Venda"
-        verbose_name_plural = "Vendas"
-        ordering = ['-data_venda']
-    
-    def __str__(self):
-        return f"Venda #{self.id} - {self.produto.nome}"
-    
-    def save(self, *args, **kwargs):
-        self.total = self.quantidade * self.preco_unitario
-        super().save(*args, **kwargs)
+    @property
+    def total(self):
+        return self.quantidade * self.preco_unitario  # ← USA O PREÇO UNITÁRIO
 
 
 class Perfil(models.Model):
