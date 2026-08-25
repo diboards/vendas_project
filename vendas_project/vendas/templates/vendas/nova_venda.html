@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             option.value = variacao.id;
                             option.dataset.preco = variacao.preco;
                             option.dataset.estoque = variacao.estoque;
-                            option.textContent = `${variacao.cor} / ${variacao.tamanho} - R$ ${variacao.preco}`;
+                            option.textContent = `${variacao.cor} / ${variacao.tamanho}`;
                             variacaoSelect.appendChild(option);
                         });
                         variacaoSelect.disabled = false;
