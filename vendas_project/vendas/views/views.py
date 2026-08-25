@@ -2059,7 +2059,6 @@ def nova_venda(request):
         observacoes = request.POST.get('observacoes', '')
         status = request.POST.get('status', 'concluida')
         
-        # 🔥 VALIDAÇÕES
         if not produto_id or not variacao_id or not quantidade:
             messages.error(request, '❌ Produto, variação e quantidade são obrigatórios.')
             return redirect('nova_venda')
@@ -2070,33 +2069,30 @@ def nova_venda(request):
             messages.error(request, '❌ Quantidade inválida.')
             return redirect('nova_venda')
         
-        # 🔥 BUSCA A VARIAÇÃO
         variacao = get_object_or_404(ProdutoVariacao, id=variacao_id)
         
-        # 🔥 VERIFICA ESTOQUE
         if variacao.quantidade_estoque < quantidade:
             messages.error(request, f'❌ Estoque insuficiente. Disponível: {variacao.quantidade_estoque}')
             return redirect('nova_venda')
         
-        # 🔥 CRIA A VENDA
+        # 🔥 CRIA A VENDA COM USUÁRIO
         venda = Venda.objects.create(
-            usuario=request.user,
+            usuario=request.user,  # ← ADICIONADO
             produto=variacao.produto,
             variacao=variacao,
             quantidade=quantidade,
-            preco_unitario=variacao.preco,  # 🔥 USA O PREÇO DA VARIAÇÃO
+            preco_unitario=variacao.preco,
             observacoes=observacoes,
             status=status
         )
         
-        # 🔥 ATUALIZA O ESTOQUE
+        # Atualiza estoque
         variacao.quantidade_estoque -= quantidade
         variacao.save()
         
         messages.success(request, f'✅ Venda #{venda.id} criada com sucesso!')
         return redirect('lista_vendas')
     
-    # GET - Mostra o formulário
     produtos = Produto.objects.filter(ativo=True)
     
     context = {
