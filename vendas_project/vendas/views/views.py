@@ -2032,7 +2032,9 @@ def meus_pedidos(request):
         'pedidos': pedidos
     })
 
-
+# 🔥 LISTA DE VENDAS - 10 minutos (apenas para admin)
+@cache_page(60 * 10)
+@vary_on_headers('Cookie', 'User-Agent')
 @login_required
 def lista_vendas(request):
     vendas = Venda.objects.all().order_by('-data_venda')
