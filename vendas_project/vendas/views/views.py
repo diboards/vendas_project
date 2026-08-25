@@ -2254,18 +2254,26 @@ def relatorios_pedidos(request):
     return render(request, 'vendas/relatorios_pedidos.html', context)
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def editar_venda(request, venda_id):
+    """Edita uma venda (apenas admin)"""
     venda = get_object_or_404(Venda, id=venda_id)
-
+    
     if request.method == 'POST':
-        form = VendaForm(request.POST, instance=venda)
-        if form.is_valid():
-            form.save()
-            return redirect('lista_vendas')
-    else:
-        form = VendaForm(instance=venda)
-
-    return render(request, 'vendas/editar_venda.html', {'form': form})
+        status = request.POST.get('status')
+        observacoes = request.POST.get('observacoes', '')
+        
+        if status in ['concluida', 'pendente', 'cancelada']:
+            venda.status = status
+            venda.observacoes = observacoes
+            venda.save()
+            messages.success(request, f'✅ Venda #{venda.id} atualizada com sucesso!')
+        else:
+            messages.error(request, '❌ Status inválido.')
+        
+        return redirect('lista_vendas')
+    
+    return redirect('lista_vendas')
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
