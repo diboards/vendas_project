@@ -18,8 +18,6 @@ urlpatterns = [
     path('', views_principais.pagina_inicial, name='pagina_inicial'),
     path('index/', views_principais.pagina_inicial, name='index'),
    
-    path('cadastrar_produto/', views_principais.cadastrar_produto, name='cadastrar_produto'),
-    #path('vendas/nova/', views_principais.nova_venda, name='nova_venda'),
     path('relatorios-pedidos/', views_principais.relatorios_pedidos, name='relatorios_pedidos'),
     #Funções de Registro de vendas
     path('vendas/editar/<int:venda_id>/', views_principais.editar_venda, name='editar_venda'),
@@ -43,6 +41,7 @@ urlpatterns = [
     path('estoque/', views_principais.estoque, name='estoque'),
     path('estoque/editar/<int:produto_id>/', views_principais.editar_produto, name='editar_produto'),
     path('estoque/cadastrar/', views_principais.cadastrar_produto, name='cadastrar_produto'),
+    path('deletar/<int:produto_id>/', views_principais.deletar_produto, name='deletar_produto'),
     
     # Painel
     path('painel/pedidos/', views_principais.gerenciar_pedidos, name='gerenciar_pedidos'),
