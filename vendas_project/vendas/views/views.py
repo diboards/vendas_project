@@ -2052,35 +2052,54 @@ def lista_vendas(request):
 def nova_venda(request):
     """View para admin criar uma venda manual"""
     
-    # 🔥 Cria um formulário para a venda
     if request.method == 'POST':
-        form = VendaForm(request.POST)
+        produto_id = request.POST.get('produto')
+        variacao_id = request.POST.get('variacao')
+        quantidade = request.POST.get('quantidade')
+        observacoes = request.POST.get('observacoes', '')
+        status = request.POST.get('status', 'concluida')
         
-        if form.is_valid():
-            venda = form.save(commit=False)
-            venda.usuario = request.user
-            venda.save()
-            
-            # 🔥 Atualiza o estoque
-            produto = venda.produto
-            variacao = ProdutoVariacao.objects.filter(produto=produto).first()
-            if variacao and variacao.quantidade_estoque >= venda.quantidade:
-                variacao.quantidade_estoque -= venda.quantidade
-                variacao.save()
-            
-            messages.success(request, f'✅ Venda #{venda.id} criada com sucesso!')
-            return redirect('lista_vendas')
-        else:
-            messages.error(request, '❌ Erro ao criar venda. Verifique os dados.')
+        # 🔥 VALIDAÇÕES
+        if not produto_id or not variacao_id or not quantidade:
+            messages.error(request, '❌ Produto, variação e quantidade são obrigatórios.')
+            return redirect('nova_venda')
+        
+        try:
+            quantidade = int(quantidade)
+        except ValueError:
+            messages.error(request, '❌ Quantidade inválida.')
+            return redirect('nova_venda')
+        
+        # 🔥 BUSCA A VARIAÇÃO
+        variacao = get_object_or_404(ProdutoVariacao, id=variacao_id)
+        
+        # 🔥 VERIFICA ESTOQUE
+        if variacao.quantidade_estoque < quantidade:
+            messages.error(request, f'❌ Estoque insuficiente. Disponível: {variacao.quantidade_estoque}')
+            return redirect('nova_venda')
+        
+        # 🔥 CRIA A VENDA
+        venda = Venda.objects.create(
+            usuario=request.user,
+            produto=variacao.produto,
+            variacao=variacao,
+            quantidade=quantidade,
+            preco_unitario=variacao.preco,  # 🔥 USA O PREÇO DA VARIAÇÃO
+            observacoes=observacoes,
+            status=status
+        )
+        
+        # 🔥 ATUALIZA O ESTOQUE
+        variacao.quantidade_estoque -= quantidade
+        variacao.save()
+        
+        messages.success(request, f'✅ Venda #{venda.id} criada com sucesso!')
+        return redirect('lista_vendas')
     
-    else:
-        form = VendaForm()
-    
-    # 🔥 Busca produtos para o dropdown
+    # GET - Mostra o formulário
     produtos = Produto.objects.filter(ativo=True)
     
     context = {
-        'form': form,
         'produtos': produtos,
         'titulo': 'Nova Venda Manual',
     }
