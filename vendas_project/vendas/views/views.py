@@ -1934,6 +1934,9 @@ def editar_produto(request, produto_id):
         # 🔥 REMOVE VARIAÇÕES QUE NÃO ESTÃO NA LISTA DE MANTIDAS
         if manter_ids:
             produto.variacoes.exclude(id__in=manter_ids).delete()
+
+        # 🔥 LIMPA O CACHE APÓS ALTERAR O PRODUTO
+        cache.clear()
         
         messages.success(request, f'Produto "{produto.nome}" atualizado com sucesso!')
         return redirect('estoque')
