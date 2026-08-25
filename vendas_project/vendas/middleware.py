@@ -1,20 +1,23 @@
 # vendas/middleware.py
 from django.core.cache import cache
 from django.conf import settings
-import re
 
 class DynamicCacheMiddleware:
     """Middleware para cachear páginas dinamicamente"""
     
     def __init__(self, get_response):
         self.get_response = get_response
-        
-        # URLs que NUNCA devem ser cacheadas
         self.excluded_urls = getattr(settings, 'CACHE_EXCLUDED_URLS', [])
     
     def __call__(self, request):
-        # Verifica se a URL deve ser cacheadas
         path = request.path
+        
+        # 🔥 VERIFICA SE O USUÁRIO ESTÁ AUTENTICADO (com tratamento de erro)
+        try:
+            is_authenticated = request.user.is_authenticated
+        except AttributeError:
+            # Se não tiver user, não usa cache
+            return self.get_response(request)
         
         # Se for uma URL excluída, não usa cache
         for excluded in self.excluded_urls:
@@ -26,7 +29,7 @@ class DynamicCacheMiddleware:
             return self.get_response(request)
         
         # Se o usuário está logado, não usa cache
-        if request.user.is_authenticated:
+        if is_authenticated:
             return self.get_response(request)
         
         # 🔥 Tenta buscar do cache
@@ -41,6 +44,6 @@ class DynamicCacheMiddleware:
         
         # 🔥 Salva no cache
         if response.status_code == 200:
-            cache.set(cache_key, response, 300)  # 5 minutos
+            cache.set(cache_key, response, 300)
         
         return response
