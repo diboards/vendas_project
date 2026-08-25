@@ -4,88 +4,149 @@
 {% block content %}
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">
-                        <i class="bi bi-cart-plus"></i> Nova Venda Manual
-                    </h4>
-                    <small>Registre uma venda diretamente pelo sistema</small>
+        <div class="col-lg-10 offset-lg-1">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-gradient-primary text-white py-3 rounded-top-4">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-white bg-opacity-25 p-2 me-3">
+                            <i class="bi bi-cart-plus fs-3 text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 fw-bold">Nova Venda Manual</h4>
+                            <small class="text-white-50">Registre uma venda diretamente pelo sistema</small>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
+                
+                <div class="card-body p-4 p-lg-5">
                     
                     <!-- MENSAGENS -->
                     {% if messages %}
                         {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-3" role="alert">
+                                <i class="bi {% if message.tags == 'success' %}bi-check-circle{% else %}bi-exclamation-triangle{% endif %} me-2"></i>
                                 {{ message }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         {% endfor %}
                     {% endif %}
                     
-                    <form method="POST">
+                    <form method="POST" id="form-venda">
                         {% csrf_token %}
                         
-                        <!-- PRODUTO -->
-                        <div class="mb-3">
-                            <label class="form-label">Produto *</label>
-                            <select name="produto" class="form-select" required>
-                                <option value="">Selecione um produto...</option>
-                                {% for produto in produtos %}
-                                <option value="{{ produto.id }}" data-variacao="{{ produto.variacoes.first.id }}">
-                                    {{ produto.nome }} 
-                                    {% with variacao=produto.variacoes.first %}
-                                        - R$ {{ variacao.preco|floatformat:2 }}
-                                    {% endwith %}
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <small class="text-muted">Selecione o produto que será vendido</small>
-                        </div>
-                        
-                        <!-- VARIAÇÃO -->
-                        <div class="mb-3">
-                            <label class="form-label">Cor / Tamanho</label>
-                            <select name="variacao" class="form-select" id="id_variacao" required>
-                                <option value="">Selecione a variação...</option>
-                            </select>
-                            <small class="text-muted">Selecione a cor e tamanho disponíveis</small>
-                        </div>
-                        
-                        <!-- QUANTIDADE -->
-                        <div class="mb-3">
-                            <label class="form-label">Quantidade *</label>
-                            <input type="number" name="quantidade" class="form-control" min="1" value="1" required>
-                            <small class="text-muted">Quantidade de itens a serem vendidos</small>
-                        </div>
-                        
-                        <!-- OBSERVAÇÕES -->
-                        <div class="mb-3">
-                            <label class="form-label">Observações</label>
-                            <textarea name="observacoes" class="form-control" rows="3"></textarea>
-                            <small class="text-muted">Informações adicionais sobre a venda</small>
-                        </div>
-                        
-                        <!-- STATUS -->
-                        <div class="mb-3">
-                            <label class="form-label">Status</label>
-                            <select name="status" class="form-select">
-                                <option value="concluida">Concluída</option>
-                                <option value="pendente">Pendente</option>
-                                <option value="cancelada">Cancelada</option>
-                            </select>
-                            <small class="text-muted">Status atual da venda</small>
-                        </div>
-                        
-                        <!-- BOTÕES -->
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle"></i> Registrar Venda
-                            </button>
-                            <a href="{% url 'lista_vendas' %}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Cancelar
-                            </a>
+                        <div class="row g-4">
+                            
+                            <!-- PRODUTO -->
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select name="produto" class="form-select" id="id_produto" required>
+                                        <option value="">Selecione...</option>
+                                        {% for produto in produtos %}
+                                        <option value="{{ produto.id }}" data-preco="{{ produto.variacoes.first.preco|default:0 }}">
+                                            {{ produto.nome }}
+                                            {% with variacao=produto.variacoes.first %}
+                                                - R$ {{ variacao.preco|floatformat:2 }}
+                                            {% endwith %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <label for="id_produto">
+                                        <i class="bi bi-box me-1"></i> Produto *
+                                    </label>
+                                </div>
+                                <div class="form-text mt-1">
+                                    <i class="bi bi-info-circle"></i> Selecione o produto a ser vendido
+                                </div>
+                            </div>
+                            
+                            <!-- QUANTIDADE -->
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <input type="number" name="quantidade" class="form-control" id="id_quantidade" min="1" value="1" required>
+                                    <label for="id_quantidade">
+                                        <i class="bi bi-hash me-1"></i> Quantidade *
+                                    </label>
+                                </div>
+                                <div class="form-text mt-1">
+                                    <i class="bi bi-info-circle"></i> Quantidade de itens
+                                </div>
+                            </div>
+                            
+                            <!-- PREÇO (automático) -->
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="id_preco" value="R$ 0,00" readonly>
+                                    <label for="id_preco">
+                                        <i class="bi bi-currency-dollar me-1"></i> Preço Unitário
+                                    </label>
+                                </div>
+                                <div class="form-text mt-1">
+                                    <i class="bi bi-info-circle"></i> Preço do produto selecionado
+                                </div>
+                            </div>
+                            
+                            <!-- STATUS -->
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select name="status" class="form-select" id="id_status">
+                                        <option value="concluida">✅ Concluída</option>
+                                        <option value="pendente">⏳ Pendente</option>
+                                        <option value="cancelada">❌ Cancelada</option>
+                                    </select>
+                                    <label for="id_status">
+                                        <i class="bi bi-tag me-1"></i> Status
+                                    </label>
+                                </div>
+                                <div class="form-text mt-1">
+                                    <i class="bi bi-info-circle"></i> Status atual da venda
+                                </div>
+                            </div>
+                            
+                            <!-- OBSERVAÇÕES -->
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <textarea name="observacoes" class="form-control" id="id_observacoes" rows="3" style="height: 100px;"></textarea>
+                                    <label for="id_observacoes">
+                                        <i class="bi bi-chat me-1"></i> Observações
+                                    </label>
+                                </div>
+                                <div class="form-text mt-1">
+                                    <i class="bi bi-info-circle"></i> Informações adicionais sobre a venda (opcional)
+                                </div>
+                            </div>
+                            
+                            <!-- RESUMO -->
+                            <div class="col-12">
+                                <div class="card bg-light border-0 rounded-3 p-3 mt-2">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <h6 class="mb-1">
+                                                <i class="bi bi-receipt me-2"></i>Resumo da Venda
+                                            </h6>
+                                            <p class="text-muted small mb-0" id="resumo-texto">
+                                                Nenhum produto selecionado
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6 text-md-end">
+                                            <span class="text-muted">Total:</span>
+                                            <span class="fs-3 fw-bold text-success ms-2" id="total-resumo">R$ 0,00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- BOTÕES -->
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button type="submit" class="btn btn-success btn-lg px-5" id="btn-submit">
+                                        <i class="bi bi-check-circle me-2"></i> Registrar Venda
+                                    </button>
+                                    <a href="{% url 'lista_vendas' %}" class="btn btn-outline-secondary btn-lg px-4">
+                                        <i class="bi bi-arrow-left me-2"></i> Cancelar
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -95,50 +156,98 @@
 </div>
 
 <script>
-// 🔥 Busca as variações quando o produto é selecionado
-document.querySelector('select[name="produto"]').addEventListener('change', function() {
-    const produtoId = this.value;
-    const variacaoSelect = document.getElementById('id_variacao');
+document.addEventListener('DOMContentLoaded', function() {
+    const produtoSelect = document.getElementById('id_produto');
+    const quantidadeInput = document.getElementById('id_quantidade');
+    const precoInput = document.getElementById('id_preco');
+    const totalResumo = document.getElementById('total-resumo');
+    const resumoTexto = document.getElementById('resumo-texto');
+    const submitBtn = document.getElementById('btn-submit');
     
-    // Limpa as opções atuais
-    variacaoSelect.innerHTML = '<option value="">Selecione a variação...</option>';
-    
-    if (produtoId) {
-        // Busca as variações via AJAX
-        fetch(`/api/produto/${produtoId}/variacoes/`)
-            .then(response => response.json())
-            .then(data => {
-                data.variacoes.forEach(variacao => {
-                    const option = document.createElement('option');
-                    option.value = variacao.id;
-                    option.textContent = `${variacao.cor} / ${variacao.tamanho} - R$ ${variacao.preco} (Estoque: ${variacao.estoque})`;
-                    variacaoSelect.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Erro ao buscar variações:', error);
-            });
+    function atualizarResumo() {
+        const selectedOption = produtoSelect.options[produtoSelect.selectedIndex];
+        const preco = parseFloat(selectedOption?.dataset?.preco || 0);
+        const quantidade = parseInt(quantidadeInput.value) || 1;
+        const produtoNome = selectedOption?.text?.split(' - ')[0] || 'Nenhum produto selecionado';
+        const total = preco * quantidade;
+        
+        // Atualiza preço
+        precoInput.value = `R$ ${preco.toFixed(2)}`;
+        
+        // Atualiza resumo
+        resumoTexto.textContent = `${produtoNome} × ${quantidade} unidade(s)`;
+        
+        // Atualiza total
+        totalResumo.textContent = `R$ ${total.toFixed(2)}`;
+        
+        // Habilita/desabilita botão
+        submitBtn.disabled = !produtoSelect.value;
     }
-});
-
-// 🔥 Preço dinâmico (opcional)
-document.querySelector('select[name="produto"]').addEventListener('change', function() {
-    const selectedOption = this.options[this.selectedIndex];
-    // Você pode adicionar lógica de preço aqui se quiser
+    
+    // Eventos
+    produtoSelect.addEventListener('change', atualizarResumo);
+    quantidadeInput.addEventListener('input', atualizarResumo);
+    
+    // Inicializar
+    atualizarResumo();
 });
 </script>
 
 <style>
-.card {
-    border-radius: 15px;
-    overflow: hidden;
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0d6efd 100%);
 }
-.card-header {
-    border-radius: 0;
+.form-floating > .form-control,
+.form-floating > .form-select {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+.form-floating > .form-control:focus,
+.form-floating > .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+}
+.form-floating > .form-control:disabled,
+.form-floating > .form-control[readonly] {
+    background-color: #f8f9fa;
 }
 .btn {
-    border-radius: 8px;
-    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.btn-lg {
+    padding: 12px 24px;
+}
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+}
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+.btn-success:disabled {
+    opacity: 0.5;
+    transform: none;
+    box-shadow: none;
+}
+.card {
+    transition: all 0.3s ease;
+}
+.card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+}
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1.5rem !important;
+    }
+    .btn-lg {
+        width: 100%;
+    }
 }
 </style>
 {% endblock %}
