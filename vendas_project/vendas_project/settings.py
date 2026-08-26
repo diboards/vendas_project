@@ -109,7 +109,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'vendas.middleware.DynamicCacheMiddleware',  # ← DEPOIS DO CSRF
+    #'vendas.middleware.DynamicCacheMiddleware',  # ← DEPOIS DO CSRF
 ]
 
 ROOT_URLCONF = 'vendas_project.urls'
