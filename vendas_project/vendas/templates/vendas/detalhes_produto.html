@@ -4,19 +4,40 @@
 {% block content %}
 <div class="container my-5">
     <div class="row">
-        <!-- Imagem do Produto -->
+        <!-- ========================================================== -->
+        <!-- COLUNA DA ESQUERDA: IMAGEM PRINCIPAL + MINIATURAS           -->
+        <!-- ========================================================== -->
         <div class="col-md-6">
             <div class="product-image-container">
-                {% if primeira_variacao and primeira_variacao.imagem %}
-                    <img src="{{ primeira_variacao.imagem.url }}" class="img-fluid rounded shadow" alt="{{ produto.nome }}" 
-                         id="main-product-image" style="max-height: 500px; width: 100%; object-fit: cover;">
-                {% elif cores_com_imagem.0.imagem %}
-                    <img src="{{ cores_com_imagem.0.imagem }}" class="img-fluid rounded shadow" alt="{{ produto.nome }}" 
-                         id="main-product-image" style="max-height: 500px; width: 100%; object-fit: cover;">
-                {% else %}
-                    <img src="{% static 'vendas/images/default-product.png' %}" class="img-fluid rounded shadow" 
-                         alt="{{ produto.nome }}" style="max-height: 500px; width: 100%; object-fit: cover;">
-                {% endif %}
+                <!-- 🔥 IMAGEM PRINCIPAL -->
+                <div class="main-image-wrapper position-relative" style="background: #f8f9fa; border-radius: 12px; overflow: hidden;">
+                    <img id="main-product-image" 
+                         src="{{ primeira_variacao.imagem.url|default:cores_com_imagem.0.imagem|default:'https://placehold.co/500x500?text=Sem+Imagem' }}" 
+                         alt="{{ produto.nome }}" 
+                         class="img-fluid" 
+                         style="width: 100%; height: 500px; object-fit: contain; cursor: zoom-in;">
+                </div>
+                
+                <!-- 🔥 MINIATURAS -->
+                <div class="thumbnails-container mt-3">
+                    <div class="d-flex gap-2 flex-wrap" id="thumbnails-container">
+                        <!-- A primeira imagem é a principal -->
+                        <img src="{{ primeira_variacao.imagem.url|default:cores_com_imagem.0.imagem|default:'https://placehold.co/100x100?text=Sem+Imagem' }}" 
+                             class="img-thumbnail thumbnail-item active" 
+                             style="width: 80px; height: 80px; object-fit: cover; cursor: pointer; border: 3px solid #0d6efd;"
+                             onclick="trocarImagemPrincipal(this.src)">
+
+                        <!-- Miniaturas das imagens adicionais da primeira cor -->
+                        {% for img_url in cores_com_imagem.0.imagens_adicionais %}
+                        <img src="{{ img_url }}" 
+                             class="img-thumbnail thumbnail-item" 
+                             style="width: 80px; height: 80px; object-fit: cover; cursor: pointer; border: 2px solid #dee2e6;"
+                             onmouseover="this.style.border='3px solid #0d6efd'" 
+                             onmouseout="this.style.border='2px solid #dee2e6'"
+                             onclick="trocarImagemPrincipal(this.src)">
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
             
             <!-- Calculadora de Frete -->
@@ -43,7 +64,9 @@
             </div>
         </div>
 
-        <!-- Informações do Produto -->
+        <!-- ========================================================== -->
+        <!-- COLUNA DA DIREITA: INFORMAÇÕES DO PRODUTO                  -->
+        <!-- ========================================================== -->
         <div class="col-md-6">
             <div class="product-details">
                 <h1 class="product-title">{{ produto.nome }}</h1>
@@ -85,52 +108,54 @@
                     <input type="hidden" name="tamanho" id="input-tamanho-comprar" value="">
                     <input type="hidden" name="quantidade" id="quantidade-comprar" value="1">
                     
-                    <!-- Miniaturas de cores -->
-<div class="mb-3">
-    <label class="form-label fw-bold">Selecione a cor:</label>
-    <div class="d-flex gap-2" id="cores-container">
-        {% for cor_info in cores_com_imagem %}
-        <button type="button" class="btn p-0 border cor-btn" 
-                data-cor="{{ cor_info.cor }}" 
-                data-cor-display="{{ cor_info.cor_display }}" 
-                data-imagem="{{ cor_info.imagem|default:'' }}"
-                data-target="comprar">
-            {% if cor_info.imagem %}
-                <img src="{{ cor_info.imagem }}" alt="{{ cor_info.cor_display }}" 
-                     class="img-thumbnail" style="width:60px; height:80px; object-fit:cover;">
-            {% else %}
-                <div class="img-thumbnail d-flex align-items-center justify-content-center"
-                     style="width:60px;height:80px;background:#f4f4f4;">
-                    {{ cor_info.cor_display }}
-                </div>
-            {% endif %}
-        </button>
-        {% endfor %}
-    </div>
-</div>
+                    <!-- 🔥 CORES (com imagem e miniaturas) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Cores:</label>
+                        <div class="d-flex gap-2 flex-wrap" id="cores-container">
+                            {% for cor_info in cores_com_imagem %}
+                            <button type="button" class="btn p-0 border cor-btn" 
+                                    data-cor="{{ cor_info.cor }}" 
+                                    data-cor-display="{{ cor_info.cor_display }}" 
+                                    data-imagem="{{ cor_info.imagem }}"
+                                    data-imagens-adicionais="{{ cor_info.imagens_adicionais|join:',' }}"
+                                    onclick="selecionarCor(this)">
+                                {% if cor_info.imagem %}
+                                    <img src="{{ cor_info.imagem }}" alt="{{ cor_info.cor_display }}" 
+                                         class="img-thumbnail" style="width: 60px; height: 80px; object-fit: cover;">
+                                {% else %}
+                                    <div class="img-thumbnail d-flex align-items-center justify-content-center"
+                                         style="width:60px;height:80px;background:#f4f4f4;">
+                                        {{ cor_info.cor_display }}
+                                    </div>
+                                {% endif %}
+                                <span class="d-block small text-center mt-1">{{ cor_info.cor_display }}</span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
 
-                    <!-- Tamanhos -->
-<div class="mb-3">
-    <label class="form-label fw-bold">Selecione o tamanho:</label>
-    <div id="tamanhos-container" class="d-flex gap-2 flex-wrap">
-        {% for tamanho in tamanhos_disponiveis %}
-        <button type="button" 
-                class="btn tamanho-btn {% if tamanho.disponivel %}btn-outline-dark{% else %}btn-outline-secondary disabled{% endif %}" 
-                data-tamanho="{{ tamanho.valor }}"
-                data-disponivel="{% if tamanho.disponivel %}true{% else %}false{% endif %}"
-                data-target="comprar"
-                {% if not tamanho.disponivel %}disabled{% endif %}
-                style="min-width: 50px; {% if not tamanho.disponivel %}opacity: 0.5;{% endif %}">
-            {{ tamanho.label }}
-            {% if not tamanho.disponivel %}
-                <span class="d-block small text-muted">indisponível</span>
-            {% endif %}
-        </button>
-        {% empty %}
-        <p class="text-muted">Nenhum tamanho disponível.</p>
-        {% endfor %}
-    </div>
-</div>
+                    <!-- 🔥 TAMANHOS -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tamanhos:</label>
+                        <div id="tamanhos-container" class="d-flex gap-2 flex-wrap">
+                            {% for tamanho in tamanhos_disponiveis %}
+                            <button type="button" 
+                                    class="btn tamanho-btn {% if tamanho.disponivel %}btn-outline-dark{% else %}btn-outline-secondary disabled{% endif %}" 
+                                    data-tamanho="{{ tamanho.valor }}"
+                                    data-disponivel="{% if tamanho.disponivel %}true{% else %}false{% endif %}"
+                                    data-target="comprar"
+                                    {% if not tamanho.disponivel %}disabled{% endif %}
+                                    style="min-width: 50px; {% if not tamanho.disponivel %}opacity: 0.5;{% endif %}">
+                                {{ tamanho.label }}
+                                {% if not tamanho.disponivel %}
+                                    <span class="d-block small text-muted">indisponível</span>
+                                {% endif %}
+                            </button>
+                            {% empty %}
+                            <p class="text-muted">Nenhum tamanho disponível.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
 
                     <div class="row mb-4">
                         <div class="col-md-6">
@@ -179,7 +204,9 @@
     </div>
 </div>
 
-<!-- JAVASCRIPT -->
+<!-- ========================================================== -->
+<!-- JAVASCRIPT: GALERIA DE IMAGENS                             -->
+<!-- ========================================================== -->
 <script>
 // ============================================
 // FUNÇÕES DE FORMATAÇÃO E FRETE
@@ -324,186 +351,108 @@ function atualizarPrecos() {
 }
 
 // ============================================
-// SELEÇÃO DE COR E TAMANHO (DINÂMICO)
+// GALERIA DE IMAGENS - TROCA DE IMAGEM
 // ============================================
 
+function trocarImagemPrincipal(src) {
+    const mainImage = document.getElementById('main-product-image');
+    if (mainImage) {
+        mainImage.src = src;
+    }
+    
+    // 🔥 Atualiza o destaque das miniaturas
+    document.querySelectorAll('.thumbnail-item').forEach(el => {
+        el.style.border = '2px solid #dee2e6';
+        if (el.src === src) {
+            el.style.border = '3px solid #0d6efd';
+        }
+    });
+}
+
+function selecionarCor(button) {
+    const cor = button.dataset.cor;
+    const imagemPrincipal = button.dataset.imagem;
+    const imagensAdicionais = button.dataset.imagensAdicionais ? button.dataset.imagensAdicionais.split(',') : [];
+    
+    console.log('🔄 Selecionando cor:', cor);
+    console.log('📸 Imagens adicionais:', imagensAdicionais);
+    
+    // 🔥 Atualiza a imagem principal
+    const mainImage = document.getElementById('main-product-image');
+    if (mainImage && imagemPrincipal) {
+        mainImage.src = imagemPrincipal;
+    }
+    
+    // 🔥 Atualiza as miniaturas
+    const thumbnailsContainer = document.getElementById('thumbnails-container');
+    if (thumbnailsContainer) {
+        // Limpa as miniaturas atuais
+        thumbnailsContainer.innerHTML = '';
+        
+        // Adiciona a imagem principal como primeira miniatura
+        if (imagemPrincipal) {
+            const img = document.createElement('img');
+            img.src = imagemPrincipal;
+            img.className = 'img-thumbnail thumbnail-item active';
+            img.style.width = '80px';
+            img.style.height = '80px';
+            img.style.objectFit = 'cover';
+            img.style.cursor = 'pointer';
+            img.style.border = '3px solid #0d6efd';
+            img.onclick = function() { trocarImagemPrincipal(this.src); };
+            thumbnailsContainer.appendChild(img);
+        }
+        
+        // Adiciona as imagens adicionais
+        imagensAdicionais.forEach(imgUrl => {
+            if (imgUrl) {
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.className = 'img-thumbnail thumbnail-item';
+                img.style.width = '80px';
+                img.style.height = '80px';
+                img.style.objectFit = 'cover';
+                img.style.cursor = 'pointer';
+                img.style.border = '2px solid #dee2e6';
+                img.onmouseover = function() { this.style.border = '3px solid #0d6efd'; };
+                img.onmouseout = function() { this.style.border = '2px solid #dee2e6'; };
+                img.onclick = function() { trocarImagemPrincipal(this.src); };
+                thumbnailsContainer.appendChild(img);
+            }
+        });
+    }
+    
+    // 🔥 Atualiza o display da cor
+    const corDisplay = document.getElementById('cor-display');
+    if (corDisplay) {
+        corDisplay.textContent = cor;
+    }
+    
+    // 🔥 Atualiza o destaque das cores
+    document.querySelectorAll('.cor-btn').forEach(btn => {
+        btn.classList.remove('border-primary', 'border-2');
+    });
+    button.classList.add('border-primary', 'border-2');
+    
+    // 🔥 Atualiza os campos hidden do formulário
+    const inputCorComprar = document.getElementById('input-cor-comprar');
+    if (inputCorComprar) {
+        inputCorComprar.value = cor;
+    }
+    const inputCorCarrinho = document.getElementById('input-cor-carrinho');
+    if (inputCorCarrinho) {
+        inputCorCarrinho.value = cor;
+    }
+}
+
 // ============================================
-// SELEÇÃO DE COR E TAMANHO (DINÂMICO)
+// INICIALIZAÇÃO
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM carregado - Inicializando página de produto');
+    console.log('🚀 DOM carregado - Inicializando página de produto');
     
-    const mainImage = document.getElementById('main-product-image');
-    const corDisplay = document.getElementById('cor-display');
-    const tamanhoDisplay = document.getElementById('tamanho-display');
-    const inputCorComprar = document.getElementById('input-cor-comprar');
-    const inputTamanhoComprar = document.getElementById('input-tamanho-comprar');
-    const inputCorCarrinho = document.getElementById('input-cor-carrinho');
-    const inputTamanhoCarrinho = document.getElementById('input-tamanho-carrinho');
-    
-    const corButtons = document.querySelectorAll('.cor-btn');
-    const tamanhoButtons = document.querySelectorAll('.tamanho-btn');
-
-    // 🔥 DADOS DE CORES E TAMANHOS (passados pela view)
-    const sizesByColor = {{ sizes_by_color|safe }};
-    const sizeLabels = {{ size_labels|safe }};
-
-    console.log('sizesByColor:', sizesByColor);
-    console.log('sizeLabels:', sizeLabels);
-
-    // --- FUNÇÃO PARA ATUALIZAR TAMANHOS POR COR ---
-    function atualizarTamanhos(corSelecionada) {
-        // Obtém os tamanhos disponíveis para a cor selecionada
-        const tamanhosDisponiveis = sizesByColor[corSelecionada] || [];
-        console.log('Tamanhos disponíveis para', corSelecionada, ':', tamanhosDisponiveis);
-        
-        // Itera sobre todos os botões de tamanho
-        tamanhoButtons.forEach(btn => {
-            const tamanho = btn.dataset.tamanho;
-            const isDisponivel = tamanhosDisponiveis.includes(tamanho);
-            
-            // Atualiza o estado do botão
-            if (isDisponivel) {
-                btn.disabled = false;
-                btn.classList.remove('btn-outline-secondary', 'disabled');
-                btn.classList.add('btn-outline-dark');
-                btn.style.opacity = '1';
-                // Remove o texto "indisponível" se existir
-                const span = btn.querySelector('span.d-block');
-                if (span) span.remove();
-            } else {
-                btn.disabled = true;
-                btn.classList.remove('btn-outline-dark', 'active', 'btn-dark');
-                btn.classList.add('btn-outline-secondary', 'disabled');
-                btn.style.opacity = '0.5';
-                // Adiciona texto "indisponível" se não existir
-                if (!btn.querySelector('span.d-block')) {
-                    const span = document.createElement('span');
-                    span.className = 'd-block small text-muted';
-                    span.textContent = 'indisponível';
-                    btn.appendChild(span);
-                }
-            }
-        });
-        
-        // 🔥 Se o tamanho atualmente selecionado não está mais disponível, limpa a seleção
-        const tamanhoAtual = inputTamanhoComprar ? inputTamanhoComprar.value : '';
-        if (tamanhoAtual && !tamanhosDisponiveis.includes(tamanhoAtual)) {
-            if (inputTamanhoComprar) inputTamanhoComprar.value = '';
-            if (inputTamanhoCarrinho) inputTamanhoCarrinho.value = '';
-            if (tamanhoDisplay) tamanhoDisplay.textContent = 'Selecione o tamanho';
-            // Remove destaque de todos os botões
-            tamanhoButtons.forEach(btn => {
-                btn.classList.remove('active', 'btn-dark');
-                btn.classList.add('btn-outline-dark');
-            });
-        }
-        
-        // 🔥 Se só tem um tamanho disponível, seleciona automaticamente
-        if (tamanhosDisponiveis.length === 1) {
-            const unicoTamanho = tamanhosDisponiveis[0];
-            const btnUnico = Array.from(tamanhoButtons).find(btn => btn.dataset.tamanho === unicoTamanho);
-            if (btnUnico && !btnUnico.disabled) {
-                btnUnico.click();
-            }
-        }
-    }
-
-    // --- FUNÇÃO PARA DEFINIR COR (com atualização de tamanhos) ---
-    function setColor(cor) {
-        console.log('setColor chamado com cor:', cor);
-        
-        // Atualiza campos hidden
-        if (inputCorComprar) inputCorComprar.value = cor;
-        if (inputCorCarrinho) inputCorCarrinho.value = cor;
-        
-        // Atualiza display
-        if (corDisplay) corDisplay.textContent = cor;
-        
-        // Busca a imagem desta cor
-        const selectedBtn = Array.from(corButtons).find(btn => btn.dataset.cor === cor);
-        if (selectedBtn) {
-            const imagem = selectedBtn.dataset.imagem;
-            console.log('Imagem encontrada para cor', cor, ':', imagem);
-            if (imagem && mainImage) {
-                mainImage.src = imagem;
-                console.log('Imagem principal atualizada para:', imagem);
-            }
-        }
-        
-        // Remove destaque de outros botões
-        corButtons.forEach(btn => {
-            btn.classList.remove('border-primary', 'border-2');
-        });
-        
-        // Destaca botão selecionado
-        if (selectedBtn) {
-            selectedBtn.classList.add('border-primary', 'border-2');
-        }
-        
-        // 🔥 ATUALIZA OS TAMANHOS DISPONÍVEIS PARA ESTA COR
-        atualizarTamanhos(cor);
-    }
-
-    // --- FUNÇÃO PARA DEFINIR TAMANHO ---
-    function setTamanho(tamanho, label) {
-        if (inputTamanhoComprar) inputTamanhoComprar.value = tamanho;
-        if (inputTamanhoCarrinho) inputTamanhoCarrinho.value = tamanho;
-        if (tamanhoDisplay) tamanhoDisplay.textContent = label || tamanho;
-        
-        tamanhoButtons.forEach(btn => {
-            btn.classList.remove('active', 'btn-dark');
-            btn.classList.add('btn-outline-dark');
-        });
-        
-        const selectedBtn = Array.from(tamanhoButtons).find(btn => btn.dataset.tamanho === tamanho);
-        if (selectedBtn && !selectedBtn.disabled) {
-            selectedBtn.classList.remove('btn-outline-dark');
-            selectedBtn.classList.add('active', 'btn-dark');
-        }
-    }
-
-    // --- EVENTOS DAS CORES ---
-    corButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const cor = this.dataset.cor;
-            const imagem = this.dataset.imagem;
-            const corDisplayName = this.dataset.corDisplay;
-            
-            console.log('Clique na cor:', cor, 'Imagem:', imagem);
-            
-            if (imagem && mainImage) {
-                mainImage.src = imagem;
-                console.log('Imagem principal atualizada para:', imagem);
-            }
-            if (corDisplay) corDisplay.textContent = corDisplayName || cor;
-            
-            setColor(cor);
-        });
-    });
-
-    // --- EVENTOS DOS TAMANHOS ---
-    tamanhoButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            if (this.disabled) return;
-            const tamanho = this.dataset.tamanho;
-            const label = this.textContent.trim();
-            setTamanho(tamanho, label);
-        });
-    });
-
-    // --- CONFIGURAR CAMPO DE QUANTIDADE ---
-    const qtdInput = document.getElementById('quantidade-input-comprar');
-    if (qtdInput) {
-        qtdInput.addEventListener('input', atualizarPrecos);
-        qtdInput.addEventListener('change', atualizarPrecos);
-    }
-    
-    // --- INICIALIZAR PREÇOS ---
-    atualizarPrecos();
-    
-    // --- CONFIGURAR FRETE COM ENTER ---
+    // 🔥 Configurar frete com Enter
     const cepFrete = document.getElementById('cep-frete');
     if (cepFrete) {
         cepFrete.addEventListener('keypress', function(e) {
@@ -511,18 +460,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // --- INICIALIZAR: selecionar primeira cor e atualizar tamanhos ---
-    if (corButtons.length > 0) {
-        const primeiraCor = corButtons[0].dataset.cor;
-        console.log('Inicializando com primeira cor:', primeiraCor);
-        setColor(primeiraCor);
-        // Atualiza a imagem
-        if (corButtons[0].dataset.imagem && mainImage) {
-            mainImage.src = corButtons[0].dataset.imagem;
+    // 🔥 Inicializar preços
+    atualizarPrecos();
+    
+    // 🔥 Inicializar galeria: seleciona a primeira cor
+    const firstCorBtn = document.querySelector('.cor-btn');
+    if (firstCorBtn) {
+        firstCorBtn.classList.add('border-primary', 'border-2');
+        // Carrega as imagens da primeira cor
+        const mainImage = document.getElementById('main-product-image');
+        if (mainImage && firstCorBtn.dataset.imagem) {
+            mainImage.src = firstCorBtn.dataset.imagem;
+        }
+        // Seleciona a primeira cor automaticamente
+        selecionarCor(firstCorBtn);
+    }
+    
+    // 🔥 Inicializar tamanhos
+    const tamanhos = document.querySelectorAll('.tamanho-btn');
+    if (tamanhos.length === 1) {
+        const unicoTamanho = tamanhos[0];
+        if (!unicoTamanho.disabled) {
+            unicoTamanho.click();
         }
     }
     
-    console.log('Inicialização concluída');
+    console.log('✅ Inicialização concluída');
 });
 </script>
 
@@ -539,6 +502,12 @@ document.addEventListener('DOMContentLoaded', function() {
 .cor-btn:hover {
     transform: scale(1.05);
 }
+.cor-btn .img-thumbnail {
+    transition: all 0.2s ease;
+}
+.cor-btn:hover .img-thumbnail {
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.3);
+}
 .tamanho-btn.active {
     background-color: #007bff !important;
     color: white !important;
@@ -551,6 +520,15 @@ document.addEventListener('DOMContentLoaded', function() {
 .tamanho-btn:not(.disabled):hover {
     background-color: #007bff;
     color: white;
+}
+.thumbnail-item {
+    transition: all 0.2s ease;
+}
+.thumbnail-item:hover {
+    transform: scale(1.05);
+}
+.thumbnail-item.active {
+    border-color: #0d6efd !important;
 }
 </style>
 {% endblock %}
