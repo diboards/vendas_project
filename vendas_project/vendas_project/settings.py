@@ -99,10 +99,36 @@ CLOUDINARY_STORAGE = {
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
+# ========================================== #
+# LOGGING - FILTRO DE DADOS SENSÍVEIS        #
+# ========================================== #
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'mask_sensitive': {
+            '()': 'vendas.logging.MaskSensitiveFilter',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'filters': ['mask_sensitive'],
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
+
 # ⚙️ Middleware correto
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'vendas.middleware_security.SecurityHeadersMiddleware',      # 🔥 segurança
+    'vendas.middleware_security.BlockSuspiciousRequestsMiddleware',  # 🔥 segurança (opcional)
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',  # ← CSRF VEM ANTES
