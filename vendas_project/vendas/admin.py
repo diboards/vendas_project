@@ -1,6 +1,6 @@
 # vendas/admin.py
 from django.contrib import admin
-from .models import Produto, ProdutoVariacao, Venda, Pedido, EnderecoEntrega, Perfil
+from .models import Produto, ProdutoVariacao, Venda, Pedido, EnderecoEntrega, Perfil, ImagemVariacao
 
 
 class ProdutoVariacaoInline(admin.TabularInline):
