@@ -196,57 +196,75 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from ..models import Produto, ProdutoVariacao, TAMANHO_CHOICES  # 🔥 IMPORTE A CONSTANTE
 
+@login_required
 def detalhes_produto(request, produto_id):
     produto = get_object_or_404(Produto, id=produto_id, ativo=True)
     
-    # Buscar variações disponíveis
-    variacoes = produto.variacoes.all()
+    # 🔥 BUSCA VARIAÇÕES COM IMAGENS ADICIONAIS
+    variacoes = produto.variacoes.all().prefetch_related('imagens_adicionais')
     
     if not variacoes.exists():
         messages.warning(request, 'Este produto não está disponível no momento.')
         return redirect('pagina_inicial')
     
-    # 🔥 ORGANIZAR CORES E TAMANHOS POR COR
+    # --- ORGANIZAR CORES E TAMANHOS ---
+    from collections import OrderedDict
     colors = OrderedDict()
     sizes_by_color = {}
     
     for var in variacoes:
         cor = var.cor
         if cor not in colors:
+            # 🔥 PEGA A IMAGEM PRINCIPAL
             imagem_url = None
             if var.imagem:
                 try:
                     imagem_url = var.imagem.url.replace("http://", "https://")
                 except:
                     imagem_url = None
+            # 🔥 SE NÃO TIVER IMAGEM PRINCIPAL, PEGA A PRIMEIRA ADICIONAL
+            if not imagem_url and var.imagens_adicionais.exists():
+                try:
+                    imagem_url = var.imagens_adicionais.first().imagem.url.replace("http://", "https://")
+                except:
+                    pass
             
             colors[cor] = {
                 'cor': cor,
                 'cor_display': cor,
-                'imagem': imagem_url
+                'imagem': imagem_url,
+                'imagens_adicionais': [],  # 🔥 LISTA DE IMAGENS ADICIONAIS
             }
             sizes_by_color[cor] = []
+        
+        # 🔥 ADICIONA AS IMAGENS ADICIONAIS
+        for img in var.imagens_adicionais.all():
+            try:
+                img_url = img.imagem.url.replace("http://", "https://")
+                if img_url not in colors[cor]['imagens_adicionais']:
+                    colors[cor]['imagens_adicionais'].append(img_url)
+            except:
+                pass
+        
         if var.tamanho not in sizes_by_color[cor]:
             sizes_by_color[cor].append(var.tamanho)
-    
-    # 🔥 LISTA DE TAMANHOS (TODOS OS POSSÍVEIS) - CORRIGIDO
-    # Usa a constante importada do models.py
-    TAMANHO_CHOICES_DICT = dict(TAMANHO_CHOICES)  # Agora TAMANHO_CHOICES é a constante do models.py
-    tamanhos_disponiveis = []
-    for val, label in TAMANHO_CHOICES_DICT.items():
-        # Verifica se o tamanho existe em alguma cor
-        existe = any(val in sizes for sizes in sizes_by_color.values())
-        tamanhos_disponiveis.append({
-            'valor': val,
-            'label': label,
-            'disponivel': existe
-        })
     
     # --- PREÇOS ---
     primeira_variacao = variacoes.first()
     preco = primeira_variacao.preco
     preco_pix = preco * Decimal("0.90")
     preco_parcela = preco / Decimal("3")
+    
+    # --- MAPEAMENTO DE TAMANHOS ---
+    TAMANHO_CHOICES_DICT = dict(TAMANHO_CHOICES)
+    tamanhos_disponiveis = []
+    for val, label in TAMANHO_CHOICES_DICT.items():
+        existe = any(val in sizes for sizes in sizes_by_color.values())
+        tamanhos_disponiveis.append({
+            'valor': val,
+            'label': label,
+            'disponivel': existe
+        })
     
     context = {
         'produto': produto,
@@ -256,9 +274,12 @@ def detalhes_produto(request, produto_id):
         'preco_parcela': preco_parcela.quantize(Decimal("0.01")),
         'cores_com_imagem': list(colors.values()),
         'tamanhos_disponiveis': tamanhos_disponiveis,
-        'sizes_by_color': sizes_by_color,  # 🔥 PARA O JAVASCRIPT
-        'size_labels': TAMANHO_CHOICES_DICT,  # 🔥 PARA O JAVASCRIPT
+        'sizes_by_color': sizes_by_color,
+        'size_labels': TAMANHO_CHOICES_DICT,
         'primeira_variacao': primeira_variacao,
+        'colors_json': json.dumps(list(colors.values())),
+        'sizes_json': json.dumps(sizes_by_color),
+        'size_labels_json': json.dumps(TAMANHO_CHOICES_DICT),
     }
     return render(request, 'vendas/detalhes_produto.html', context)
 
