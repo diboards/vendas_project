@@ -1881,6 +1881,12 @@ def editar_produto(request, produto_id):
         if excluir_ids:
             produto.variacoes.filter(id__in=excluir_ids).delete()
         
+        # 🔥 EXCLUI IMAGENS ADICIONAIS MARCADAS
+        remover_imagens = request.POST.getlist('remover_imagem[]')
+        if remover_imagens:
+            from .models import ImagemVariacao
+            ImagemVariacao.objects.filter(id__in=remover_imagens).delete()
+        
         # 🔥 ATUALIZA/CRIA VARIAÇÕES
         variacao_ids = request.POST.getlist('variacao_id[]')
         cores = request.POST.getlist('cor[]')
@@ -1888,14 +1894,27 @@ def editar_produto(request, produto_id):
         precos = request.POST.getlist('preco[]')
         estoques = request.POST.getlist('quantidade_estoque[]')
         
-        # 🔥 MAPEIA AS IMAGENS PELO ID DA VARIAÇÃO
-        imagens = {}
+        # 🔥 MAPEIA AS IMAGENS PRINCIPAIS PELO ÍNDICE
+        imagens_principais = {}
         for key, file in request.FILES.items():
-            if key.startswith('imagem_variacao_'):
-                # Extrai o índice ou ID da variação
+            if key.startswith('imagem_principal_'):
                 try:
                     idx = int(key.split('_')[-1])
-                    imagens[idx] = file
+                    imagens_principais[idx] = file
+                except:
+                    pass
+        
+        # 🔥 MAPEIA AS IMAGENS ADICIONAIS PELO ID DA VARIAÇÃO
+        imagens_adicionais = {}
+        for key, file in request.FILES.items():
+            if key.startswith('imagens_adicionais_'):
+                try:
+                    # Extrai o ID da variação do nome do campo
+                    # Exemplo: imagens_adicionais_123 → 123
+                    var_id = int(key.split('_')[-1])
+                    if var_id not in imagens_adicionais:
+                        imagens_adicionais[var_id] = []
+                    imagens_adicionais[var_id].append(file)
                 except:
                     pass
         
@@ -1928,38 +1947,71 @@ def editar_produto(request, produto_id):
                         variacao.preco = preco
                         variacao.quantidade_estoque = estoque
                         
-                        # 🔥 VERIFICA SE TEM IMAGEM PARA ESTA VARIAÇÃO
-                        if i in imagens and imagens[i]:
-                            variacao.imagem = imagens[i]
+                        # 🔥 ATUALIZA IMAGEM PRINCIPAL
+                        if i in imagens_principais and imagens_principais[i]:
+                            variacao.imagem = imagens_principais[i]
                         
                         variacao.save()
                         manter_ids.append(variacao.id)
+                        
+                        # 🔥 ADICIONA IMAGENS ADICIONAIS PARA ESTA VARIAÇÃO
+                        if variacao.id in imagens_adicionais:
+                            from .models import ImagemVariacao
+                            for img in imagens_adicionais[variacao.id]:
+                                ImagemVariacao.objects.create(
+                                    variacao=variacao,
+                                    imagem=img,
+                                    ordem=0
+                                )
+                                print(f"✅ Imagem adicional adicionada para variação {variacao.id}")
+                        
                     except ProdutoVariacao.DoesNotExist:
+                        print(f"⚠️ Variação {variacao_id} não encontrada")
                         pass
                 else:
                     # 🔥 CRIA NOVA VARIAÇÃO
-                    imagem = imagens[i] if i in imagens and imagens[i] else None
+                    imagem_principal = imagens_principais[i] if i in imagens_principais and imagens_principais[i] else None
                     nova_variacao = ProdutoVariacao.objects.create(
                         produto=produto,
                         cor=cor,
                         tamanho=tamanho,
                         preco=preco,
                         quantidade_estoque=estoque,
-                        imagem=imagem
+                        imagem=imagem_principal
                     )
                     manter_ids.append(nova_variacao.id)
+                    print(f"✅ Nova variação criada: {nova_variacao.id}")
+                    
+                    # 🔥 ADICIONA IMAGENS ADICIONAIS PARA A NOVA VARIAÇÃO (se houver)
+                    # Como é nova, o ID pode não estar no map, mas vamos verificar
+                    # Usamos o índice i para buscar, mas o ID da variação é gerado depois
+                    # Vamos tentar pegar pelo índice também
+                    for key, file in request.FILES.items():
+                        if key.startswith(f'imagens_adicionais_new_{i}'):
+                            from .models import ImagemVariacao
+                            ImagemVariacao.objects.create(
+                                variacao=nova_variacao,
+                                imagem=file,
+                                ordem=0
+                            )
+                            print(f"✅ Imagem adicional adicionada para nova variação {nova_variacao.id}")
+                        
             except Exception as e:
-                print(f"Erro ao processar variação {i}: {e}")
+                print(f"❌ Erro ao processar variação {i+1}: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
         
         # 🔥 REMOVE VARIAÇÕES QUE NÃO ESTÃO NA LISTA DE MANTIDAS
         if manter_ids:
             produto.variacoes.exclude(id__in=manter_ids).delete()
-
+            print(f"🗑️ Variações removidas: {produto.variacoes.count()}")
+        
         # 🔥 LIMPA O CACHE APÓS ALTERAR O PRODUTO
+        from django.core.cache import cache
         cache.clear()
         
-        messages.success(request, f'Produto "{produto.nome}" atualizado com sucesso!')
+        messages.success(request, f'✅ Produto "{produto.nome}" atualizado com sucesso!')
         return redirect('estoque')
     
     return redirect('estoque')
