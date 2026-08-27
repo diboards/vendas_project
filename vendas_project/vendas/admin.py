@@ -37,6 +37,12 @@ class ProdutoVariacaoAdmin(admin.ModelAdmin):
     em_estoque.boolean = True
     em_estoque.short_description = 'Em estoque'
 
+@admin.register(ImagemVariacao)  # 🔥 ADICIONE ESTE REGISTRO
+class ImagemVariacaoAdmin(admin.ModelAdmin):
+    list_display = ['id', 'variacao', 'ordem', 'data_criacao']
+    list_filter = ['variacao__produto', 'ordem']
+    search_fields = ['variacao__produto__nome']
+    raw_id_fields = ['variacao']
 
 @admin.register(Venda)
 class VendaAdmin(admin.ModelAdmin):
