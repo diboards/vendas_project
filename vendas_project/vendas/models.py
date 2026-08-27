@@ -63,14 +63,18 @@ class Produto(models.Model):
         return self.nome
 
 
+# vendas/models.py
+
 class ProdutoVariacao(models.Model):
-    """Variação do produto (ex: Conjunto - Azul - M)"""
     produto = models.ForeignKey(Produto, on_delete=models.CASCADE, related_name='variacoes')
     cor = models.CharField(max_length=20, choices=COR_CHOICES)
     tamanho = models.CharField(max_length=10, choices=TAMANHO_CHOICES)
     preco = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
     quantidade_estoque = models.PositiveIntegerField(default=0)
+    # 🔥 MANTENHA A IMAGEM PRINCIPAL (para compatibilidade)
     imagem = CloudinaryField('imagem', blank=True, null=True)
+    # 🔥 ADICIONE A RELAÇÃO COM AS IMAGENS SECUNDÁRIAS
+    # As imagens adicionais ficarão na tabela ImagemVariacao
     
     class Meta:
         unique_together = ['produto', 'cor', 'tamanho']
@@ -78,6 +82,22 @@ class ProdutoVariacao(models.Model):
     
     def __str__(self):
         return f"{self.produto.nome} - {self.cor}/{self.tamanho}"
+
+
+class ImagemVariacao(models.Model):
+    """Imagens adicionais de uma variação (múltiplos ângulos)"""
+    variacao = models.ForeignKey(ProdutoVariacao, on_delete=models.CASCADE, related_name='imagens_adicionais')
+    imagem = CloudinaryField('imagem')
+    ordem = models.PositiveIntegerField(default=0)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['ordem']
+        verbose_name = 'Imagem Adicional'
+        verbose_name_plural = 'Imagens Adicionais'
+    
+    def __str__(self):
+        return f"Imagem {self.ordem} - {self.variacao.produto.nome}"
 
 
 class CarrinhoItem(models.Model):
