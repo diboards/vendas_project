@@ -1863,38 +1863,35 @@ def estoque(request):
 
     return render(request, 'vendas/estoque.html', context)
 
-@login_required
-@user_passes_test(lambda u: u.is_superuser)
 def editar_produto(request, produto_id):
     produto = get_object_or_404(Produto, id=produto_id)
     
     if request.method == 'POST':
-        # 🔥 ATUALIZA O PRODUTO
+        # Atualiza o produto
         produto.nome = request.POST.get('nome')
         produto.descricao = request.POST.get('descricao', '')
         produto.categoria = request.POST.get('categoria')
         produto.ativo = request.POST.get('ativo') == '1'
         produto.save()
         
-        # 🔥 EXCLUI VARIAÇÕES MARCADAS
+        # Exclui variações marcadas
         excluir_ids = request.POST.getlist('excluir_variacao[]')
         if excluir_ids:
             produto.variacoes.filter(id__in=excluir_ids).delete()
         
-        # 🔥 EXCLUI IMAGENS ADICIONAIS MARCADAS
+        # Exclui imagens adicionais marcadas
         remover_imagens = request.POST.getlist('remover_imagem[]')
         if remover_imagens:
-            from .models import ImagemVariacao
             ImagemVariacao.objects.filter(id__in=remover_imagens).delete()
         
-        # 🔥 ATUALIZA/CRIA VARIAÇÕES
+        # Processa as variações
         variacao_ids = request.POST.getlist('variacao_id[]')
         cores = request.POST.getlist('cor[]')
         tamanhos = request.POST.getlist('tamanho[]')
         precos = request.POST.getlist('preco[]')
         estoques = request.POST.getlist('quantidade_estoque[]')
         
-        # 🔥 MAPEIA AS IMAGENS PRINCIPAIS PELO ÍNDICE
+        # Mapeia imagens principais por índice
         imagens_principais = {}
         for key, file in request.FILES.items():
             if key.startswith('imagem_principal_'):
@@ -1904,17 +1901,27 @@ def editar_produto(request, produto_id):
                 except:
                     pass
         
-        # 🔥 MAPEIA AS IMAGENS ADICIONAIS PELO ID DA VARIAÇÃO
-        imagens_adicionais = {}
-        for key, file in request.FILES.items():
-            if key.startswith('imagens_adicionais_'):
+        # 🔥 MAPEIA IMAGENS ADICIONAIS POR ID DA VARIAÇÃO (existentes)
+        imagens_adicionais_por_id = {}
+        for key in request.FILES.keys():
+            if key.startswith('imagens_adicionais_') and not key.startswith('imagens_adicionais_new_'):
                 try:
-                    # Extrai o ID da variação do nome do campo
-                    # Exemplo: imagens_adicionais_123 → 123
-                    var_id = int(key.split('_')[-1])
-                    if var_id not in imagens_adicionais:
-                        imagens_adicionais[var_id] = []
-                    imagens_adicionais[var_id].append(file)
+                    var_id = int(key.split('_')[-1].replace('[]', ''))
+                    files = request.FILES.getlist(key)
+                    if files:
+                        imagens_adicionais_por_id[var_id] = files
+                except:
+                    pass
+        
+        # 🔥 MAPEIA IMAGENS ADICIONAIS POR ÍNDICE (novas variações)
+        imagens_adicionais_novas = {}
+        for key in request.FILES.keys():
+            if key.startswith('imagens_adicionais_new_'):
+                try:
+                    idx = int(key.split('_')[-1].replace('[]', ''))
+                    files = request.FILES.getlist(key)
+                    if files:
+                        imagens_adicionais_novas[idx] = files
                 except:
                     pass
         
@@ -1939,7 +1946,7 @@ def editar_produto(request, produto_id):
                 variacao_id = variacao_ids[i] if i < len(variacao_ids) and variacao_ids[i] else None
                 
                 if variacao_id and variacao_id != '':
-                    # 🔥 ATUALIZA VARIAÇÃO EXISTENTE
+                    # Atualiza variação existente
                     try:
                         variacao = ProdutoVariacao.objects.get(id=variacao_id, produto=produto)
                         variacao.cor = cor
@@ -1947,30 +1954,30 @@ def editar_produto(request, produto_id):
                         variacao.preco = preco
                         variacao.quantidade_estoque = estoque
                         
-                        # 🔥 ATUALIZA IMAGEM PRINCIPAL
+                        # Atualiza imagem principal
                         if i in imagens_principais and imagens_principais[i]:
                             variacao.imagem = imagens_principais[i]
                         
                         variacao.save()
                         manter_ids.append(variacao.id)
                         
-                        # 🔥 ADICIONA IMAGENS ADICIONAIS PARA ESTA VARIAÇÃO
-                        if variacao.id in imagens_adicionais:
-                            from .models import ImagemVariacao
-                            for img in imagens_adicionais[variacao.id]:
+                        # 🔥 ADICIONA IMAGENS ADICIONAIS PARA VARIAÇÃO EXISTENTE
+                        if variacao.id in imagens_adicionais_por_id:
+                            for ordem, img in enumerate(imagens_adicionais_por_id[variacao.id]):
                                 ImagemVariacao.objects.create(
                                     variacao=variacao,
                                     imagem=img,
-                                    ordem=0
+                                    ordem=variacao.imagens_adicionais.count() + ordem
                                 )
-                                print(f"✅ Imagem adicional adicionada para variação {variacao.id}")
+                                print(f"✅ Imagem adicional salva para variação {variacao.id}")
                         
                     except ProdutoVariacao.DoesNotExist:
                         print(f"⚠️ Variação {variacao_id} não encontrada")
-                        pass
+                        continue
                 else:
-                    # 🔥 CRIA NOVA VARIAÇÃO
-                    imagem_principal = imagens_principais[i] if i in imagens_principais and imagens_principais[i] else None
+                    # Cria nova variação
+                    imagem_principal = imagens_principais.get(i, None)
+                    
                     nova_variacao = ProdutoVariacao.objects.create(
                         produto=produto,
                         cor=cor,
@@ -1980,34 +1987,30 @@ def editar_produto(request, produto_id):
                         imagem=imagem_principal
                     )
                     manter_ids.append(nova_variacao.id)
-                    print(f"✅ Nova variação criada: {nova_variacao.id}")
                     
-                    # 🔥 ADICIONA IMAGENS ADICIONAIS PARA A NOVA VARIAÇÃO (se houver)
-                    # Como é nova, o ID pode não estar no map, mas vamos verificar
-                    # Usamos o índice i para buscar, mas o ID da variação é gerado depois
-                    # Vamos tentar pegar pelo índice também
-                    for key, file in request.FILES.items():
-                        if key.startswith(f'imagens_adicionais_new_{i}'):
-                            from .models import ImagemVariacao
+                    # 🔥 ADICIONA IMAGENS ADICIONAIS PARA NOVA VARIAÇÃO
+                    if i in imagens_adicionais_novas:
+                        for ordem, img in enumerate(imagens_adicionais_novas[i]):
                             ImagemVariacao.objects.create(
                                 variacao=nova_variacao,
-                                imagem=file,
-                                ordem=0
+                                imagem=img,
+                                ordem=ordem
                             )
-                            print(f"✅ Imagem adicional adicionada para nova variação {nova_variacao.id}")
-                        
+                            print(f"✅ Imagem adicional salva para nova variação {nova_variacao.id}")
+                    
+                    print(f"✅ Nova variação criada: {nova_variacao.id}")
+                    
             except Exception as e:
                 print(f"❌ Erro ao processar variação {i+1}: {e}")
                 import traceback
                 traceback.print_exc()
                 continue
         
-        # 🔥 REMOVE VARIAÇÕES QUE NÃO ESTÃO NA LISTA DE MANTIDAS
+        # Remove variações que não estão na lista de mantidas
         if manter_ids:
             produto.variacoes.exclude(id__in=manter_ids).delete()
-            print(f"🗑️ Variações removidas: {produto.variacoes.count()}")
         
-        # 🔥 LIMPA O CACHE APÓS ALTERAR O PRODUTO
+        # Limpa cache
         from django.core.cache import cache
         cache.clear()
         
@@ -2015,6 +2018,7 @@ def editar_produto(request, produto_id):
         return redirect('estoque')
     
     return redirect('estoque')
+
 
 # 🔥 DETALHES DO PRODUTO - 1 hora
 @cache_page(60 * 60)
@@ -2029,11 +2033,9 @@ def deletar_produto(request, produto_id):
     messages.success(request, f'Produto "{nome}" excluído com sucesso!')
     return redirect('estoque')
 
+
 @superuser_required
 @login_required
-
-
-
 def cadastrar_produto(request):
     if request.method == 'POST':
         # --- VALIDAÇÃO BÁSICA ---
@@ -2057,19 +2059,36 @@ def cadastrar_produto(request):
         estoques = request.POST.getlist('quantidade_estoque[]')
         imagens = request.FILES.getlist('imagem_variacao[]')
         
-        # Remove valores vazios
+        # 🔥 MAPEIA AS IMAGENS ADICIONAIS POR ÍNDICE
+        imagens_adicionais_por_indice = {}
+        for key in request.FILES.keys():
+            if key.startswith('imagens_adicionais_'):
+                try:
+                    # Extrai o índice do nome do campo
+                    # Exemplo: imagens_adicionais_0[] → 0
+                    import re
+                    match = re.search(r'imagens_adicionais_(\d+)\[\]', key)
+                    if match:
+                        idx = int(match.group(1))
+                        files = request.FILES.getlist(key)
+                        if files:
+                            imagens_adicionais_por_indice[idx] = files
+                except Exception as e:
+                    print(f"Erro ao processar chave {key}: {e}")
+        
         variacoes_criadas = 0
         for i in range(len(cores)):
             preco_str = precos[i] if i < len(precos) else ''
             if not preco_str:
-                continue  # Pula se não tiver preço
-                
+                continue
+            
             try:
-                preco = Decimal(preco_str)
+                preco = Decimal(preco_str.replace(',', '.'))
                 if preco <= 0:
                     continue
-                    
-                ProdutoVariacao.objects.create(
+                
+                # Cria a variação
+                variacao = ProdutoVariacao.objects.create(
                     produto=produto,
                     cor=cores[i] if i < len(cores) else 'Branco',
                     tamanho=tamanhos[i] if i < len(tamanhos) else 'M',
@@ -2077,12 +2096,23 @@ def cadastrar_produto(request):
                     quantidade_estoque=int(estoques[i]) if i < len(estoques) and estoques[i] else 0,
                     imagem=imagens[i] if i < len(imagens) and imagens[i] else None
                 )
+                
+                # 🔥 SALVA AS IMAGENS ADICIONAIS DESTA VARIAÇÃO
+                if i in imagens_adicionais_por_indice:
+                    for ordem, img in enumerate(imagens_adicionais_por_indice[i]):
+                        ImagemVariacao.objects.create(
+                            variacao=variacao,
+                            imagem=img,
+                            ordem=ordem
+                        )
+                        print(f"✅ Imagem adicional {ordem+1} salva para variação {variacao.id}")
+                
                 variacoes_criadas += 1
-            except (ValueError, TypeError, Decimal.InvalidOperation):
-                continue  # Pula se houver erro nos dados
+            except (ValueError, TypeError, Decimal.InvalidOperation) as e:
+                print(f"❌ Erro na variação {i+1}: {e}")
+                continue
         
         if variacoes_criadas == 0:
-            # Se nenhuma variação foi criada, exclui o produto e avisa
             produto.delete()
             messages.error(request, 'É necessário cadastrar pelo menos uma variação válida (com preço).')
             return render(request, 'vendas/cadastrar_produto.html')
