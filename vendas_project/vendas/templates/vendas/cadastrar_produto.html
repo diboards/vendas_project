@@ -26,9 +26,7 @@
                         {% endfor %}
                     {% endif %}
                     
-                    <!-- ========================================== -->
                     <!-- INFORMAÇÕES BÁSICAS DO PRODUTO -->
-                    <!-- ========================================== -->
                     <h5 class="mb-3">Informações Básicas</h5>
                     <div class="row mb-3">
                         <div class="col-md-6">
@@ -42,7 +40,7 @@
                                 <option value="lancamentos">Lançamentos</option>
                                 <option value="promocoes">Promoções</option>
                                 <option value="conjuntos">Conjuntos</option>
-                                <option value="destaque">Destaque</option>  <!-- 🔥 NOVA OPÇÃO -->
+                                <option value="destaque">Destaque</option>
                                 <option value="outros" selected>Outros</option>
                             </select>
                         </div>
@@ -55,13 +53,13 @@
                         </div>
                     </div>
 
-                    <!-- ========================================== -->
                     <!-- VARIAÇÕES DO PRODUTO -->
-                    <!-- ========================================== -->
                     <hr>
                     <h5 class="mb-3">Variações do Produto</h5>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> Adicione pelo menos uma variação com <strong>cor, tamanho, preço e estoque</strong>.
+                        <br>
+                        <i class="bi bi-images"></i> Você pode adicionar <strong>imagens adicionais</strong> para cada variação.
                     </div>
                     
                     <div id="variacoes-container">
@@ -111,8 +109,23 @@
                                         <input type="number" name="quantidade_estoque[]" class="form-control" min="0" value="10" required>
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label">Imagem da Variação</label>
+                                        <label class="form-label">Imagem Principal</label>
                                         <input type="file" name="imagem_variacao[]" class="form-control" accept="image/*">
+                                    </div>
+                                </div>
+                                
+                                <!-- 🔥 CAMPO PARA IMAGENS ADICIONAIS -->
+                                <div class="row mt-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label">
+                                            <i class="bi bi-images"></i> Imagens Adicionais (múltiplos ângulos)
+                                        </label>
+                                        <input type="file" 
+                                               name="imagens_adicionais_0[]" 
+                                               class="form-control" 
+                                               accept="image/*" 
+                                               multiple>
+                                        <small class="text-muted">Você pode selecionar várias imagens de uma vez</small>
                                     </div>
                                 </div>
                             </div>
@@ -123,9 +136,7 @@
                         <i class="bi bi-plus-circle"></i> Adicionar Variação
                     </button>
 
-                    <!-- ========================================== -->
                     <!-- BOTÕES DE AÇÃO -->
-                    <!-- ========================================== -->
                     <div class="row">
                         <div class="col text-start">
                             <button type="submit" class="btn btn-primary btn-sm" id="btn-submit">
@@ -164,7 +175,7 @@
     // ==========================================
     // ADICIONAR NOVA VARIAÇÃO
     // ==========================================
-    let formIndex = 1;
+    let formIndex = 0; // Começa em 0 para controlar os índices
     const container = document.getElementById('variacoes-container');
     const addButton = document.getElementById('add-variacao');
     
@@ -174,7 +185,7 @@
         wrapper.className = 'card mb-3 variacao-card';
         wrapper.innerHTML = `
             <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                <span>Variação ${formIndex}</span>
+                <span>Variação ${formIndex + 1}</span>
                 <button type="button" class="btn btn-danger btn-sm remover-variacao">
                     <i class="bi bi-trash"></i> Remover
                 </button>
@@ -217,8 +228,23 @@
                         <input type="number" name="quantidade_estoque[]" class="form-control" min="0" value="10" required>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Imagem da Variação</label>
+                        <label class="form-label">Imagem Principal</label>
                         <input type="file" name="imagem_variacao[]" class="form-control" accept="image/*">
+                    </div>
+                </div>
+                
+                <!-- 🔥 CAMPO PARA IMAGENS ADICIONAIS -->
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <label class="form-label">
+                            <i class="bi bi-images"></i> Imagens Adicionais
+                        </label>
+                        <input type="file" 
+                               name="imagens_adicionais_${formIndex}[]" 
+                               class="form-control" 
+                               accept="image/*" 
+                               multiple>
+                        <small class="text-muted">Selecione várias imagens de uma vez</small>
                     </div>
                 </div>
             </div>
