@@ -1,0 +1,534 @@
+{% extends 'vendas/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <!-- ========================================================== -->
+        <!-- COLUNA DA ESQUERDA: IMAGEM PRINCIPAL + MINIATURAS           -->
+        <!-- ========================================================== -->
+        <div class="col-md-6">
+            <div class="product-image-container">
+                <!-- 🔥 IMAGEM PRINCIPAL -->
+                <div class="main-image-wrapper position-relative" style="background: #f8f9fa; border-radius: 12px; overflow: hidden;">
+                    <img id="main-product-image" 
+                         src="{{ primeira_variacao.imagem.url|default:cores_com_imagem.0.imagem|default:'https://placehold.co/500x500?text=Sem+Imagem' }}" 
+                         alt="{{ produto.nome }}" 
+                         class="img-fluid" 
+                         style="width: 100%; height: 500px; object-fit: contain; cursor: zoom-in;">
+                </div>
+                
+                <!-- 🔥 MINIATURAS -->
+                <div class="thumbnails-container mt-3">
+                    <div class="d-flex gap-2 flex-wrap" id="thumbnails-container">
+                        <!-- A primeira imagem é a principal -->
+                        <img src="{{ primeira_variacao.imagem.url|default:cores_com_imagem.0.imagem|default:'https://placehold.co/100x100?text=Sem+Imagem' }}" 
+                             class="img-thumbnail thumbnail-item active" 
+                             style="width: 80px; height: 80px; object-fit: cover; cursor: pointer; border: 3px solid #0d6efd;"
+                             onclick="trocarImagemPrincipal(this.src)">
+
+                        <!-- Miniaturas das imagens adicionais da primeira cor -->
+                        {% for img_url in cores_com_imagem.0.imagens_adicionais %}
+                        <img src="{{ img_url }}" 
+                             class="img-thumbnail thumbnail-item" 
+                             style="width: 80px; height: 80px; object-fit: cover; cursor: pointer; border: 2px solid #dee2e6;"
+                             onmouseover="this.style.border='3px solid #0d6efd'" 
+                             onmouseout="this.style.border='2px solid #dee2e6'"
+                             onclick="trocarImagemPrincipal(this.src)">
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Calculadora de Frete -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">🚚 Calcular Frete</h6>
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-2">
+                        <input type="text" id="cep-frete" class="form-control" placeholder="Digite seu CEP" 
+                               maxlength="10" oninput="formatarCEP(this)">
+                        <button class="btn btn-outline-primary" onclick="calcularFrete()">
+                            Calcular
+                        </button>
+                    </div>
+                    <div class="loading-frete text-center" style="display: none;">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Calculando...</span>
+                        </div>
+                        <small class="text-muted ms-2">Calculando frete...</small>
+                    </div>
+                    <div id="resultado-frete" class="mt-2 small"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- COLUNA DA DIREITA: INFORMAÇÕES DO PRODUTO                  -->
+        <!-- ========================================================== -->
+        <div class="col-md-6">
+            <div class="product-details">
+                <h1 class="product-title">{{ produto.nome }}</h1>
+                <p class="product-price h3 text-primary">R$ {{ preco_pix }}</p>
+                
+                <!-- Opções de Pagamento -->
+                <div class="payment-options mb-4">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">💳 Opções de Pagamento</h6>
+                        </div>
+                        <div class="mt-3">
+                            <p class="fw-bold text-success">
+                                💰 Preço à vista no Pix: <span id="preco-pix">R$ {{ preco_pix }}</span>
+                            </p>
+                            <p class="fw-bold text-primary">
+                                💳 Parcelado em 3x: <span id="preco-parcelado">R$ {{ preco_parcela }}</span> sem juros
+                            </p>
+                            <p class="text-muted">
+                                Preço original: <s>R$ {{ preco }}</s>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- BADGES DINÂMICOS -->
+                <div class="product-meta mb-3">
+                    <span class="badge bg-secondary">{{ produto.get_categoria_display }}</span>
+                    <span class="badge bg-info" id="cor-display">Selecione a cor</span>
+                    <span class="badge bg-warning text-dark" id="tamanho-display">Selecione o tamanho</span>
+                </div>
+                
+                <p class="product-description">{{ produto.descricao }}</p>
+
+                <!-- 🔥 FORMULÁRIO PARA COMPRAR AGORA -->
+                <form method="POST" action="{% url 'comprar_agora' produto.id %}" class="buy-form mb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="cor" id="input-cor-comprar" value="">
+                    <input type="hidden" name="tamanho" id="input-tamanho-comprar" value="">
+                    <input type="hidden" name="quantidade" id="quantidade-comprar" value="1">
+                    
+                    <!-- 🔥 CORES (com imagem e miniaturas) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Cores:</label>
+                        <div class="d-flex gap-2 flex-wrap" id="cores-container">
+                            {% for cor_info in cores_com_imagem %}
+                            <button type="button" class="btn p-0 border cor-btn" 
+                                    data-cor="{{ cor_info.cor }}" 
+                                    data-cor-display="{{ cor_info.cor_display }}" 
+                                    data-imagem="{{ cor_info.imagem }}"
+                                    data-imagens-adicionais="{{ cor_info.imagens_adicionais|join:',' }}"
+                                    onclick="selecionarCor(this)">
+                                {% if cor_info.imagem %}
+                                    <img src="{{ cor_info.imagem }}" alt="{{ cor_info.cor_display }}" 
+                                         class="img-thumbnail" style="width: 60px; height: 80px; object-fit: cover;">
+                                {% else %}
+                                    <div class="img-thumbnail d-flex align-items-center justify-content-center"
+                                         style="width:60px;height:80px;background:#f4f4f4;">
+                                        {{ cor_info.cor_display }}
+                                    </div>
+                                {% endif %}
+                                <span class="d-block small text-center mt-1">{{ cor_info.cor_display }}</span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- 🔥 TAMANHOS -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tamanhos:</label>
+                        <div id="tamanhos-container" class="d-flex gap-2 flex-wrap">
+                            {% for tamanho in tamanhos_disponiveis %}
+                            <button type="button" 
+                                    class="btn tamanho-btn {% if tamanho.disponivel %}btn-outline-dark{% else %}btn-outline-secondary disabled{% endif %}" 
+                                    data-tamanho="{{ tamanho.valor }}"
+                                    data-disponivel="{% if tamanho.disponivel %}true{% else %}false{% endif %}"
+                                    data-target="comprar"
+                                    {% if not tamanho.disponivel %}disabled{% endif %}
+                                    style="min-width: 50px; {% if not tamanho.disponivel %}opacity: 0.5;{% endif %}">
+                                {{ tamanho.label }}
+                                {% if not tamanho.disponivel %}
+                                    <span class="d-block small text-muted">indisponível</span>
+                                {% endif %}
+                            </button>
+                            {% empty %}
+                            <p class="text-muted">Nenhum tamanho disponível.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="quantidade-input-comprar" class="form-label">Quantidade:</label>
+                            <input type="number" id="quantidade-input-comprar" 
+                                   class="form-control" min="1" value="1" 
+                                   onchange="document.getElementById('quantidade-comprar').value = this.value">
+                            <small class="text-muted">Disponível: {{ primeira_variacao.quantidade_estoque|default:0 }} unidades</small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-bag-check"></i> Comprar Agora
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 🔥 FORMULÁRIO PARA ADICIONAR AO CARRINHO -->
+                <form method="POST" action="{% url 'adicionar_carrinho' produto.id %}" class="buy-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="cor" id="input-cor-carrinho" value="">
+                    <input type="hidden" name="tamanho" id="input-tamanho-carrinho" value="">
+                    <input type="hidden" name="quantidade" id="quantidade-carrinho" value="1">
+                    <input type="hidden" name="action" value="carrinho">
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-cart-plus"></i> Adicionar ao Carrinho
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Informações de Estoque -->
+                <div class="mt-4">
+                    {% if primeira_variacao.quantidade_estoque > 10 %}
+                    <span class="text-success"><i class="bi bi-check-circle"></i> Em estoque</span>
+                    {% elif primeira_variacao.quantidade_estoque > 0 %}
+                    <span class="text-warning"><i class="bi bi-exclamation-triangle"></i> Últimas unidades</span>
+                    {% else %}
+                    <span class="text-danger"><i class="bi bi-x-circle"></i> Fora de estoque</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================== -->
+<!-- JAVASCRIPT: GALERIA DE IMAGENS                             -->
+<!-- ========================================================== -->
+<script>
+// ============================================
+// FUNÇÕES DE FORMATAÇÃO E FRETE
+// ============================================
+
+function formatBR(value){
+    return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatarCEP(input) {
+    if (!input) return;
+    let cep = input.value.replace(/\D/g, '');
+    if (cep.length > 5) {
+        cep = cep.substring(0, 5) + '-' + cep.substring(5, 8);
+    }
+    input.value = cep;
+}
+
+function validarCEP(cep) {
+    cep = cep.replace(/\D/g, '');
+    return cep.length === 8;
+}
+
+// ============================================
+// BANCO DE DADOS DE FRETE
+// ============================================
+const regioesFrete = {
+    '70000000-72799999': { cidade: 'Brasília-DF (Plano Piloto)', valor: 8.90, prazo: '2-3 dias', regiao: 'capital' },
+    '71587040-71588238': { cidade: 'Paranoá-DF', valor: 8.90, prazo: '2-3 dias', regiao: 'rmdf' },
+    '71590000-71590245': { cidade: 'Itapoã-DF', valor: 8.90, prazo: '2-3 dias', regiao: 'rmdf' },
+    '73000000-73699999': { cidade: 'Brasília-DF (Águas Claras)', valor: 9.90, prazo: '2-4 dias', regiao: 'rmdf' },
+    '72000000-72299999': { cidade: 'Taguatinga-DF', valor: 9.90, prazo: '2-4 dias', regiao: 'rmdf' },
+    '72300000-72499999': { cidade: 'Samambaia-DF', valor: 9.90, prazo: '2-4 dias', regiao: 'rmdf' },
+    '72504003-72549825': { cidade: 'Santa Maria-DF', valor: 9.90, prazo: '2-4 dias', regiao: 'rmdf' },
+    '72215000-72275684': { cidade: 'Ceilândia-DF', valor: 9.90, prazo: '2-4 dias', regiao: 'rmdf' },
+    '73300000-73399999': { cidade: 'Planaltina-DF', valor: 10.90, prazo: '3-5 dias', regiao: 'rmdf' },
+    '73200000-73299999': { cidade: 'Sobradinho-DF', valor: 10.90, prazo: '3-5 dias', regiao: 'rmdf' },
+    '73500000-73599999': { cidade: 'Brazlândia-DF', valor: 11.90, prazo: '3-5 dias', regiao: 'rmdf' },
+    '74000000-74899999': { cidade: 'Goiânia-GO', valor: 12.90, prazo: '4-6 dias', regiao: 'goias' },
+    '75000000-75999999': { cidade: 'Anápolis-GO', valor: 15.90, prazo: '5-8 dias', regiao: 'interior-go' },
+    '72800000-72999999': { cidade: 'Luziânia-GO', valor: 13.90, prazo: '4-6 dias', regiao: 'goias' },
+    '73800000-73999999': { cidade: 'Formosa-GO', valor: 14.90, prazo: '5-7 dias', regiao: 'goias' },
+    '01000000-09999999': { cidade: 'São Paulo-SP', valor: 22.90, prazo: '8-12 dias', regiao: 'sul' },
+    '20000000-28999999': { cidade: 'Rio de Janeiro-RJ', valor: 24.90, prazo: '8-12 dias', regiao: 'sudeste' },
+    '30000000-39999999': { cidade: 'Belo Horizonte-MG', valor: 19.90, prazo: '7-10 dias', regiao: 'sudeste' },
+    '50000000-56999999': { cidade: 'Recife-PE', valor: 29.90, prazo: '10-15 dias', regiao: 'nordeste' },
+    '80000000-87999999': { cidade: 'Curitiba-PR', valor: 19.90, prazo: '7-10 dias', regiao: 'sul' },
+    'default': { cidade: 'sua cidade', valor: 15.90, prazo: '5-10 dias', regiao: 'default' }
+};
+
+function encontrarRegiaoPorCEP(cep) {
+    cep = cep.replace(/\D/g, '');
+    const cepNum = parseInt(cep, 10);
+    
+    if (isNaN(cepNum) || cep.length !== 8) {
+        return regioesFrete['default'];
+    }
+
+    let melhorMatch = null;
+
+    for (const faixa in regioesFrete) {
+        if (faixa === 'default') continue;
+        const [inicioStr, fimStr] = faixa.split('-');
+        const inicio = parseInt(inicioStr, 10);
+        const fim = parseInt(fimStr, 10);
+        if (cepNum >= inicio && cepNum <= fim) {
+            const tamanhoFaixa = fim - inicio;
+            if (!melhorMatch || tamanhoFaixa < melhorMatch.tamanho) {
+                melhorMatch = { dados: regioesFrete[faixa], tamanho: tamanhoFaixa };
+            }
+        }
+    }
+    return melhorMatch ? melhorMatch.dados : regioesFrete['default'];
+}
+
+function consultarFrete(cep) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const regiao = encontrarRegiaoPorCEP(cep);
+            const precoProduto = parseFloat("{{ preco|floatformat:2 }}".replace(",", ".")) || 0;
+            if (precoProduto > 200) {
+                regiao.valor = 0;
+                regiao.prazo = '3-5 dias (FRETE GRÁTIS)';
+            }
+            resolve(regiao);
+        }, 800);
+    });
+}
+
+async function calcularFrete() {
+    const cepInput = document.getElementById('cep-frete');
+    if (!cepInput) return;
+    
+    const cep = cepInput.value.replace(/\D/g, '');
+    const resultadoEl = document.getElementById('resultado-frete');
+    const loadingEl = document.querySelector('.loading-frete');
+    
+    if (!validarCEP(cep)) {
+        if (resultadoEl) resultadoEl.innerHTML = '<div class="alert alert-warning">Digite um CEP válido (8 dígitos)</div>';
+        return;
+    }
+    
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (resultadoEl) resultadoEl.innerHTML = '';
+    
+    try {
+        const resultado = await consultarFrete(cep);
+        if (resultadoEl) {
+            if (resultado.valor === 0) {
+                resultadoEl.innerHTML = `<div class="alert alert-success"><strong>🎉 FRETE GRÁTIS!</strong><br><small>${resultado.cidade}<br>📅 ${resultado.prazo}</small></div>`;
+            } else {
+                resultadoEl.innerHTML = `<div class="alert alert-info"><strong>Frete: ${formatBR(resultado.valor)}</strong><br><small>${resultado.cidade}<br>📅 ${resultado.prazo}</small></div>`;
+            }
+        }
+    } catch (error) {
+        if (resultadoEl) resultadoEl.innerHTML = '<div class="alert alert-danger">Erro ao calcular frete</div>';
+    } finally {
+        if (loadingEl) loadingEl.style.display = 'none';
+    }
+}
+
+// ============================================
+// FUNÇÕES DE CORES, TAMANHOS E PREÇOS
+// ============================================
+
+function atualizarPrecos() {
+    let quantidadeInput = document.getElementById('quantidade-input-comprar');
+    if (!quantidadeInput) return;
+    
+    const precoProduto = parseFloat("{{ preco|floatformat:2 }}".replace(",", ".")) || 0;
+    const qtd = parseInt(quantidadeInput.value) || 1;
+    const total = precoProduto * qtd;
+    const precoPix = total * 0.90;
+    
+    const precoPixEl = document.getElementById('preco-pix');
+    const precoParceladoEl = document.getElementById('preco-parcelado');
+    const qtdHidden = document.getElementById('quantidade-comprar');
+    
+    if (precoPixEl) precoPixEl.textContent = formatBR(precoPix);
+    if (precoParceladoEl) precoParceladoEl.textContent = formatBR(total);
+    if (qtdHidden) qtdHidden.value = qtd;
+}
+
+// ============================================
+// GALERIA DE IMAGENS - TROCA DE IMAGEM
+// ============================================
+
+function trocarImagemPrincipal(src) {
+    const mainImage = document.getElementById('main-product-image');
+    if (mainImage) {
+        mainImage.src = src;
+    }
+    
+    // 🔥 Atualiza o destaque das miniaturas
+    document.querySelectorAll('.thumbnail-item').forEach(el => {
+        el.style.border = '2px solid #dee2e6';
+        if (el.src === src) {
+            el.style.border = '3px solid #0d6efd';
+        }
+    });
+}
+
+function selecionarCor(button) {
+    const cor = button.dataset.cor;
+    const imagemPrincipal = button.dataset.imagem;
+    const imagensAdicionais = button.dataset.imagensAdicionais ? button.dataset.imagensAdicionais.split(',') : [];
+    
+    console.log('🔄 Selecionando cor:', cor);
+    console.log('📸 Imagens adicionais:', imagensAdicionais);
+    
+    // 🔥 Atualiza a imagem principal
+    const mainImage = document.getElementById('main-product-image');
+    if (mainImage && imagemPrincipal) {
+        mainImage.src = imagemPrincipal;
+    }
+    
+    // 🔥 Atualiza as miniaturas
+    const thumbnailsContainer = document.getElementById('thumbnails-container');
+    if (thumbnailsContainer) {
+        // Limpa as miniaturas atuais
+        thumbnailsContainer.innerHTML = '';
+        
+        // Adiciona a imagem principal como primeira miniatura
+        if (imagemPrincipal) {
+            const img = document.createElement('img');
+            img.src = imagemPrincipal;
+            img.className = 'img-thumbnail thumbnail-item active';
+            img.style.width = '80px';
+            img.style.height = '80px';
+            img.style.objectFit = 'cover';
+            img.style.cursor = 'pointer';
+            img.style.border = '3px solid #0d6efd';
+            img.onclick = function() { trocarImagemPrincipal(this.src); };
+            thumbnailsContainer.appendChild(img);
+        }
+        
+        // Adiciona as imagens adicionais
+        imagensAdicionais.forEach(imgUrl => {
+            if (imgUrl) {
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.className = 'img-thumbnail thumbnail-item';
+                img.style.width = '80px';
+                img.style.height = '80px';
+                img.style.objectFit = 'cover';
+                img.style.cursor = 'pointer';
+                img.style.border = '2px solid #dee2e6';
+                img.onmouseover = function() { this.style.border = '3px solid #0d6efd'; };
+                img.onmouseout = function() { this.style.border = '2px solid #dee2e6'; };
+                img.onclick = function() { trocarImagemPrincipal(this.src); };
+                thumbnailsContainer.appendChild(img);
+            }
+        });
+    }
+    
+    // 🔥 Atualiza o display da cor
+    const corDisplay = document.getElementById('cor-display');
+    if (corDisplay) {
+        corDisplay.textContent = cor;
+    }
+    
+    // 🔥 Atualiza o destaque das cores
+    document.querySelectorAll('.cor-btn').forEach(btn => {
+        btn.classList.remove('border-primary', 'border-2');
+    });
+    button.classList.add('border-primary', 'border-2');
+    
+    // 🔥 Atualiza os campos hidden do formulário
+    const inputCorComprar = document.getElementById('input-cor-comprar');
+    if (inputCorComprar) {
+        inputCorComprar.value = cor;
+    }
+    const inputCorCarrinho = document.getElementById('input-cor-carrinho');
+    if (inputCorCarrinho) {
+        inputCorCarrinho.value = cor;
+    }
+}
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM carregado - Inicializando página de produto');
+    
+    // 🔥 Configurar frete com Enter
+    const cepFrete = document.getElementById('cep-frete');
+    if (cepFrete) {
+        cepFrete.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') calcularFrete();
+        });
+    }
+    
+    // 🔥 Inicializar preços
+    atualizarPrecos();
+    
+    // 🔥 Inicializar galeria: seleciona a primeira cor
+    const firstCorBtn = document.querySelector('.cor-btn');
+    if (firstCorBtn) {
+        firstCorBtn.classList.add('border-primary', 'border-2');
+        // Carrega as imagens da primeira cor
+        const mainImage = document.getElementById('main-product-image');
+        if (mainImage && firstCorBtn.dataset.imagem) {
+            mainImage.src = firstCorBtn.dataset.imagem;
+        }
+        // Seleciona a primeira cor automaticamente
+        selecionarCor(firstCorBtn);
+    }
+    
+    // 🔥 Inicializar tamanhos
+    const tamanhos = document.querySelectorAll('.tamanho-btn');
+    if (tamanhos.length === 1) {
+        const unicoTamanho = tamanhos[0];
+        if (!unicoTamanho.disabled) {
+            unicoTamanho.click();
+        }
+    }
+    
+    console.log('✅ Inicialização concluída');
+});
+</script>
+
+<style>
+.loading-frete {
+    border-left: 3px solid #007bff;
+    padding-left: 10px;
+    background-color: #f8f9ff;
+}
+.cor-btn {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.cor-btn:hover {
+    transform: scale(1.05);
+}
+.cor-btn .img-thumbnail {
+    transition: all 0.2s ease;
+}
+.cor-btn:hover .img-thumbnail {
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.3);
+}
+.tamanho-btn.active {
+    background-color: #007bff !important;
+    color: white !important;
+    border-color: #007bff !important;
+}
+.tamanho-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.tamanho-btn:not(.disabled):hover {
+    background-color: #007bff;
+    color: white;
+}
+.thumbnail-item {
+    transition: all 0.2s ease;
+}
+.thumbnail-item:hover {
+    transform: scale(1.05);
+}
+.thumbnail-item.active {
+    border-color: #0d6efd !important;
+}
+</style>
+{% endblock %}
