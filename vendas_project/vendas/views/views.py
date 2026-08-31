@@ -48,7 +48,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.contrib.admin.views.decorators import staff_member_required
 
-
+from decimal import Decimal, InvalidOperation
 
 
 
@@ -1863,6 +1863,8 @@ def estoque(request):
 
     return render(request, 'vendas/estoque.html', context)
 
+
+
 def editar_produto(request, produto_id):
     produto = get_object_or_404(Produto, id=produto_id)
     
@@ -2108,7 +2110,7 @@ def cadastrar_produto(request):
                         print(f"✅ Imagem adicional {ordem+1} salva para variação {variacao.id}")
                 
                 variacoes_criadas += 1
-            except (ValueError, TypeError, Decimal.InvalidOperation) as e:
+            except (ValueError, TypeError) as e:
                 print(f"❌ Erro na variação {i+1}: {e}")
                 continue
         
