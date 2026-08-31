@@ -21,7 +21,21 @@
                 <!-- 🔥 MINIATURAS -->
                 <div class="thumbnails-container mt-3">
                     <div class="d-flex gap-2 flex-wrap" id="thumbnails-container">
-                        <!-- As miniaturas serão carregadas via JavaScript -->
+                        <!-- A primeira imagem é a principal -->
+                        <img src="{{ primeira_variacao.imagem.url|default:cores_com_imagem.0.imagem|default:'https://placehold.co/100x100?text=Sem+Imagem' }}" 
+                             class="img-thumbnail thumbnail-item active" 
+                             style="width: 80px; height: 80px; object-fit: cover; cursor: pointer; border: 3px solid #0d6efd;"
+                             onclick="trocarImagemPrincipal(this.src)">
+
+                        <!-- Miniaturas das imagens adicionais da primeira cor -->
+                        {% for img_url in cores_com_imagem.0.imagens_adicionais %}
+                        <img src="{{ img_url }}" 
+                             class="img-thumbnail thumbnail-item" 
+                             style="width: 80px; height: 80px; object-fit: cover; cursor: pointer; border: 2px solid #dee2e6;"
+                             onmouseover="this.style.border='3px solid #0d6efd'" 
+                             onmouseout="this.style.border='2px solid #dee2e6'"
+                             onclick="trocarImagemPrincipal(this.src)">
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -64,7 +78,7 @@
                         <div class="card-header bg-light">
                             <h6 class="mb-0">💳 Opções de Pagamento</h6>
                         </div>
-                        <div class="card-body">
+                        <div class="mt-3">
                             <p class="fw-bold text-success">
                                 💰 Preço à vista no Pix: <span id="preco-pix">R$ {{ preco_pix }}</span>
                             </p>
@@ -88,7 +102,7 @@
                 <p class="product-description">{{ produto.descricao }}</p>
 
                 <!-- 🔥 FORMULÁRIO PARA COMPRAR AGORA -->
-                <form method="POST" action="{% url 'comprar_agora' produto.id %}" class="buy-form mb-3" id="form-comprar">
+                <form method="POST" action="{% url 'comprar_agora' produto.id %}" class="buy-form mb-3" id="form-comprar" onsubmit="return validarCompra(event)">
                     {% csrf_token %}
                     <input type="hidden" name="cor" id="input-cor-comprar" value="">
                     <input type="hidden" name="tamanho" id="input-tamanho-comprar" value="">
@@ -131,7 +145,7 @@
                                     data-disponivel="{% if tamanho.disponivel %}true{% else %}false{% endif %}"
                                     {% if not tamanho.disponivel %}disabled{% endif %}
                                     onclick="selecionarTamanho(this)"
-                                    style="min-width: 50px; {% if not tamanho.disponivel %}opacity: 0.5; cursor: not-allowed;{% endif %}">
+                                    style="min-width: 50px; {% if not tamanho.disponivel %}opacity: 0.5;{% endif %}">
                                 {{ tamanho.label }}
                                 {% if not tamanho.disponivel %}
                                     <span class="d-block small text-muted">indisponível</span>
@@ -147,22 +161,21 @@
                         <div class="col-md-6">
                             <label for="quantidade-input-comprar" class="form-label">Quantidade:</label>
                             <input type="number" id="quantidade-input-comprar" 
-                                   class="form-control" min="1" value="1">
-                            <small class="text-muted" id="estoque-disponivel">
-                                Disponível: {{ primeira_variacao.quantidade_estoque|default:0 }} unidades
-                            </small>
+                                   class="form-control" min="1" value="1" 
+                                   onchange="atualizarQuantidade()">
+                            <small class="text-muted">Disponível: {{ primeira_variacao.quantidade_estoque|default:0 }} unidades</small>
                         </div>
                     </div>
 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-success btn-lg" id="btn-comprar" disabled>
-                            <i class="bi bi-bag"></i> Selecione cor e tamanho
+                        <button type="submit" class="btn btn-success btn-lg" id="btn-comprar">
+                            <i class="bi bi-bag-check"></i> Comprar Agora
                         </button>
                     </div>
                 </form>
 
                 <!-- 🔥 FORMULÁRIO PARA ADICIONAR AO CARRINHO -->
-                <form method="POST" action="{% url 'adicionar_carrinho' produto.id %}" class="buy-form" id="form-carrinho">
+                <form method="POST" action="{% url 'adicionar_carrinho' produto.id %}" class="buy-form" id="form-carrinho" onsubmit="return validarCompra(event)">
                     {% csrf_token %}
                     <input type="hidden" name="cor" id="input-cor-carrinho" value="">
                     <input type="hidden" name="tamanho" id="input-tamanho-carrinho" value="">
@@ -170,7 +183,7 @@
                     <input type="hidden" name="action" value="carrinho">
                     
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg" id="btn-carrinho" disabled>
+                        <button type="submit" class="btn btn-primary btn-lg" id="btn-carrinho">
                             <i class="bi bi-cart-plus"></i> Adicionar ao Carrinho
                         </button>
                     </div>
@@ -192,7 +205,7 @@
 </div>
 
 <!-- ========================================================== -->
-<!-- JAVASCRIPT: GALERIA DE IMAGENS E SELEÇÃO DE VARIAÇÕES     -->
+<!-- JAVASCRIPT: GALERIA DE IMAGENS E SELEÇÃO                   -->
 <!-- ========================================================== -->
 <script>
 // ============================================
@@ -201,28 +214,10 @@
 let corSelecionada = null;
 let tamanhoSelecionado = null;
 
-// Dados das variações do produto
-const variacoesProduto = [
-    {% for variacao in produto.variacoes.all %}
-    {
-        id: {{ variacao.id }},
-        cor: "{{ variacao.cor }}",
-        tamanho: "{{ variacao.tamanho }}",
-        preco: {{ variacao.preco|default:0 }},
-        estoque: {{ variacao.quantidade_estoque|default:0 }},
-        imagem: "{{ variacao.imagem.url|default:'' }}",
-        imagens_adicionais: [
-            {% for img in variacao.imagens_adicionais.all %}
-            "{{ img.imagem.url }}"{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ]
-    }{% if not forloop.last %},{% endif %}
-    {% endfor %}
-];
+// ============================================
+// FUNÇÕES DE FORMATAÇÃO E FRETE
+// ============================================
 
-// ============================================
-// FUNÇÕES DE FORMATAÇÃO
-// ============================================
 function formatBR(value){
     return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -340,8 +335,9 @@ async function calcularFrete() {
 }
 
 // ============================================
-// FUNÇÕES DE SELEÇÃO DE COR E TAMANHO
+// FUNÇÕES DE SELEÇÃO
 // ============================================
+
 function trocarImagemPrincipal(src) {
     const mainImage = document.getElementById('main-product-image');
     if (mainImage) {
@@ -358,7 +354,6 @@ function trocarImagemPrincipal(src) {
 
 function selecionarCor(button) {
     const cor = button.dataset.cor;
-    const corDisplay = button.dataset.corDisplay || cor;
     const imagemPrincipal = button.dataset.imagem;
     const imagensAdicionais = button.dataset.imagensAdicionais ? button.dataset.imagensAdicionais.split(',') : [];
     
@@ -410,9 +405,9 @@ function selecionarCor(button) {
     }
     
     // Atualiza o display da cor
-    const corDisplayEl = document.getElementById('cor-display');
-    if (corDisplayEl) {
-        corDisplayEl.textContent = corDisplay;
+    const corDisplay = document.getElementById('cor-display');
+    if (corDisplay) {
+        corDisplay.textContent = cor;
     }
     
     // Atualiza o destaque das cores
@@ -422,14 +417,8 @@ function selecionarCor(button) {
     button.classList.add('border-primary', 'border-2');
     
     // Atualiza os campos hidden
-    const inputCorComprar = document.getElementById('input-cor-comprar');
-    if (inputCorComprar) inputCorComprar.value = cor;
-    
-    const inputCorCarrinho = document.getElementById('input-cor-carrinho');
-    if (inputCorCarrinho) inputCorCarrinho.value = cor;
-    
-    atualizarEstadoBotoes();
-    atualizarPrecos();
+    document.getElementById('input-cor-comprar').value = cor;
+    document.getElementById('input-cor-carrinho').value = cor;
 }
 
 function selecionarTamanho(button) {
@@ -441,7 +430,7 @@ function selecionarTamanho(button) {
     
     tamanhoSelecionado = tamanho;
     
-    // Remove a classe active de todos os botões
+    // Remove active de todos os botões
     document.querySelectorAll('.tamanho-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.style.backgroundColor = '';
@@ -449,119 +438,44 @@ function selecionarTamanho(button) {
         btn.style.borderColor = '';
     });
     
-    // Adiciona a classe active ao botão selecionado
+    // Adiciona active ao botão selecionado
     button.classList.add('active');
     button.style.backgroundColor = '#007bff';
     button.style.color = 'white';
     button.style.borderColor = '#007bff';
     
     // Atualiza o display do tamanho
-    const tamanhoDisplayEl = document.getElementById('tamanho-display');
-    if (tamanhoDisplayEl) {
-        tamanhoDisplayEl.textContent = tamanho;
+    const tamanhoDisplay = document.getElementById('tamanho-display');
+    if (tamanhoDisplay) {
+        tamanhoDisplay.textContent = tamanho;
     }
     
     // Atualiza os campos hidden
-    const inputTamanhoComprar = document.getElementById('input-tamanho-comprar');
-    if (inputTamanhoComprar) inputTamanhoComprar.value = tamanho;
-    
-    const inputTamanhoCarrinho = document.getElementById('input-tamanho-carrinho');
-    if (inputTamanhoCarrinho) inputTamanhoCarrinho.value = tamanho;
-    
-    atualizarEstadoBotoes();
-    atualizarPrecos();
-    atualizarEstoque();
+    document.getElementById('input-tamanho-comprar').value = tamanho;
+    document.getElementById('input-tamanho-carrinho').value = tamanho;
 }
 
-function atualizarEstadoBotoes() {
-    const podeComprar = corSelecionada && tamanhoSelecionado;
-    
-    console.log('🔍 Estado:', { corSelecionada, tamanhoSelecionado, podeComprar });
-    
-    const btnComprar = document.getElementById('btn-comprar');
-    if (btnComprar) {
-        if (podeComprar) {
-            btnComprar.disabled = false;
-            btnComprar.style.opacity = '1';
-            btnComprar.innerHTML = '<i class="bi bi-bag-check"></i> Comprar Agora';
-        } else {
-            btnComprar.disabled = true;
-            btnComprar.style.opacity = '0.5';
-            btnComprar.innerHTML = '<i class="bi bi-bag"></i> Selecione cor e tamanho';
-        }
-    }
-    
-    const btnCarrinho = document.getElementById('btn-carrinho');
-    if (btnCarrinho) {
-        if (podeComprar) {
-            btnCarrinho.disabled = false;
-            btnCarrinho.style.opacity = '1';
-        } else {
-            btnCarrinho.disabled = true;
-            btnCarrinho.style.opacity = '0.5';
-        }
-    }
+function atualizarQuantidade() {
+    const quantidade = document.getElementById('quantidade-input-comprar').value;
+    document.getElementById('quantidade-comprar').value = quantidade;
+    document.getElementById('quantidade-carrinho').value = quantidade;
 }
 
-function atualizarPrecos() {
-    const quantidadeInput = document.getElementById('quantidade-input-comprar');
-    if (!quantidadeInput) return;
-    
-    const qtd = parseInt(quantidadeInput.value) || 1;
-    
-    // Busca a variação selecionada
-    const variacao = variacoesProduto.find(v => 
-        v.cor === corSelecionada && v.tamanho === tamanhoSelecionado
-    );
-    
-    let precoProduto = 0;
-    if (variacao) {
-        precoProduto = variacao.preco;
-    } else {
-        // Usa o preço padrão se nenhuma variação selecionada
-        precoProduto = parseFloat("{{ preco|floatformat:2 }}".replace(",", ".")) || 0;
+function validarCompra(event) {
+    if (!corSelecionada || !tamanhoSelecionado) {
+        event.preventDefault();
+        alert('Por favor, selecione a cor e o tamanho do produto.');
+        return false;
     }
-    
-    const total = precoProduto * qtd;
-    const precoPix = total * 0.90;
-    
-    const precoPixEl = document.getElementById('preco-pix');
-    const precoParceladoEl = document.getElementById('preco-parcelado');
-    
-    if (precoPixEl) precoPixEl.textContent = formatBR(precoPix);
-    if (precoParceladoEl) precoParceladoEl.textContent = formatBR(total);
-    
-    // Atualiza os campos hidden de quantidade
-    const qtdComprar = document.getElementById('quantidade-comprar');
-    if (qtdComprar) qtdComprar.value = qtd;
-    
-    const qtdCarrinho = document.getElementById('quantidade-carrinho');
-    if (qtdCarrinho) qtdCarrinho.value = qtd;
-}
-
-function atualizarEstoque() {
-    const variacao = variacoesProduto.find(v => 
-        v.cor === corSelecionada && v.tamanho === tamanhoSelecionado
-    );
-    
-    const estoqueEl = document.getElementById('estoque-disponivel');
-    if (estoqueEl && variacao) {
-        estoqueEl.textContent = `Disponível: ${variacao.estoque} unidades`;
-        
-        // Atualiza o máximo do input de quantidade
-        const quantidadeInput = document.getElementById('quantidade-input-comprar');
-        if (quantidadeInput && variacao.estoque > 0) {
-            quantidadeInput.max = variacao.estoque;
-        }
-    }
+    return true;
 }
 
 // ============================================
 // INICIALIZAÇÃO
 // ============================================
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM carregado - Inicializando página de produto');
-    console.log('📦 Variações disponíveis:', variacoesProduto);
     
     // Configurar frete com Enter
     const cepFrete = document.getElementById('cep-frete');
@@ -574,30 +488,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Configurar atualização de preço quando quantidade mudar
-    const quantidadeInput = document.getElementById('quantidade-input-comprar');
-    if (quantidadeInput) {
-        quantidadeInput.addEventListener('change', atualizarPrecos);
-        quantidadeInput.addEventListener('input', atualizarPrecos);
-    }
-    
-    // Selecionar a primeira cor automaticamente
+    // Seleciona a primeira cor automaticamente
     const firstCorBtn = document.querySelector('.cor-btn');
     if (firstCorBtn) {
         selecionarCor(firstCorBtn);
         console.log('🎨 Primeira cor selecionada:', firstCorBtn.dataset.cor);
     }
     
-    // Selecionar o primeiro tamanho disponível automaticamente
-    const tamanhosDisponiveis = document.querySelectorAll('.tamanho-btn:not(.disabled)');
-    if (tamanhosDisponiveis.length > 0) {
-        selecionarTamanho(tamanhosDisponiveis[0]);
-        console.log('📏 Primeiro tamanho selecionado:', tamanhosDisponiveis[0].dataset.tamanho);
+    // Seleciona o primeiro tamanho disponível automaticamente
+    const primeiroTamanhoDisponivel = document.querySelector('.tamanho-btn:not(.disabled)');
+    if (primeiroTamanhoDisponivel) {
+        selecionarTamanho(primeiroTamanhoDisponivel);
+        console.log('📏 Primeiro tamanho selecionado:', primeiroTamanhoDisponivel.dataset.tamanho);
     }
     
-    // Atualizar estado inicial
-    atualizarEstadoBotoes();
-    atualizarPrecos();
+    // Atualiza quantidade inicial
+    atualizarQuantidade();
     
     console.log('✅ Inicialização concluída');
 });
@@ -609,69 +515,44 @@ document.addEventListener('DOMContentLoaded', function() {
     padding-left: 10px;
     background-color: #f8f9ff;
 }
-
 .cor-btn {
     cursor: pointer;
     transition: all 0.2s ease;
-    position: relative;
 }
-
 .cor-btn:hover {
     transform: scale(1.05);
 }
-
 .cor-btn .img-thumbnail {
     transition: all 0.2s ease;
 }
-
 .cor-btn:hover .img-thumbnail {
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.3);
 }
-
 .cor-btn.border-primary {
     border-color: #007bff !important;
     border-width: 3px !important;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3) !important;
 }
-
 .tamanho-btn.active {
     background-color: #007bff !important;
     color: white !important;
     border-color: #007bff !important;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3) !important;
 }
-
 .tamanho-btn.disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    pointer-events: none;
 }
-
 .tamanho-btn:not(.disabled):hover {
     background-color: #007bff;
     color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-
 .thumbnail-item {
     transition: all 0.2s ease;
 }
-
 .thumbnail-item:hover {
     transform: scale(1.05);
 }
-
 .thumbnail-item.active {
     border-color: #0d6efd !important;
-}
-
-#btn-comprar, #btn-carrinho {
-    transition: all 0.3s ease;
-}
-
-#btn-comprar:disabled, #btn-carrinho:disabled {
-    cursor: not-allowed;
 }
 </style>
 {% endblock %}
