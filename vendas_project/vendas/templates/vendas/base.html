@@ -613,35 +613,6 @@
       }    
     
     
-// Retirar erros violates the following Content Security 
-
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('img').forEach(img => {
-        // Remove onerror inline problemático
-        if (img.getAttribute('onerror') && img.getAttribute('onerror').includes('placehold.co')) {
-            img.removeAttribute('onerror');
-        }
-        
-        // Adiciona handler seguro
-        img.addEventListener('error', function() {
-            this.classList.add('error');
-            
-            // Cria placeholder se não existir
-            let placeholder = this.nextElementSibling;
-            if (!placeholder || !placeholder.classList.contains('image-placeholder')) {
-                placeholder = document.createElement('div');
-                placeholder.className = 'image-placeholder';
-                placeholder.innerHTML = '<i class="bi bi-image"></i>';
-                
-                if (this.parentNode) {
-                    this.parentNode.insertBefore(placeholder, this.nextSibling);
-                }
-            }
-            
-            placeholder.style.display = 'flex';
-        });
-    });
-});
 </script>
     {% endblock %}
 
