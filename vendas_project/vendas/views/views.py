@@ -2024,7 +2024,7 @@ def editar_produto(request, produto_id):
 
 
 # 🔥 DETALHES DO PRODUTO - 1 hora
-@cache_page(60 * 60)
+
 @superuser_required
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
