@@ -565,6 +565,10 @@ function adicionarLinhaVariacao(produtoId) {
     const tbody = tabela.querySelector('tbody');
     const numLinhas = tbody.querySelectorAll('tr').length;
     
+    // Usa o número total de variações para criar um índice único
+    const todasVariacoes = document.querySelectorAll('[name="variacao_id[]"]').length;
+    const novoIndice = todasVariacoes;
+    
     const novaLinha = document.createElement('tr');
     novaLinha.innerHTML = `
         <td>
@@ -600,11 +604,11 @@ function adicionarLinhaVariacao(produtoId) {
             <input type="number" class="form-control form-control-sm" name="quantidade_estoque[]" min="0" value="0" required>
         </td>
         <td>
-            <input type="file" class="form-control form-control-sm" name="imagem_principal_{{ numLinhas }}" accept="image/*">
+            <input type="file" class="form-control form-control-sm" name="imagem_principal_${novoIndice}" accept="image/*">
             <small class="text-muted d-block">Imagem principal</small>
         </td>
         <td>
-            <input type="file" class="form-control form-control-sm" name="imagens_adicionais_new_{{ numLinhas }}[]" accept="image/*" multiple>
+            <input type="file" class="form-control form-control-sm" name="imagens_adicionais_new_${novoIndice}[]" accept="image/*" multiple>
             <small class="text-muted d-block">Imagens adicionais</small>
         </td>
         <td>
