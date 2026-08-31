@@ -1707,7 +1707,7 @@ def superuser_required(view_func):
     return _wrapped_view
 
 # 🔥 ESTOQUE / LISTA DE PRODUTOS - 10 minutos
-@cache_page(60 * 10)
+#@cache_page(60 * 10)
 @superuser_required
 def estoque(request):
     """View para gerenciamento de estoque com filtros e paginação"""
