@@ -589,7 +589,33 @@
         
         return '';
       }    
-    </script>    
+    
+    
+// Retirar erros violates the following Content Security 
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Substitui todas as imagens com erro por placeholder CSS
+    document.querySelectorAll('img').forEach(img => {
+        img.addEventListener('error', function() {
+            // Cria um div placeholder
+            const placeholder = document.createElement('div');
+            placeholder.style.cssText = `
+                width: ${img.style.width || '40px'}; 
+                height: ${img.style.height || '40px'}; 
+                background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%); 
+                border-radius: ${img.style.borderRadius || '8px'}; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+            `;
+            placeholder.innerHTML = '<i class="bi bi-image text-muted"></i>';
+            
+            // Substitui a imagem pelo placeholder
+            img.parentNode.replaceChild(placeholder, img);
+        });
+    });
+});
+</script>
     {% endblock %}
 
     <!-- ===== BOOTSTRAP JS ===== -->
