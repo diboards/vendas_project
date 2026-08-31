@@ -18,6 +18,7 @@ from django.views.generic import TemplateView
 from django.http import JsonResponse
 from django.utils import timezone
 from django.contrib.admin.views.decorators import staff_member_required
+from decimal import Decimal, InvalidOperation
 # E-mail de confirmação
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -28,7 +29,7 @@ from django.forms import inlineformset_factory
 from collections import OrderedDict
 from django.http import HttpResponseBadRequest
 from django.views.decorators.http import require_POST
-from vendas.models import Produto, ProdutoVariacao, Venda, CarrinhoItem, EnderecoEntrega, Pedido, ItemPedido, COR_CHOICES, TAMANHO_CHOICES
+from vendas.models import Produto, ProdutoVariacao, ImagemVariacao, Venda, CarrinhoItem, EnderecoEntrega, Pedido, ItemPedido, COR_CHOICES, TAMANHO_CHOICES
 from vendas.forms import VendaForm, ProdutoForm, ProdutoVariacaoForm, ProdutoVariacaoInlineFormSet, UsuarioComEnderecoForm
 from vendas.forms import OrcamentoForm  # ← Verifique esta importação
 import json, os
@@ -48,7 +49,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.contrib.admin.views.decorators import staff_member_required
 
-from decimal import Decimal, InvalidOperation
+
 
 
 
