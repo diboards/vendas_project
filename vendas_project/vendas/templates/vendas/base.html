@@ -541,7 +541,7 @@
 
     <!-- Aqui começa o conteúdo Form Login-->
     {% block extra_style %}
-        <style>
+    <style>
           .auto-check-indicator {
               animation: pulse 2s infinite;
           }
@@ -554,7 +554,29 @@
               font-size: 0.7em !important;
               animation: pulse 3s infinite;
           }
-        </style>
+
+        
+    /* Classe para imagens quebradas */
+    img.error {
+        display: none;
+    }
+    
+    img.error + .image-placeholder {
+        display: flex !important;
+    }
+    
+    .image-placeholder {
+        display: none;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+        border-radius: 8px;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+    }
+  
+    </style>
     {% endblock %}
 
     
@@ -594,24 +616,29 @@
 // Retirar erros violates the following Content Security 
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Substitui todas as imagens com erro por placeholder CSS
     document.querySelectorAll('img').forEach(img => {
+        // Remove onerror inline problemático
+        if (img.getAttribute('onerror') && img.getAttribute('onerror').includes('placehold.co')) {
+            img.removeAttribute('onerror');
+        }
+        
+        // Adiciona handler seguro
         img.addEventListener('error', function() {
-            // Cria um div placeholder
-            const placeholder = document.createElement('div');
-            placeholder.style.cssText = `
-                width: ${img.style.width || '40px'}; 
-                height: ${img.style.height || '40px'}; 
-                background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%); 
-                border-radius: ${img.style.borderRadius || '8px'}; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center;
-            `;
-            placeholder.innerHTML = '<i class="bi bi-image text-muted"></i>';
+            this.classList.add('error');
             
-            // Substitui a imagem pelo placeholder
-            img.parentNode.replaceChild(placeholder, img);
+            // Cria placeholder se não existir
+            let placeholder = this.nextElementSibling;
+            if (!placeholder || !placeholder.classList.contains('image-placeholder')) {
+                placeholder = document.createElement('div');
+                placeholder.className = 'image-placeholder';
+                placeholder.innerHTML = '<i class="bi bi-image"></i>';
+                
+                if (this.parentNode) {
+                    this.parentNode.insertBefore(placeholder, this.nextSibling);
+                }
+            }
+            
+            placeholder.style.display = 'flex';
         });
     });
 });
