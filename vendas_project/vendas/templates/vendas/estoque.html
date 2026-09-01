@@ -290,7 +290,46 @@
 </div>
 
 <script>
-// ... Seu JavaScript existente para adicionar/remover variações ...
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ Inicializando página de estoque');
+    console.log('✅ Bootstrap disponível:', typeof bootstrap !== 'undefined');
+    
+    // Verifica se os modais existem
+    const modais = document.querySelectorAll('.modal');
+    console.log(`📦 ${modais.length} modais encontrados`);
+    
+    // Verifica os botões de editar
+    const botoesEditar = document.querySelectorAll('[data-bs-target^="#editarModal"]');
+    console.log(`✏️ ${botoesEditar.length} botões de editar encontrados`);
+    
+    // Adiciona evento de clique manual para garantir funcionamento
+    botoesEditar.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const targetId = this.getAttribute('data-bs-target');
+            console.log('🖱️ Clicou em editar, target:', targetId);
+            
+            const modal = document.querySelector(targetId);
+            if (modal) {
+                console.log('✅ Modal encontrado:', targetId);
+                if (typeof bootstrap !== 'undefined') {
+                    const bootstrapModal = new bootstrap.Modal(modal);
+                    bootstrapModal.show();
+                } else {
+                    console.error('❌ Bootstrap não carregado');
+                }
+            } else {
+                console.error('❌ Modal não encontrado:', targetId);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
 </script>
 
 <style>
