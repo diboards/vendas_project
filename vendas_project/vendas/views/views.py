@@ -34,6 +34,7 @@ from vendas.forms import VendaForm, ProdutoForm, ProdutoVariacaoForm, ProdutoVar
 from vendas.forms import OrcamentoForm  # ← Verifique esta importação
 import json, os
 import requests
+import re
 import mercadopago
 from django.conf import settings
 
@@ -1865,13 +1866,15 @@ def estoque(request):
     return render(request, 'vendas/estoque.html', context)
 
 
-
+@login_required
 def editar_produto(request, produto_id):
     produto = get_object_or_404(Produto, id=produto_id)
     
     if request.method == 'POST':
         print("=" * 50)
         print(f"📝 Editando produto: {produto.nome} (ID: {produto.id})")
+        print(f"📋 POST data: {request.POST}")
+        print(f"📁 FILES data: {request.FILES}")
         print("=" * 50)
         
         # Atualiza o produto
@@ -1886,14 +1889,14 @@ def editar_produto(request, produto_id):
         excluir_ids = request.POST.getlist('excluir_variacao[]')
         if excluir_ids:
             excluidas = produto.variacoes.filter(id__in=excluir_ids)
-            print(f"🗑️ Excluindo {excluidas.count()} variações marcadas")
+            print(f"🗑️ Excluindo {excluidas.count()} variações marcadas: {excluir_ids}")
             excluidas.delete()
         
         # Exclui imagens adicionais marcadas
         remover_imagens = request.POST.getlist('remover_imagem[]')
         if remover_imagens:
             removidas = ImagemVariacao.objects.filter(id__in=remover_imagens)
-            print(f"🗑️ Excluindo {removidas.count()} imagens adicionais marcadas")
+            print(f"🗑️ Excluindo {removidas.count()} imagens adicionais: {remover_imagens}")
             removidas.delete()
         
         # Processa as variações
@@ -1903,19 +1906,21 @@ def editar_produto(request, produto_id):
         precos = request.POST.getlist('preco[]')
         estoques = request.POST.getlist('quantidade_estoque[]')
         
-        print(f"📊 Dados recebidos: {len(cores)} cores, {len(tamanhos)} tamanhos, {len(precos)} preços")
-        print(f"📊 Variação IDs: {variacao_ids}")
+        print(f"📊 Dados recebidos:")
+        print(f"   - Variação IDs: {variacao_ids}")
+        print(f"   - Cores: {cores}")
+        print(f"   - Tamanhos: {tamanhos}")
+        print(f"   - Preços: {precos}")
+        print(f"   - Estoques: {estoques}")
         
         # Mapeia imagens principais por índice
         imagens_principais = {}
         for key, file in request.FILES.items():
             if key.startswith('imagem_principal_'):
                 try:
-                    # Extrai o índice do nome do campo
-                    # Formato: imagem_principal_0, imagem_principal_1, etc.
                     idx = int(key.split('_')[-1])
                     imagens_principais[idx] = file
-                    print(f"📸 Imagem principal encontrada para índice {idx}")
+                    print(f"📸 Imagem principal para índice {idx}: {file.name}")
                 except Exception as e:
                     print(f"⚠️ Erro ao processar chave {key}: {e}")
         
@@ -1924,15 +1929,13 @@ def editar_produto(request, produto_id):
         for key in request.FILES.keys():
             if key.startswith('imagens_adicionais_') and not key.startswith('imagens_adicionais_new_'):
                 try:
-                    # Extrai o ID da variação do nome do campo
-                    # Formato: imagens_adicionais_123[] → 123
                     match = re.search(r'imagens_adicionais_(\d+)\[\]', key)
                     if match:
                         var_id = int(match.group(1))
                         files = request.FILES.getlist(key)
                         if files:
                             imagens_adicionais_por_id[var_id] = files
-                            print(f"📸 {len(files)} imagens adicionais para variação existente ID {var_id}")
+                            print(f"📸 {len(files)} imagens adicionais para variação ID {var_id}")
                 except Exception as e:
                     print(f"⚠️ Erro ao processar chave {key}: {e}")
         
@@ -1941,8 +1944,6 @@ def editar_produto(request, produto_id):
         for key in request.FILES.keys():
             if key.startswith('imagens_adicionais_new_'):
                 try:
-                    # Extrai o índice do nome do campo
-                    # Formato: imagens_adicionais_new_0[], imagens_adicionais_new_1[], etc.
                     match = re.search(r'imagens_adicionais_new_(\d+)\[\]', key)
                     if match:
                         idx = int(match.group(1))
@@ -1968,7 +1969,11 @@ def editar_produto(request, produto_id):
                     print(f"⚠️ Linha {i+1}: Cor ou tamanho vazio, pulando")
                     continue
                 
-                preco = Decimal(preco_str) if preco_str else Decimal('0.00')
+                try:
+                    preco = Decimal(preco_str) if preco_str else Decimal('0.00')
+                except:
+                    print(f"⚠️ Linha {i+1}: Preço inválido '{preco_str}', pulando")
+                    continue
                 
                 if preco <= 0:
                     print(f"⚠️ Linha {i+1}: Preço inválido ({preco}), pulando")
@@ -1976,7 +1981,7 @@ def editar_produto(request, produto_id):
                 
                 variacao_id = variacao_ids[i] if i < len(variacao_ids) and variacao_ids[i] else None
                 
-                print(f"\n📦 Processando linha {i+1}: {cor}/{tamanho} - R$ {preco}")
+                print(f"\n📦 Processando linha {i+1}: {cor}/{tamanho} - R$ {preco} - ID: {variacao_id}")
                 
                 if variacao_id and variacao_id != '':
                     # Atualiza variação existente
@@ -2004,13 +2009,10 @@ def editar_produto(request, produto_id):
                                     imagem=img,
                                     ordem=variacao.imagens_adicionais.count() + ordem
                                 )
-                                print(f"✅ Imagem adicional {ordem+1} salva para variação existente {variacao.id} (Imagem ID: {nova_imagem.id})")
+                                print(f"✅ Imagem adicional salva para variação {variacao.id}")
                         
                     except ProdutoVariacao.DoesNotExist:
                         print(f"⚠️ Variação {variacao_id} não encontrada")
-                        continue
-                    except Exception as e:
-                        print(f"❌ Erro ao atualizar variação {variacao_id}: {e}")
                         continue
                 else:
                     # Cria nova variação
@@ -2031,14 +2033,12 @@ def editar_produto(request, produto_id):
                     # ADICIONA IMAGENS ADICIONAIS PARA NOVA VARIAÇÃO
                     if i in imagens_adicionais_novas:
                         for ordem, img in enumerate(imagens_adicionais_novas[i]):
-                            nova_imagem = ImagemVariacao.objects.create(
+                            ImagemVariacao.objects.create(
                                 variacao=nova_variacao,
                                 imagem=img,
                                 ordem=ordem
                             )
-                            print(f"✅ Imagem adicional {ordem+1} salva para nova variação {nova_variacao.id} (Imagem ID: {nova_imagem.id})")
-                    else:
-                        print(f"⚠️ Nenhuma imagem adicional encontrada para nova variação índice {i}")
+                            print(f"✅ Imagem adicional salva para nova variação {nova_variacao.id}")
                     
             except Exception as e:
                 print(f"❌ Erro ao processar variação {i+1}: {e}")
@@ -2055,14 +2055,11 @@ def editar_produto(request, produto_id):
         
         # Limpa cache
         cache.clear()
-        print("🔄 Cache limpo")
         
         print("=" * 50)
         print(f"✅ Produto atualizado com sucesso!")
         print(f"   - Variações mantidas: {len(manter_ids)}")
-        print(f"   - Novas variações criadas: {novas_variacoes_criadas}")
-        print(f"   - Imagens adicionais para variações existentes: {len(imagens_adicionais_por_id)}")
-        print(f"   - Imagens adicionais para novas variações: {len(imagens_adicionais_novas)}")
+        print(f"   - Novas variações: {novas_variacoes_criadas}")
         print("=" * 50)
         
         messages.success(request, f'✅ Produto "{produto.nome}" atualizado com sucesso!')
