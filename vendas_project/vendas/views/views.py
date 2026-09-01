@@ -1871,11 +1871,10 @@ def editar_produto(request, produto_id):
     produto = get_object_or_404(Produto, id=produto_id)
     
     if request.method == 'POST':
-        print("=" * 50)
+        
         print(f"📝 Editando produto: {produto.nome} (ID: {produto.id})")
         print(f"📋 POST data: {request.POST}")
         print(f"📁 FILES data: {request.FILES}")
-        print("=" * 50)
         
         # Atualiza o produto
         produto.nome = request.POST.get('nome')
