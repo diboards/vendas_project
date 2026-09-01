@@ -214,6 +214,25 @@
 let corSelecionada = null;
 let tamanhoSelecionado = null;
 
+// Dados das variações do produto
+const variacoesProduto = [
+    {% for variacao in produto.variacoes.all %}
+    {
+        id: {{ variacao.id }},
+        cor: "{{ variacao.cor }}",
+        tamanho: "{{ variacao.tamanho }}",
+        preco: {{ variacao.preco|default:0 }},
+        estoque: {{ variacao.quantidade_estoque|default:0 }},
+        imagem: "{{ variacao.imagem.url|default:'' }}",
+        imagens_adicionais: [
+            {% for img in variacao.imagens_adicionais.all %}
+            "{{ img.imagem.url }}"{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
 // ============================================
 // FUNÇÕES DE FORMATAÇÃO E FRETE
 // ============================================
@@ -260,6 +279,7 @@ const regioesFrete = {
     '30000000-39999999': { cidade: 'Belo Horizonte-MG', valor: 19.90, prazo: '7-10 dias', regiao: 'sudeste' },
     '50000000-56999999': { cidade: 'Recife-PE', valor: 29.90, prazo: '10-15 dias', regiao: 'nordeste' },
     '80000000-87999999': { cidade: 'Curitiba-PR', valor: 19.90, prazo: '7-10 dias', regiao: 'sul' },
+    '80000000-87999999': { cidade: 'Porto Alegre-RS', valor: 19.90, prazo: '7-10 dias', regiao: 'sul' },
     'default': { cidade: 'sua cidade', valor: 15.90, prazo: '5-10 dias', regiao: 'default' }
 };
 
@@ -335,7 +355,7 @@ async function calcularFrete() {
 }
 
 // ============================================
-// FUNÇÕES DE SELEÇÃO
+// GALERIA DE IMAGENS
 // ============================================
 
 function trocarImagemPrincipal(src) {
@@ -352,8 +372,13 @@ function trocarImagemPrincipal(src) {
     });
 }
 
+// ============================================
+// FUNÇÃO PARA SELECIONAR COR
+// ============================================
+
 function selecionarCor(button) {
     const cor = button.dataset.cor;
+    const corDisplay = button.dataset.corDisplay || cor;
     const imagemPrincipal = button.dataset.imagem;
     const imagensAdicionais = button.dataset.imagensAdicionais ? button.dataset.imagensAdicionais.split(',') : [];
     
@@ -405,9 +430,9 @@ function selecionarCor(button) {
     }
     
     // Atualiza o display da cor
-    const corDisplay = document.getElementById('cor-display');
-    if (corDisplay) {
-        corDisplay.textContent = cor;
+    const corDisplayEl = document.getElementById('cor-display');
+    if (corDisplayEl) {
+        corDisplayEl.textContent = corDisplay;
     }
     
     // Atualiza o destaque das cores
@@ -419,7 +444,17 @@ function selecionarCor(button) {
     // Atualiza os campos hidden
     document.getElementById('input-cor-comprar').value = cor;
     document.getElementById('input-cor-carrinho').value = cor;
+    
+    // ATUALIZA A DISPONIBILIDADE DOS TAMANHOS PARA ESTA COR
+    atualizarDisponibilidadeTamanhos(cor);
+    
+    // ATUALIZA PREÇOS E ESTOQUE
+    atualizarPrecosEestoque();
 }
+
+// ============================================
+// FUNÇÃO PARA SELECIONAR TAMANHO
+// ============================================
 
 function selecionarTamanho(button) {
     if (button.disabled) return;
@@ -453,20 +488,225 @@ function selecionarTamanho(button) {
     // Atualiza os campos hidden
     document.getElementById('input-tamanho-comprar').value = tamanho;
     document.getElementById('input-tamanho-carrinho').value = tamanho;
+    
+    // ATUALIZA PREÇOS E ESTOQUE
+    atualizarPrecosEestoque();
 }
+
+// ============================================
+// FUNÇÃO: ATUALIZAR DISPONIBILIDADE DOS TAMANHOS
+// ============================================
+
+function atualizarDisponibilidadeTamanhos(cor) {
+    if (!cor) return;
+    
+    // Busca todos os tamanhos disponíveis para esta cor
+    const tamanhosDisponiveisParaCor = variacoesProduto
+        .filter(v => v.cor === cor)
+        .map(v => v.tamanho);
+    
+    console.log(`📏 Tamanhos disponíveis para ${cor}:`, tamanhosDisponiveisParaCor);
+    
+    // Atualiza cada botão de tamanho
+    document.querySelectorAll('.tamanho-btn').forEach(btn => {
+        const tamanho = btn.dataset.tamanho;
+        const estaDisponivel = tamanhosDisponiveisParaCor.includes(tamanho);
+        
+        if (estaDisponivel) {
+            // Tamanho disponível para esta cor
+            btn.disabled = false;
+            btn.classList.remove('disabled', 'btn-outline-secondary');
+            btn.classList.add('btn-outline-dark');
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.style.textDecoration = 'none';
+            
+            // Remove o texto de indisponível se existir
+            const spanIndisponivel = btn.querySelector('.text-muted');
+            if (spanIndisponivel) {
+                spanIndisponivel.remove();
+            }
+        } else {
+            // Tamanho NÃO disponível para esta cor
+            btn.disabled = true;
+            btn.classList.add('disabled');
+            btn.classList.remove('btn-outline-dark');
+            btn.classList.add('btn-outline-secondary');
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.style.textDecoration = 'line-through';
+            
+            // Adiciona texto de indisponível se não existir
+            if (!btn.querySelector('.text-muted')) {
+                const spanIndisponivel = document.createElement('span');
+                spanIndisponivel.className = 'd-block small text-muted';
+                spanIndisponivel.textContent = 'indisponível';
+                btn.appendChild(spanIndisponivel);
+            }
+        }
+    });
+    
+    // Se o tamanho selecionado não está disponível para esta cor, deseleciona
+    if (tamanhoSelecionado && !tamanhosDisponiveisParaCor.includes(tamanhoSelecionado)) {
+        console.log(`⚠️ Tamanho ${tamanhoSelecionado} não disponível para ${cor}, deselecionando`);
+        
+        const tamanhoAnterior = tamanhoSelecionado;
+        
+        // Limpa a seleção do tamanho
+        tamanhoSelecionado = null;
+        document.getElementById('input-tamanho-comprar').value = '';
+        document.getElementById('input-tamanho-carrinho').value = '';
+        
+        // Atualiza o display
+        const tamanhoDisplay = document.getElementById('tamanho-display');
+        if (tamanhoDisplay) {
+            tamanhoDisplay.textContent = 'Selecione o tamanho';
+        }
+        
+        // Remove active de todos os botões de tamanho
+        document.querySelectorAll('.tamanho-btn').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.backgroundColor = '';
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        });
+        
+        // Mostra mensagem de aviso
+        mostrarMensagemAviso(`Tamanho ${tamanhoAnterior} não disponível para a cor ${cor}. Por favor, selecione outro tamanho.`);
+    }
+    
+    // Se não houver tamanho selecionado, seleciona o primeiro disponível
+    if (!tamanhoSelecionado && tamanhosDisponiveisParaCor.length > 0) {
+        const primeiroTamanhoDisponivel = document.querySelector(`.tamanho-btn[data-tamanho="${tamanhosDisponiveisParaCor[0]}"]`);
+        if (primeiroTamanhoDisponivel && !primeiroTamanhoDisponivel.disabled) {
+            selecionarTamanho(primeiroTamanhoDisponivel);
+            console.log(`📏 Selecionado automaticamente: ${tamanhosDisponiveisParaCor[0]}`);
+        }
+    }
+}
+
+// ============================================
+// FUNÇÃO: MOSTRAR MENSAGEM DE AVISO
+// ============================================
+
+function mostrarMensagemAviso(mensagem) {
+    // Remove mensagens anteriores
+    const mensagensAnteriores = document.querySelectorAll('.alert-aviso-variacao');
+    mensagensAnteriores.forEach(el => el.remove());
+    
+    // Cria a mensagem
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-warning alert-dismissible fade show alert-aviso-variacao mt-2';
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.innerHTML = `
+        <i class="bi bi-exclamation-triangle me-2"></i> ${mensagem}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+    `;
+    
+    // Insere a mensagem antes dos botões de tamanho
+    const tamanhosContainer = document.getElementById('tamanhos-container');
+    if (tamanhosContainer && tamanhosContainer.parentNode) {
+        tamanhosContainer.parentNode.insertBefore(alertDiv, tamanhosContainer);
+    }
+    
+    // Auto-remove após 3 segundos
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 3000);
+}
+
+// ============================================
+// FUNÇÃO PARA ATUALIZAR PREÇOS E ESTOQUE
+// ============================================
+
+function atualizarPrecosEestoque() {
+    const quantidadeInput = document.getElementById('quantidade-input-comprar');
+    const qtd = parseInt(quantidadeInput ? quantidadeInput.value : 1) || 1;
+    
+    // Busca a variação selecionada
+    const variacaoSelecionada = variacoesProduto.find(v => 
+        v.cor === corSelecionada && v.tamanho === tamanhoSelecionado
+    );
+    
+    let precoProduto = 0;
+    let estoqueDisponivel = 0;
+    
+    if (variacaoSelecionada) {
+        precoProduto = variacaoSelecionada.preco;
+        estoqueDisponivel = variacaoSelecionada.estoque;
+        console.log('✅ Variação encontrada:', variacaoSelecionada);
+    } else {
+        // Usa o preço padrão
+        precoProduto = parseFloat("{{ preco|floatformat:2 }}".replace(",", ".")) || 0;
+        console.log('⚠️ Variação não encontrada, usando preço padrão:', precoProduto);
+    }
+    
+    // Calcula os preços
+    const total = precoProduto * qtd;
+    const precoPix = total * 0.90;
+    
+    // Atualiza os displays de preço
+    const precoPixEl = document.getElementById('preco-pix');
+    if (precoPixEl) precoPixEl.textContent = formatBR(precoPix);
+    
+    const precoParceladoEl = document.getElementById('preco-parcelado');
+    if (precoParceladoEl) precoParceladoEl.textContent = formatBR(total);
+    
+    // Atualiza o estoque
+    const estoqueEl = document.getElementById('estoque-disponivel');
+    if (estoqueEl) {
+        estoqueEl.textContent = `Disponível: ${estoqueDisponivel} unidades`;
+    }
+    
+    // Atualiza os campos hidden
+    const qtdComprar = document.getElementById('quantidade-comprar');
+    if (qtdComprar) qtdComprar.value = qtd;
+    
+    const qtdCarrinho = document.getElementById('quantidade-carrinho');
+    if (qtdCarrinho) qtdCarrinho.value = qtd;
+}
+
+// ============================================
+// FUNÇÃO PARA ATUALIZAR QUANTIDADE
+// ============================================
 
 function atualizarQuantidade() {
     const quantidade = document.getElementById('quantidade-input-comprar').value;
     document.getElementById('quantidade-comprar').value = quantidade;
     document.getElementById('quantidade-carrinho').value = quantidade;
+    atualizarPrecosEestoque();
 }
+
+// ============================================
+// FUNÇÃO PARA VALIDAR COMPRA
+// ============================================
 
 function validarCompra(event) {
     if (!corSelecionada || !tamanhoSelecionado) {
         event.preventDefault();
-        alert('Por favor, selecione a cor e o tamanho do produto.');
+        
+        if (!corSelecionada) {
+            alert('Por favor, selecione a cor do produto.');
+        } else if (!tamanhoSelecionado) {
+            alert('Por favor, selecione o tamanho do produto.');
+        }
+        
         return false;
     }
+    
+    // Verifica se a variação existe
+    const variacaoExiste = variacoesProduto.some(v => 
+        v.cor === corSelecionada && v.tamanho === tamanhoSelecionado
+    );
+    
+    if (!variacaoExiste) {
+        event.preventDefault();
+        alert('Esta combinação de cor e tamanho não está disponível.');
+        return false;
+    }
+    
     return true;
 }
 
@@ -476,6 +716,7 @@ function validarCompra(event) {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM carregado - Inicializando página de produto');
+    console.log('📦 Variações disponíveis:', variacoesProduto);
     
     // Configurar frete com Enter
     const cepFrete = document.getElementById('cep-frete');
@@ -488,6 +729,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Configurar atualização de preço quando quantidade mudar
+    const quantidadeInput = document.getElementById('quantidade-input-comprar');
+    if (quantidadeInput) {
+        quantidadeInput.addEventListener('change', atualizarPrecosEestoque);
+        quantidadeInput.addEventListener('input', atualizarPrecosEestoque);
+    }
+    
     // Seleciona a primeira cor automaticamente
     const firstCorBtn = document.querySelector('.cor-btn');
     if (firstCorBtn) {
@@ -495,20 +743,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🎨 Primeira cor selecionada:', firstCorBtn.dataset.cor);
     }
     
-    // Seleciona o primeiro tamanho disponível automaticamente
-    const primeiroTamanhoDisponivel = document.querySelector('.tamanho-btn:not(.disabled)');
-    if (primeiroTamanhoDisponivel) {
-        selecionarTamanho(primeiroTamanhoDisponivel);
-        console.log('📏 Primeiro tamanho selecionado:', primeiroTamanhoDisponivel.dataset.tamanho);
-    }
-    
-    // Atualiza quantidade inicial
-    atualizarQuantidade();
-    
     console.log('✅ Inicialização concluída');
 });
-</script>
-
+</script>    
 <style>
 .loading-frete {
     border-left: 3px solid #007bff;
@@ -554,5 +791,38 @@ document.addEventListener('DOMContentLoaded', function() {
 .thumbnail-item.active {
     border-color: #0d6efd !important;
 }
-</style>
+    
+    .alert-aviso-variacao {
+    animation: slideDown 0.3s ease;
+    border-left: 4px solid #ffc107;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tamanho-btn {
+    transition: all 0.3s ease;
+}
+
+.tamanho-btn:not(.disabled):hover {
+    background-color: #007bff;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tamanho-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+</style>    
 {% endblock %}
