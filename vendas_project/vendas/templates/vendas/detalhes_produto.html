@@ -203,7 +203,52 @@
         </div>
     </div>
 </div>
-
+<style>
+.loading-frete {
+    border-left: 3px solid #007bff;
+    padding-left: 10px;
+    background-color: #f8f9ff;
+}
+.cor-btn {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.cor-btn:hover {
+    transform: scale(1.05);
+}
+.cor-btn .img-thumbnail {
+    transition: all 0.2s ease;
+}
+.cor-btn:hover .img-thumbnail {
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.3);
+}
+.cor-btn.border-primary {
+    border-color: #007bff !important;
+    border-width: 3px !important;
+}
+.tamanho-btn.active {
+    background-color: #007bff !important;
+    color: white !important;
+    border-color: #007bff !important;
+}
+.tamanho-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.tamanho-btn:not(.disabled):hover {
+    background-color: #007bff;
+    color: white;
+}
+.thumbnail-item {
+    transition: all 0.2s ease;
+}
+.thumbnail-item:hover {
+    transform: scale(1.05);
+}
+.thumbnail-item.active {
+    border-color: #0d6efd !important;
+}
+</style>
 <!-- ========================================================== -->
 <!-- JAVASCRIPT: GALERIA DE IMAGENS E SELEÇÃO                   -->
 <!-- ========================================================== -->
@@ -509,50 +554,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<style>
-.loading-frete {
-    border-left: 3px solid #007bff;
-    padding-left: 10px;
-    background-color: #f8f9ff;
-}
-.cor-btn {
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.cor-btn:hover {
-    transform: scale(1.05);
-}
-.cor-btn .img-thumbnail {
-    transition: all 0.2s ease;
-}
-.cor-btn:hover .img-thumbnail {
-    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.3);
-}
-.cor-btn.border-primary {
-    border-color: #007bff !important;
-    border-width: 3px !important;
-}
-.tamanho-btn.active {
-    background-color: #007bff !important;
-    color: white !important;
-    border-color: #007bff !important;
-}
-.tamanho-btn.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-.tamanho-btn:not(.disabled):hover {
-    background-color: #007bff;
-    color: white;
-}
-.thumbnail-item {
-    transition: all 0.2s ease;
-}
-.thumbnail-item:hover {
-    transform: scale(1.05);
-}
-.thumbnail-item.active {
-    border-color: #0d6efd !important;
-}
-</style>
 {% endblock %}
