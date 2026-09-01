@@ -464,7 +464,34 @@ function selecionarCor(button) {
     // Atualiza os campos hidden
     document.getElementById('input-cor-comprar').value = cor;
     document.getElementById('input-cor-carrinho').value = cor;
+    
+    // 🔥 ADICIONE APENAS ESTE BLOCO AQUI // Desabilita tamanhos que não existem para esta cor
+    const variacoes = [
+        {% for variacao in produto.variacoes.all %}
+        { cor: "{{ variacao.cor }}", tamanho: "{{ variacao.tamanho }}" },
+        {% endfor %}
+    ];
+    
+    document.querySelectorAll('.tamanho-btn').forEach(btn => {
+        const tamanho = btn.dataset.tamanho;
+        const existe = variacoes.some(v => v.cor === cor && v.tamanho === tamanho);
+        
+        if (!existe) {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+            btn.style.opacity = '0.4';
+            btn.style.cursor = 'not-allowed';
+            btn.style.textDecoration = 'line-through';
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.style.textDecoration = 'none';
+        }
+    });
 }
+
 
 function selecionarTamanho(button) {
     if (button.disabled) return;
@@ -552,6 +579,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ Inicialização concluída');
 });
+    
 </script>
 
 {% endblock %}
