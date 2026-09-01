@@ -1,6 +1,6 @@
 {% extends 'vendas/base.html' %}
 {% load static %}
-{% load cache %}  <!-- 🔥LINHA de CACHE -->
+{% load cache %}
 
 {% block content %}
 <!-- Ícones do Bootstrap -->
@@ -9,73 +9,63 @@
 
 <div class="container-projetos">
 
-    <!--LOGO/BANNER >
-    <section class="hero-banner" style="background: url('{% static 'img/logo.png' %}') no-repeat center center; background-size: cover;">
-        <div class="hero-content">
-            <h1>Mirna Boutique</h1>
-            <a href="#produtos" class="btn-hero">Ver produtos</a>
-        </div>
-    </section-->
     <!-- BANNER/HERO -->
-    
     <section class="hero-banner" style="background: url('{% static 'img/logo.png' %}') no-repeat center center; background-size: cover; background-position: center;">
-    <div class="hero-overlay" style="background: rgba(0,0,0,0.3); padding: 60px 0;">
-        <div class="hero-content">
-            <h1 class="text-white">Mirna Boutique</h1>
-            <p class="text-white lead">Moda Feminina</p>
-            <a href="#produtos" class="btn-hero">Ver produtos</a>
+        <div class="hero-overlay" style="background: rgba(0,0,0,0.3); padding: 60px 0;">
+            <div class="hero-content">
+                <h1 class="text-white">Mirna Boutique</h1>
+                <p class="text-white lead">Moda Feminina</p>
+                <a href="#produtos" class="btn-hero">Ver produtos</a>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
     <!-- CAROUSEL - PRODUTOS EM DESTAQUE -->
-{% if not categoria_selecionada %}
-{% cache 600 carousel_produtos %}    
-<div id="carouselProdutos" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
-    <div class="carousel-inner">
-        {% for produto in produtos_destaque|slice:":3" %}
-        <div class="carousel-item {% if forloop.first %}active{% endif %}">
-            <div class="carousel-banner">
-                <div class="carousel-content">
-                    <p class="carousel-tag">⭐ Destaque</p>
-                    <h2 class="carousel-title">{{ produto.nome }}</h2>
-                    <p class="carousel-price">💰 R$ {{ produto.preco_pix }} no PIX</p>
-                    <p class="carousel-parcelado">ou 3x de R$ {{ produto.preco_parcela }} sem juros</p>
-                    <a href="{% url 'detalhes_produto' produto.id %}" class="btn-carousel">🛒 Comprar agora →</a>
-                </div>
-                <img src="{{ produto.imagem }}" class="carousel-img" alt="{{ produto.nome }}"
-                     onerror="this.src='https://placehold.co/400x300?text=Sem+Imagem'">
-                <div class="carousel-overlay"></div>
-            </div>
-        </div>
-        
-        {% empty %}
-        <div class="carousel-item active">
-            <div class="carousel-banner" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
-                <div class="carousel-content text-center" style="width: 100%;">
-                    <p class="carousel-tag">📢</p>
-                    <h2 class="carousel-title">Nenhum produto em destaque</h2>
-                    <p class="carousel-parcelado">Cadastre produtos com a categoria "Destaque" para aparecerem aqui.</p>
+    {% if not categoria_selecionada %}
+    {% cache 600 carousel_produtos %}    
+    <div id="carouselProdutos" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            {% for produto in produtos_destaque|slice:":3" %}
+            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                <div class="carousel-banner">
+                    <div class="carousel-content">
+                        <p class="carousel-tag">⭐ Destaque</p>
+                        <h2 class="carousel-title">{{ produto.nome }}</h2>
+                        <p class="carousel-price">💰 R$ {{ produto.preco_pix }} no PIX</p>
+                        <p class="carousel-parcelado">ou 3x de R$ {{ produto.preco_parcela }} sem juros</p>
+                        <a href="{% url 'detalhes_produto' produto.id %}" class="btn-carousel">🛒 Comprar agora →</a>
+                    </div>
+                    <img src="{{ produto.imagem }}" class="carousel-img" alt="{{ produto.nome }}"
+                         onerror="this.style.display='none'">
+                    <div class="carousel-overlay"></div>
                 </div>
             </div>
+            {% empty %}
+            <div class="carousel-item active">
+                <div class="carousel-banner" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
+                    <div class="carousel-content text-center" style="width: 100%;">
+                        <p class="carousel-tag">📢</p>
+                        <h2 class="carousel-title">Nenhum produto em destaque</h2>
+                        <p class="carousel-parcelado">Cadastre produtos com a categoria "Destaque" para aparecerem aqui.</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         </div>
-        
-        {% endfor %}
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselProdutos" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselProdutos" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        </button>
+        <div class="carousel-indicators">
+            {% for produto in produtos_destaque|slice:":3" %}
+            <button type="button" data-bs-target="#carouselProdutos" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></button>
+            {% endfor %}
+        </div>
     </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#carouselProdutos" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#carouselProdutos" data-bs-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-    </button>
-    <div class="carousel-indicators">
-        {% for produto in produtos_destaque|slice:":3" %}
-        <button type="button" data-bs-target="#carouselProdutos" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></button>
-        {% endfor %}
-    </div>
-</div>
-{% endcache %}
-{% endif %}
+    {% endcache %}
+    {% endif %}
 
     <!-- SEÇÃO: LANÇAMENTOS -->
     {% if not categoria_selecionada or categoria_selecionada == 'lancamentos' %}
@@ -89,7 +79,6 @@
         </div>
         
         <div class="produtos-scroll-container">
-            <!-- Cache da lista de produtos por 5 minutos -->
             {% cache 300 produtos_lancamentos %}    
             <div class="produtos-scroll" id="scrollLancamentos">
                 {% for produto in produtos_lancamentos %}
@@ -97,7 +86,7 @@
                     <a href="{% url 'detalhes_produto' produto.id %}">
                         <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
                              style="width:100%; height:200px; object-fit:cover;"
-                             onerror="this.src='https://placehold.co/300x200?text=Sem+Imagem'">
+                             onerror="this.style.display='none'">
                         {% if produto.novo %}
                             <span class="badge-novo">NOVO</span>
                         {% endif %}
@@ -123,6 +112,47 @@
     </section>
     {% endif %}
 
+    <!-- 🔥 SEÇÃO: PROMOÇÕES (NOVA) -->
+    {% if not categoria_selecionada or categoria_selecionada == 'promocoes' %}
+    <section class="categoria-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="bi bi-tag-fill"></i> Promoções
+                <span class="section-badge discount">Ofertas</span>
+            </h2>
+            <a href="?categoria=promocoes" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
+        </div>
+        
+        <div class="produtos-scroll-container">
+            <div class="produtos-scroll" id="scrollPromocoes">
+                {% for produto in produtos_promocoes %}
+                <div class="produto-card destaque">
+                    <a href="{% url 'detalhes_produto' produto.id %}">
+                        <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
+                             style="width:100%; height:200px; object-fit:cover;"
+                             onerror="this.style.display='none'">
+                        <span class="badge-desconto">-10%</span>
+                    </a>
+                    <div class="produto-info">
+                        <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
+                        <p class="old-price">R$ {{ produto.preco }}</p>
+                        <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                        <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                        <button class="btn-quick-add" data-id="{{ produto.id }}">
+                            <i class="bi bi-cart-plus"></i> Comprar
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">Nenhuma promoção disponível no momento.</div>
+                {% endfor %}
+            </div>
+            <button class="scroll-btn left" onclick="scrollProdutos('scrollPromocoes', -1)"><i class="bi bi-chevron-left"></i></button>
+            <button class="scroll-btn right" onclick="scrollProdutos('scrollPromocoes', 1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- SEÇÃO: CONJUNTOS -->
     {% if not categoria_selecionada or categoria_selecionada == 'conjuntos' %}
     <section class="categoria-section">
@@ -141,7 +171,7 @@
                     <a href="{% url 'detalhes_produto' produto.id %}">
                         <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
                              style="width:100%; height:200px; object-fit:cover;"
-                             onerror="this.src='https://placehold.co/300x200?text=Sem+Imagem'">
+                             onerror="this.style.display='none'">
                     </a>
                     <div class="produto-info">
                         <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
@@ -180,7 +210,7 @@
                     <a href="{% url 'detalhes_produto' produto.id %}">
                         <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
                              style="width:100%; height:200px; object-fit:cover;"
-                             onerror="this.src='https://placehold.co/300x200?text=Sem+Imagem'">
+                             onerror="this.style.display='none'">
                     </a>
                     <div class="produto-info">
                         <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
@@ -253,156 +283,11 @@
 
 </div>
 
-<!-- ESTILOS -->
+<!-- ESTILOS - MANTENHA SEU CSS EXISTENTE E ADICIONE: -->
 <style>
-.hero-title {
-    color: #1f2937;
-    font-weight: bold;
-    margin-bottom: 20px;
-}
-.hero-overlay {
-    position: relative;
-    z-index: 2;
-}
-    
-/* Seções de categoria */
-.categoria-section {
-    margin-bottom: 3rem;
-}
+/* ... seus estilos existentes ... */
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.section-title {
-    font-size: 1.8rem;
-    font-weight: bold;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.section-title i {
-    color: #f59e0b;
-    font-size: 1.8rem;
-}
-
-.section-badge {
-    background: linear-gradient(135deg, #28bcc4, #0f7378);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: normal;
-}
-
-.section-badge.discount {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-}
-
-.ver-todos-link {
-    color: #28bcc4;
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.ver-todos-link:hover {
-    color: #0f7378;
-    transform: translateX(5px);
-}
-
-.ver-todos-link i {
-    font-size: 0.9rem;
-}
-
-/* Container de scroll */
-.produtos-scroll-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.produtos-scroll {
-    display: flex;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    gap: 25px;
-    padding: 15px 5px;
-    scrollbar-width: thin;
-    flex: 1;
-}
-
-.produtos-scroll::-webkit-scrollbar {
-    height: 6px;
-}
-
-.produtos-scroll::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.produtos-scroll::-webkit-scrollbar-thumb {
-    background: #28bcc4;
-    border-radius: 10px;
-}
-
-/* Cards de produto */
-.produto-card {
-    min-width: 220px;
-    max-width: 220px;
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    position: relative;
-}
-
-.produto-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-
-.produto-card a {
-    display: block;
-    overflow: hidden;
-}
-
-.produto-card img {
-    width: 100%;
-    height: 220px;
-    object-fit: cover;
-    transition: transform 0.4s ease;
-}
-
-.produto-card:hover img {
-    transform: scale(1.05);
-}
-
-.produto-card.destaque {
-    border: 2px solid #f59e0b;
-}
-
-.badge-novo {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: linear-gradient(135deg, #28bcc4, #0f7378);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    z-index: 10;
-}
-
+/* Estilo para badge de desconto */
 .badge-desconto {
     position: absolute;
     top: 10px;
@@ -416,260 +301,17 @@
     z-index: 10;
 }
 
-.produto-info {
-    padding: 12px;
+/* Estilo para produtos em promoção */
+.produto-card.destaque {
+    border: 2px solid #e74c3c;
 }
 
-.produto-info h6 {
-    font-size: 0.9rem;
-    margin-bottom: 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.section-badge.discount {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
 }
-
-.old-price {
-    color: #999;
-    text-decoration: line-through;
-    font-size: 0.8rem;
-    margin-bottom: 4px;
-}
-
-.price {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #28bcc4;
-    margin-bottom: 4px;
-}
-
-.price span {
-    font-size: 0.7rem;
-    font-weight: normal;
-    color: #666;
-}
-
-.parcelado {
-    font-size: 0.7rem;
-    color: #666;
-    margin-bottom: 8px;
-}
-
-.btn-quick-add {
-    width: 100%;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 6px;
-    font-size: 0.8rem;
-    transition: all 0.3s ease;
-}
-
-.btn-quick-add:hover {
-    background: #28bcc4;
-    color: white;
-    border-color: #28bcc4;
-}
-
-/* Botões de scroll */
-.scroll-btn {
-    position: absolute;
-    background: white;
-    border: 1px solid #e9ecef;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 10;
-}
-
-.scroll-btn.left {
-    left: -20px;
-}
-
-.scroll-btn.right {
-    right: -20px;
-}
-
-.scroll-btn:hover {
-    background: #28bcc4;
-    color: white;
-    transform: scale(1.1);
-}
-
-.info-card {
-    transition: all 0.3s ease;
-}
-
-.info-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-
-@media (max-width: 768px) {
-    .scroll-btn {
-        display: none;
-    }
-    
-    .produto-card {
-        min-width: 160px;
-    }
-    
-    .produto-card img {
-        height: 160px;
-    }
-    
-    .section-title {
-        font-size: 1.4rem;
-    }
-}
-.spinner {
-    animation: spin 0.5s linear infinite;
-    display: inline-block;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.btn-quick-add:disabled {
-    opacity: 0.7;
-    cursor: wait;
-}    
 </style>
 
 <script>
-function scrollProdutos(scrollId, direction) {
-    const container = document.getElementById(scrollId);
-    if (!container) return;
-    
-    const card = container.querySelector('.produto-card');
-    if (!card) return;
-    
-    const gap = 25;
-    const scrollAmount = card.offsetWidth + gap;
-    
-    container.scrollBy({
-        left: direction * scrollAmount,
-        behavior: 'smooth'
-    });
-}
-
-// Função para obter o CSRF token de forma segura
-function getCSRFToken() {
-    const tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (tokenInput) return tokenInput.value;
-    
-    const metaToken = document.querySelector('meta[name="csrf-token"]');
-    if (metaToken) return metaToken.content;
-    
-    console.warn('CSRF token não encontrado');
-    return '';
-}
-
-// Função para adicionar ao carrinho via AJAX
-async function adicionarAoCarrinho(produtoId, buttonElement) {
-    if (!produtoId) {
-        console.error('ID do produto não encontrado');
-        return;
-    }
-    
-    const originalText = buttonElement.innerHTML;
-    
-    buttonElement.innerHTML = '<i class="bi bi-arrow-repeat spinner"></i> Adicionando...';
-    buttonElement.disabled = true;
-    
-    try {
-        const formData = new FormData();
-        formData.append('quantidade', 1);
-        formData.append('action', 'add');
-        
-        const csrfToken = getCSRFToken();
-        
-        const response = await fetch(`/carrinho/adicionar/${produtoId}/`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken
-            }
-        });
-        
-        if (response.ok) {
-            buttonElement.innerHTML = '<i class="bi bi-check-lg"></i> Adicionado!';
-            buttonElement.style.background = '#28a745';
-            buttonElement.style.borderColor = '#28a745';
-            buttonElement.style.color = 'white';
-            
-            await atualizarCarrinhoCount();
-            
-            setTimeout(() => {
-                buttonElement.innerHTML = originalText;
-                buttonElement.disabled = false;
-                buttonElement.style.background = '';
-                buttonElement.style.borderColor = '';
-                buttonElement.style.color = '';
-            }, 2000);
-        } else {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Erro ao adicionar');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        buttonElement.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Erro!';
-        setTimeout(() => {
-            buttonElement.innerHTML = originalText;
-            buttonElement.disabled = false;
-        }, 2000);
-    }
-}
-
-// Função para atualizar contador do carrinho
-async function atualizarCarrinhoCount() {
-    try {
-        const response = await fetch('/carrinho/count/');
-        const data = await response.json();
-        
-        const badge = document.getElementById('carrinho-count');
-        if (badge) {
-            badge.innerText = data.count || 0;
-        }
-    } catch (error) {
-        console.error('Erro ao atualizar contador:', error);
-    }
-}
-
-// Inicializar quando o DOM estiver carregado
-document.addEventListener('DOMContentLoaded', function() {
-    const scrollContainers = document.querySelectorAll('.produtos-scroll');
-    scrollContainers.forEach(container => {
-        container.addEventListener('wheel', function(e) {
-            if (e.deltaY !== 0) {
-                e.preventDefault();
-                container.scrollLeft += e.deltaY;
-            }
-        });
-    });
-    
-    const botoesComprar = document.querySelectorAll('.btn-quick-add');
-    console.log(`✅ ${botoesComprar.length} botões de compra encontrados`);
-    
-    botoesComprar.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const produtoId = this.dataset.id;
-            if (produtoId) {
-                adicionarAoCarrinho(produtoId, this);
-            } else {
-                console.error('Botão sem data-id', this);
-            }
-        });
-    });
-    
-    atualizarCarrinhoCount();
-});
+// ... seu JavaScript existente ...
 </script>
 {% endblock %}
