@@ -227,6 +227,14 @@ class Venda(models.Model):
         ('pendente', 'Pendente'),
         ('cancelada', 'Cancelada'),
     ]
+
+    FORMA_PAGAMENTO_CHOICES = [
+        ('pix', 'Pix'),
+        ('cartao', 'Cartão'),
+        ('dinheiro', 'Dinheiro'),
+        ('transferencia', 'Transferência'),
+    ]
+    
     
     vendedor = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # 🔥 ADICIONE
     produto = models.ForeignKey(Produto, on_delete=models.CASCADE)
