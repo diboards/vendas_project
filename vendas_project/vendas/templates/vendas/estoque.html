@@ -286,6 +286,7 @@
                                             <div class="col-md-6">
                                                 <div class="form-floating">
                                                     <select class="form-select" name="categoria" required>
+                                                        <option value="destaque" {% if produto.categoria == 'Destaque' %}selected{% endif %}>Destaque</option>
                                                         <option value="lancamentos" {% if produto.categoria == 'Lançamentos' %}selected{% endif %}>Lançamentos</option>
                                                         <option value="promocoes" {% if produto.categoria == 'Promoções' %}selected{% endif %}>Promoções</option>
                                                         <option value="conjuntos" {% if produto.categoria == 'Conjuntos' %}selected{% endif %}>Conjuntos</option>
