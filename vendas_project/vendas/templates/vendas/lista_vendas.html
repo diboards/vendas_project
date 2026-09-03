@@ -154,6 +154,11 @@
                                     <td class="text-end">R$ {{ venda.preco_unitario|floatformat:2 }}</td>
                                     <td class="text-end fw-bold">R$ {{ venda.total|floatformat:2 }}</td>
                                     <td>
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                                            {{ venda.get_forma_pagamento_display }}
+                                        </span>
+                                    </td>
+                                    <td>
                                         <span class="badge 
                                             {% if venda.status == 'concluida' %}bg-success
                                             {% elif venda.status == 'pendente' %}bg-warning text-dark
