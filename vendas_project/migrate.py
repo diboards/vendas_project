@@ -33,58 +33,7 @@ with connection.cursor() as cursor:
         """)
         print("✅ Tabela vendas_perfil criada!")
 
-print("🔄 Verificando se a tabela vendas_produtovariacao existe...")
-with connection.cursor() as cursor:
-    cursor.execute("""
-        SELECT EXISTS (
-            SELECT 1 FROM information_schema.tables 
-            WHERE table_name='vendas_produtovariacao'
-        );
-    """)
-    exists = cursor.fetchone()[0]
-    
-    if not exists:
-        print("⚠️ Tabela vendas_produtovariacao não existe! Criando...")
-        cursor.execute("""
-            CREATE TABLE vendas_produtovariacao (
-                id SERIAL PRIMARY KEY,
-                produto_id INTEGER NOT NULL REFERENCES vendas_produto(id),
-                cor VARCHAR(20) NOT NULL,
-                tamanho VARCHAR(10) NOT NULL,
-                preco DECIMAL(10,2) NOT NULL,
-                quantidade_estoque INTEGER NOT NULL DEFAULT 0,
-                imagem VARCHAR(200)
-            );
-        """)
-        print("✅ Tabela vendas_produtovariacao criada!")
 
-print("🔄 Verificando se a coluna variacao_id existe...")
-with connection.cursor() as cursor:
-    cursor.execute("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='vendas_carrinhoitem' AND column_name='variacao_id';
-    """)
-    exists = cursor.fetchone()
-    if not exists:
-        cursor.execute("ALTER TABLE vendas_carrinhoitem ADD COLUMN variacao_id integer;")
-        print("✅ Coluna variacao_id criada!")
-
-print("🔄 Verificando se a coluna variacao_id existe em itempedido...")
-with connection.cursor() as cursor:
-    cursor.execute("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='vendas_itempedido' AND column_name='variacao_id';
-    """)
-    exists = cursor.fetchone()
-    if not exists:
-        cursor.execute("ALTER TABLE vendas_itempedido ADD COLUMN variacao_id integer;")
-        print("✅ Coluna variacao_id criada em itempedido!")
-
-print("🔄 Criando variação padrão...")
-
-print(f"✅ Variação padrão criada com ID: {variacao.id}")
 
 print("👤 Criando superusuário...")
 from django.contrib.auth import get_user_model
