@@ -233,9 +233,9 @@ class Venda(models.Model):
     variacao = models.ForeignKey(ProdutoVariacao, on_delete=models.CASCADE, null=True, blank=True)
     quantidade = models.PositiveIntegerField()
     preco_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    forma_pagamento = models.CharField(max_length=20, choices=FORMA_PAGAMENTO_CHOICES, default='pix')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='concluida')
     observacoes = models.TextField(blank=True, null=True)
-   
     data_criacao = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     
     @property
