@@ -25,7 +25,6 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 #
 from django.forms import inlineformset_factory
-from django.db.models import Q
 
 from collections import OrderedDict
 from django.http import HttpResponseBadRequest
@@ -33,10 +32,7 @@ from django.views.decorators.http import require_POST
 from vendas.models import Produto, ProdutoVariacao, ImagemVariacao, Venda, CarrinhoItem, EnderecoEntrega, Pedido, ItemPedido, COR_CHOICES, TAMANHO_CHOICES
 from vendas.forms import VendaForm, ProdutoForm, ProdutoVariacaoForm, ProdutoVariacaoInlineFormSet, UsuarioComEnderecoForm
 from vendas.forms import OrcamentoForm  # ← Verifique esta importação
-import json, os
-import requests
-import re
-import mercadopago
+import json, os, requests, re, unicodedata, mercadopago
 from django.conf import settings
 
 from django.core.paginator import Paginator # Estoque com filtros e paginação
@@ -79,40 +75,18 @@ def calcular_precos(produto_list):
     return resultado
 
 
-# 🔥 PÁGINA INICIAL - 10 minutos
-@cache_page(60 * 10)
+def remover_acentos(texto):
+    """Remove acentos e coloca em minúsculas."""
+    nfkd = unicodedata.normalize('NFKD', texto)
+    return ''.join([c for c in nfkd if not unicodedata.combining(c)]).lower()
+
 def pagina_inicial(request):
     categoria_selecionada = request.GET.get('categoria', '')
     busca = request.GET.get('busca', '').strip()
 
-    # Query base
     produtos_query = Produto.objects.filter(ativo=True)
 
-    # Se houver busca, filtra por nome, descrição ou categoria
-    if busca:
-        produtos_busca = produtos_query.filter(
-            Q(nome__icontains=busca) |
-            Q(descricao__icontains=busca) |
-            Q(categoria__icontains=busca)
-        ).distinct().order_by('-data_cadastro')
-    else:
-        produtos_busca = []
-
-    # Separar produtos por categoria (apenas quando não há busca)
-    if not busca:
-        produtos_lancamentos = produtos_query.filter(categoria='lancamentos')[:12]
-        produtos_promocoes = produtos_query.filter(categoria='promocoes')[:12]
-        produtos_conjuntos = produtos_query.filter(categoria='conjuntos')[:12]
-        produtos_outros = produtos_query.filter(categoria='outros')[:12]
-        produtos_destaque = produtos_query.filter(categoria='destaque')[:6]
-    else:
-        produtos_lancamentos = []
-        produtos_promocoes = []
-        produtos_conjuntos = []
-        produtos_outros = []
-        produtos_destaque = []
-
-    # Função auxiliar para calcular preços e dados
+    # --- Função auxiliar para calcular preços e montar dicionário ---
     def calcular_precos(produto_list):
         resultado = []
         for p in produto_list:
@@ -140,7 +114,7 @@ def pagina_inicial(request):
             resultado.append({
                 "id": p.id,
                 "nome": p.nome,
-                "descricao": p.descricao,  # incluído para exibir no template
+                "descricao": p.descricao,
                 "preco": variacao.preco,
                 "preco_pix": preco_pix,
                 "preco_parcela": preco_parcela,
@@ -148,6 +122,56 @@ def pagina_inicial(request):
                 "categoria": p.categoria,
             })
         return resultado
+
+    # --- Lógica de busca ---
+    if busca:
+        # Prepara variações do termo (original, sem acento, singular)
+        termos = []
+        termos.append(busca)
+        sem_acento = remover_acentos(busca)
+        termos.append(sem_acento)
+        if sem_acento.endswith('s'):
+            termos.append(sem_acento[:-1])  # tenta singular
+
+        # Constrói filtro com operador OR entre todos os termos
+        filtro = Q()
+        for termo in termos:
+            filtro |= (
+                Q(nome__icontains=termo) |
+                Q(descricao__icontains=termo) |
+                Q(categoria__icontains=termo)
+            )
+
+        # Se for PostgreSQL, tenta usar unaccent (ignora acentos)
+        if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+            try:
+                from django.contrib.postgres.lookups import Unaccent
+                filtro_unaccent = Q()
+                for termo in termos:
+                    filtro_unaccent |= (
+                        Q(nome__unaccent__icontains=termo) |
+                        Q(descricao__unaccent__icontains=termo) |
+                        Q(categoria__unaccent__icontains=termo)
+                    )
+                filtro |= filtro_unaccent
+            except ImportError:
+                pass  # unaccent não disponível, segue sem ele
+
+        produtos_busca = produtos_query.filter(filtro).distinct().order_by('-data_cadastro')
+
+        # Zera as listas de categorias porque a busca substitui as seções
+        produtos_lancamentos = []
+        produtos_promocoes = []
+        produtos_conjuntos = []
+        produtos_outros = []
+        produtos_destaque = []
+    else:
+        produtos_busca = []
+        produtos_lancamentos = produtos_query.filter(categoria='lancamentos')[:12]
+        produtos_promocoes = produtos_query.filter(categoria='promocoes')[:12]
+        produtos_conjuntos = produtos_query.filter(categoria='conjuntos')[:12]
+        produtos_outros = produtos_query.filter(categoria='outros')[:12]
+        produtos_destaque = produtos_query.filter(categoria='destaque')[:6]
 
     context = {
         'debug': settings.DEBUG,
@@ -159,7 +183,6 @@ def pagina_inicial(request):
         'produtos_outros': calcular_precos(produtos_outros) if not busca else [],
         'produtos_destaque': calcular_precos(produtos_destaque) if not busca else [],
         'categoria_selecionada': categoria_selecionada,
-        'produtos': [],  # se necessário, ajuste
     }
 
     return render(request, 'vendas/index.html', context)
