@@ -570,8 +570,8 @@ function adicionarLinhaVariacao(produtoId) {
     const numLinhas = tbody.querySelectorAll('tr').length;
     
     // Usa o número total de variações para criar um índice único
-    const todasVariacoes = document.querySelectorAll('[name="variacao_id[]"]').length;
-    const novoIndice = todasVariacoes;
+    const variacoesDoProduto = tbody.querySelectorAll('input[name="variacao_id[]"]').length;
+    const novoIndice = variacoesDoProduto;
     
     const novaLinha = document.createElement('tr');
     novaLinha.innerHTML = `
