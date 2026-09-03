@@ -213,7 +213,7 @@
                              onerror="this.style.display='none'">
                     </a>
                     <div class="produto-info">
-                        <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
+                        <p class="produto-descricao" title="{{ produto.descricao }}">{{ produto.descricao|truncatechars:60 }}</p>
                         <p class="old-price">R$ {{ produto.preco }}</p>
                         <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
                         <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
