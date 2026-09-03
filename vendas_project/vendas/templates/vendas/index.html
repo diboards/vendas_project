@@ -92,7 +92,7 @@
                         {% endif %}
                     </a>
                     <div class="produto-info">
-                        <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
+                        <h6 class="produto-descricao" title="{{ produto.descricao }}">{{ produto.descricao|truncatechars:50 }}</h6>
                         <p class="old-price">R$ {{ produto.preco }}</p>
                         <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
                         <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
@@ -308,6 +308,17 @@
 
 .section-badge.discount {
     background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+/* Ajuste o CSS para dar boa aparência:  */
+    .produto-descricao {
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* limita a 2 linhas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 </style>
 
