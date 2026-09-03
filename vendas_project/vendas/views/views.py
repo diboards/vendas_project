@@ -2460,7 +2460,9 @@ def editar_venda(request, venda_id):
     if request.method == 'POST':
         status = request.POST.get('status')
         observacoes = request.POST.get('observacoes', '')
-        
+        venda.forma_pagamento = request.POST.get('forma_pagamento', 'pix')
+        venda.save()
+                
         if status in ['concluida', 'pendente', 'cancelada']:
             venda.status = status
             venda.observacoes = observacoes
