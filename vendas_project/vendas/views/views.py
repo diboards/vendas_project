@@ -84,38 +84,45 @@ def calcular_precos(produto_list):
 def pagina_inicial(request):
     categoria_selecionada = request.GET.get('categoria', '')
     busca = request.GET.get('busca', '').strip()
-    
+
     # Query base
     produtos_query = Produto.objects.filter(ativo=True)
-    
-    # Se houver busca, filtra produtos por nome, descrição ou categoria
-    produtos_busca = []
+
+    # Se houver busca, filtra por nome, descrição ou categoria
     if busca:
-        produtos_busca_query = produtos_query.filter(
+        produtos_busca = produtos_query.filter(
             Q(nome__icontains=busca) |
             Q(descricao__icontains=busca) |
             Q(categoria__icontains=busca)
-        ).distinct()
-        produtos_busca = calcular_precos(produtos_busca_query)
-    
-    # Separação por categorias (como está hoje)
-    produtos_lancamentos = produtos_query.filter(categoria='lancamentos')[:12]
-    produtos_promocoes = produtos_query.filter(categoria='promocoes')[:12]
-    produtos_conjuntos = produtos_query.filter(categoria='conjuntos')[:12]
-    produtos_outros = produtos_query.filter(categoria='outros')[:12]
-    produtos_destaque = produtos_query.filter(categoria='destaque')[:6]
-    
-    # Função para calcular preços (mesma que você já tem)
+        ).distinct().order_by('-data_cadastro')
+    else:
+        produtos_busca = []
+
+    # Separar produtos por categoria (apenas quando não há busca)
+    if not busca:
+        produtos_lancamentos = produtos_query.filter(categoria='lancamentos')[:12]
+        produtos_promocoes = produtos_query.filter(categoria='promocoes')[:12]
+        produtos_conjuntos = produtos_query.filter(categoria='conjuntos')[:12]
+        produtos_outros = produtos_query.filter(categoria='outros')[:12]
+        produtos_destaque = produtos_query.filter(categoria='destaque')[:6]
+    else:
+        produtos_lancamentos = []
+        produtos_promocoes = []
+        produtos_conjuntos = []
+        produtos_outros = []
+        produtos_destaque = []
+
+    # Função auxiliar para calcular preços e dados
     def calcular_precos(produto_list):
         resultado = []
         for p in produto_list:
             variacao = p.variacoes.first()
             if not variacao:
                 continue
-            
+
             preco_pix = (variacao.preco * Decimal("0.90")).quantize(Decimal("0.01"))
             preco_parcela = (variacao.preco / Decimal("3")).quantize(Decimal("0.01"))
-            
+
             imagem_url = None
             if variacao.imagem:
                 try:
@@ -129,10 +136,11 @@ def pagina_inicial(request):
                     imagem_url = None
             if not imagem_url:
                 imagem_url = 'https://placehold.co/300x200?text=Sem+Imagem'
-            
+
             resultado.append({
                 "id": p.id,
                 "nome": p.nome,
+                "descricao": p.descricao,  # incluído para exibir no template
                 "preco": variacao.preco,
                 "preco_pix": preco_pix,
                 "preco_parcela": preco_parcela,
@@ -140,20 +148,20 @@ def pagina_inicial(request):
                 "categoria": p.categoria,
             })
         return resultado
-    
+
     context = {
         'debug': settings.DEBUG,
-        'produtos_lancamentos': calcular_precos(produtos_lancamentos),
-        'produtos_promocoes': calcular_precos(produtos_promocoes),
-        'produtos_conjuntos': calcular_precos(produtos_conjuntos),
-        'produtos_outros': calcular_precos(produtos_outros),
-        'produtos_destaque': calcular_precos(produtos_destaque),
-        'categoria_selecionada': categoria_selecionada,
-        'produtos': calcular_precos(produtos),
         'busca': busca,
-        'produtos_busca': produtos_busca,
+        'produtos_busca': calcular_precos(produtos_busca) if busca else [],
+        'produtos_lancamentos': calcular_precos(produtos_lancamentos) if not busca else [],
+        'produtos_promocoes': calcular_precos(produtos_promocoes) if not busca else [],
+        'produtos_conjuntos': calcular_precos(produtos_conjuntos) if not busca else [],
+        'produtos_outros': calcular_precos(produtos_outros) if not busca else [],
+        'produtos_destaque': calcular_precos(produtos_destaque) if not busca else [],
+        'categoria_selecionada': categoria_selecionada,
+        'produtos': [],  # se necessário, ajuste
     }
-    
+
     return render(request, 'vendas/index.html', context)
 
 
