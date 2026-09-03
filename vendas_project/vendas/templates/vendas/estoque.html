@@ -289,6 +289,7 @@
                                                         <option value="lancamentos" {% if produto.categoria == 'Lançamentos' %}selected{% endif %}>Lançamentos</option>
                                                         <option value="promocoes" {% if produto.categoria == 'Promoções' %}selected{% endif %}>Promoções</option>
                                                         <option value="conjuntos" {% if produto.categoria == 'Conjuntos' %}selected{% endif %}>Conjuntos</option>
+                                                        <option value="conjuntos" {% if produto.categoria == 'Bolsas' %}selected{% endif %}>Bolsas</option>
                                                         <option value="outros" {% if produto.categoria == 'Outros' %}selected{% endif %}>Outros</option>
                                                     </select>
                                                     <label>Categoria *</label>
@@ -526,6 +527,7 @@
                                                     <option value="lancamentos" {% if categoria_filter == 'lancamentos' %}selected{% endif %}>Lançamentos</option>
                                                     <option value="promocoes" {% if categoria_filter == 'promocoes' %}selected{% endif %}>Promoções</option>
                                                     <option value="conjuntos" {% if categoria_filter == 'conjuntos' %}selected{% endif %}>Conjuntos</option>
+                                                    <option value="Bolsas" {% if categoria_filter == 'bolsas' %}selected{% endif %}>Bolas</option>
                                                     <option value="outros" {% if categoria_filter == 'outros' %}selected{% endif %}>Outros</option>
                                                 </select>
                                                 <label>Categoria</label>
@@ -667,37 +669,7 @@ function removerImagemAdicional(imagemId, button) {
     }
 }
 
-// ==========================================
-// PREENCHER GRADE COM VALORES PADRÃO
-// ==========================================
-function preencherGrade(produtoId) {
-    const tabela = document.getElementById(`tabela-variacoes-${produtoId}`);
-    if (!tabela) return;
-    
-    const linhas = tabela.querySelectorAll('tbody tr');
-    if (linhas.length === 0) {
-        alert('Nenhuma variação para preencher!');
-        return;
-    }
-    
-    const valorPreco = prompt('Digite o preço padrão para todas as variações (ex: 49.90):', '0.00');
-    if (valorPreco === null) return;
-    const precoPadrao = parseFloat(valorPreco) || 0;
-    
-    const valorEstoque = prompt('Digite o estoque padrão para todas as variações:', '10');
-    if (valorEstoque === null) return;
-    const estoquePadrao = parseInt(valorEstoque) || 0;
-    
-    linhas.forEach(linha => {
-        const precoInput = linha.querySelector('input[name="preco[]"]');
-        const estoqueInput = linha.querySelector('input[name="quantidade_estoque[]"]');
-        
-        if (precoInput) precoInput.value = precoPadrao;
-        if (estoqueInput) estoqueInput.value = estoquePadrao;
-    });
-    
-    alert(`✅ Grade preenchida com Preço: R$ ${precoPadrao.toFixed(2)} e Estoque: ${estoquePadrao}`);
-}
+
 </script>
 
 <style>
