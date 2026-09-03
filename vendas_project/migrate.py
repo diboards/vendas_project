@@ -83,27 +83,7 @@ with connection.cursor() as cursor:
         print("✅ Coluna variacao_id criada em itempedido!")
 
 print("🔄 Criando variação padrão...")
-from vendas.models import Produto, ProdutoVariacao
 
-produto, created = Produto.objects.get_or_create(
-    nome='Produto Padrão',
-    defaults={
-        'descricao': 'Produto criado automaticamente para migração',
-        'categoria': 'outros',
-        'ativo': True
-    }
-)
-print(f"✅ Produto criado: {produto.nome}")
-
-variacao, created = ProdutoVariacao.objects.get_or_create(
-    produto=produto,
-    cor='Branco',
-    tamanho='M',
-    defaults={
-        'preco': Decimal('49.90'),
-        'quantidade_estoque': 10
-    }
-)
 print(f"✅ Variação padrão criada com ID: {variacao.id}")
 
 print("👤 Criando superusuário...")
