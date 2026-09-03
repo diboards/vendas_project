@@ -111,7 +111,7 @@
                                     <th class="fw-bold text-center">Qtd</th>
                                     <th class="fw-bold text-end">Preço Unit.</th>
                                     <th class="fw-bold text-end">Total</th>
-                                    <th class="fw-bold">Pagamento</th> <!-- NOVA COLUNA -->
+                                    <th class="fw-bold">Pagamento</th>
                                     <th class="fw-bold">Status</th>
                                     <th class="fw-bold">Data</th>
                                     <th class="fw-bold text-center">Ações</th>
@@ -223,6 +223,8 @@
                                                         </p>
                                                         <p class="mb-1"><strong>Quantidade:</strong></p>
                                                         <p class="text-muted">{{ venda.quantidade }}</p>
+                                                        <p class="mb-1"><strong>Forma de Pagamento:</strong></p>
+                                                        <p class="text-muted">{{ venda.get_forma_pagamento_display }}</p>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <p class="mb-1"><strong>Preço Unitário:</strong></p>
@@ -275,6 +277,14 @@
                                                         </select>
                                                     </div>
                                                     <div class="mb-3">
+                                                        <label class="form-label fw-bold">Forma de Pagamento</label>
+                                                        <select name="forma_pagamento" class="form-select">
+                                                            {% for value, label in venda.FORMA_PAGAMENTO_CHOICES %}
+                                                                <option value="{{ value }}" {% if venda.forma_pagamento == value %}selected{% endif %}>{{ label }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
                                                         <label class="form-label fw-bold">Observações</label>
                                                         <textarea name="observacoes" class="form-control" rows="3">{{ venda.observacoes }}</textarea>
                                                     </div>
@@ -292,7 +302,7 @@
                                 
                                 {% empty %}
                                 <tr>
-                                    <td colspan="10" class="text-center py-5">
+                                    <td colspan="11" class="text-center py-5">
                                         <div class="py-4">
                                             <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
                                             <h5 class="text-muted">Nenhuma venda encontrada</h5>
@@ -308,7 +318,7 @@
                             {% if vendas %}
                             <tfoot class="table-group-divider">
                                 <tr>
-                                    <td colspan="6" class="text-end fw-bold">Total Geral:</td>
+                                    <td colspan="7" class="text-end fw-bold">Total Geral:</td>
                                     <td colspan="4">
                                         <span class="fs-5 fw-bold text-success">R$ {{ total_valor|floatformat:2 }}</span>
                                     </td>
