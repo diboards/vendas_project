@@ -25,6 +25,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 #
 from django.forms import inlineformset_factory
+from django.db.models import Q
 
 from collections import OrderedDict
 from django.http import HttpResponseBadRequest
@@ -82,23 +83,29 @@ def calcular_precos(produto_list):
 @cache_page(60 * 10)
 def pagina_inicial(request):
     categoria_selecionada = request.GET.get('categoria', '')
+    busca = request.GET.get('busca', '').strip()
     
     # Query base
     produtos_query = Produto.objects.filter(ativo=True)
     
-    if categoria_selecionada:
-        produtos = produtos_query.filter(categoria=categoria_selecionada)
-    else:
-        produtos = produtos_query
+    # Se houver busca, filtra produtos por nome, descrição ou categoria
+    produtos_busca = []
+    if busca:
+        produtos_busca_query = produtos_query.filter(
+            Q(nome__icontains=busca) |
+            Q(descricao__icontains=busca) |
+            Q(categoria__icontains=busca)
+        ).distinct()
+        produtos_busca = calcular_precos(produtos_busca_query)
     
-    # Separar produtos por categoria
+    # Separação por categorias (como está hoje)
     produtos_lancamentos = produtos_query.filter(categoria='lancamentos')[:12]
     produtos_promocoes = produtos_query.filter(categoria='promocoes')[:12]
     produtos_conjuntos = produtos_query.filter(categoria='conjuntos')[:12]
     produtos_outros = produtos_query.filter(categoria='outros')[:12]
-    produtos_destaque = produtos_query.filter(categoria='destaque')[:6]  # 🔥 BUSCA POR CATEGORIA
+    produtos_destaque = produtos_query.filter(categoria='destaque')[:6]
     
-    # Calcular preços a partir da primeira variação
+    # Função para calcular preços (mesma que você já tem)
     def calcular_precos(produto_list):
         resultado = []
         for p in produto_list:
@@ -135,7 +142,7 @@ def pagina_inicial(request):
         return resultado
     
     context = {
-        'debug': settings.DEBUG,  # 🔥 Ocultar mensagens de debug em produção 
+        'debug': settings.DEBUG,
         'produtos_lancamentos': calcular_precos(produtos_lancamentos),
         'produtos_promocoes': calcular_precos(produtos_promocoes),
         'produtos_conjuntos': calcular_precos(produtos_conjuntos),
@@ -143,6 +150,8 @@ def pagina_inicial(request):
         'produtos_destaque': calcular_precos(produtos_destaque),
         'categoria_selecionada': categoria_selecionada,
         'produtos': calcular_precos(produtos),
+        'busca': busca,
+        'produtos_busca': produtos_busca,
     }
     
     return render(request, 'vendas/index.html', context)
