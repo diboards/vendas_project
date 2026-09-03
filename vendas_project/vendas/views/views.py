@@ -1894,8 +1894,8 @@ def editar_produto(request, produto_id):
         # Exclui imagens adicionais marcadas
         remover_imagens = request.POST.getlist('remover_imagem[]')
         if remover_imagens:
-            removidas = ImagemVariacao.objects.filter(id__in=remover_imagens)
-            print(f"🗑️ Excluindo {removidas.count()} imagens adicionais: {remover_imagens}")
+            removidas = ImagemVariacao.objects.filter(id__in=remover_imagens, variacao__produto=produto)
+            print(f"🗑️ Excluindo {removidas.count()} imagens adicionais: " f"{remover_imagens}")
             removidas.delete()
         
         # Processa as variações
