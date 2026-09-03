@@ -1,5 +1,8 @@
 # vendas/views.py
 from decimal import Decimal
+from django.db.models.functions import TruncMonth
+from django.utils.dateparse import parse_date
+from collections import defaultdict
 from django.db import IntegrityError
 from datetime import datetime, timedelta
 from urllib.parse import quote
@@ -36,7 +39,7 @@ import json, os, requests, re, unicodedata, mercadopago
 from django.conf import settings
 
 from django.core.paginator import Paginator # Estoque com filtros e paginação
-from django.db.models import Q # Estoque com filtros e paginação
+from django.db.models import Sum, Count, F, Q # Estoque com filtros e paginação
 
 from vendas.utils import get_itens_carrinho
 
@@ -46,9 +49,6 @@ from django.views.decorators.vary import vary_on_headers
 from django.conf import settings
 from django.core.cache import cache
 from django.contrib.admin.views.decorators import staff_member_required
-
-
-
 
 
 
@@ -2311,123 +2311,144 @@ def api_produto_variacoes(request, produto_id):
     
     return JsonResponse(data)
     
-# 🔥 RELATÓRIOS - 30 minutos (apenas para admin)
+
+
 @cache_page(60 * 30)
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def relatorios_pedidos(request):
-    from django.db.models import Sum, Count, F
-    from django.utils.dateparse import parse_date
-    from decimal import Decimal
-    
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
-    
-    # Query base de pedidos
-    pedidos = Pedido.objects.all()
-    
-    # Aplicar filtros de data
-    if data_inicio:
-        data_inicio_parsed = parse_date(data_inicio)
-        if data_inicio_parsed:
-            pedidos = pedidos.filter(data_criacao__date__gte=data_inicio_parsed)
-    
-    if data_fim:
-        data_fim_parsed = parse_date(data_fim)
-        if data_fim_parsed:
-            pedidos = pedidos.filter(data_criacao__date__lte=data_fim_parsed)
-    
-    # ========================================================== #
-    # ESTATÍSTICAS GERAIS                                         #
-    # ========================================================== #
-    total_pedidos = pedidos.count()
-    
-    # Valor total de todos os pedidos
-    valor_total = pedidos.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
-    
-    # Pedidos por status
-    pedidos_pendentes = pedidos.filter(status='pendente').count()
-    pedidos_aprovados = pedidos.filter(status='aprovado').count()
-    pedidos_processando = pedidos.filter(status='processando').count()
-    pedidos_enviados = pedidos.filter(status='enviado').count()
-    pedidos_entregues = pedidos.filter(status='entregue').count()
-    pedidos_cancelados = pedidos.filter(status='cancelado').count()
-    
-    # ========================================================== #
-    # PRODUTOS MAIS VENDIDOS                                     #
-    # ========================================================== #
-    produtos_vendidos = ItemPedido.objects.filter(
-        pedido__in=pedidos
-    ).values(
+
+    # Filtros de data
+    data_inicio_parsed = parse_date(data_inicio) if data_inicio else None
+    data_fim_parsed = parse_date(data_fim) if data_fim else None
+
+    filtro_pedidos = Q()
+    filtro_vendas = Q()
+    if data_inicio_parsed:
+        filtro_pedidos &= Q(data_criacao__date__gte=data_inicio_parsed)
+        filtro_vendas &= Q(data_criacao__date__gte=data_inicio_parsed)
+    if data_fim_parsed:
+        filtro_pedidos &= Q(data_criacao__date__lte=data_fim_parsed)
+        filtro_vendas &= Q(data_criacao__date__lte=data_fim_parsed)
+
+    pedidos = Pedido.objects.filter(filtro_pedidos)
+    vendas_manuais = Venda.objects.filter(filtro_vendas)
+
+    # ==================== TOTAIS ====================
+    total_pedidos_online = pedidos.count()
+    total_vendas_manuais = vendas_manuais.count()
+    total_geral = total_pedidos_online + total_vendas_manuais
+
+    valor_total_online = pedidos.aggregate(total=Sum('total'))['total'] or Decimal('0')
+    valor_total_manual = vendas_manuais.aggregate(
+        total=Sum(F('quantidade') * F('preco_unitario'))
+    )['total'] or Decimal('0')
+    valor_total = valor_total_online + valor_total_manual
+
+    # ==================== STATUS (COMBINADO) ====================
+    pendentes = pedidos.filter(status='pendente').count() + vendas_manuais.filter(status='pendente').count()
+    aprovados = pedidos.filter(status='aprovado').count()
+    processando = pedidos.filter(status='processando').count()
+    enviados = pedidos.filter(status='enviado').count()
+    entregues = pedidos.filter(status='entregue').count()
+    cancelados = pedidos.filter(status='cancelado').count() + vendas_manuais.filter(status='cancelada').count()
+    # Vendas manuais concluídas entram como "entregues"
+    entregues += vendas_manuais.filter(status='concluida').count()
+
+    # ==================== PRODUTOS MAIS VENDIDOS ====================
+    produtos = defaultdict(lambda: {'total_quantidade': 0, 'total_vendas': 0})
+
+    online_prod = ItemPedido.objects.filter(pedido__in=pedidos).values(
         'variacao__produto__nome'
     ).annotate(
         total_quantidade=Sum('quantidade'),
         total_vendas=Count('pedido', distinct=True)
-    ).order_by('-total_quantidade')[:10]
-    
-    # ========================================================== #
-    # VENDAS POR MÊS (para gráfico de linha)                     #
-    # ========================================================== #
-    from django.db.models.functions import TruncMonth
-    vendas_por_mes = pedidos.filter(
-        status__in=['aprovado', 'entregue', 'enviado']
-    ).annotate(
+    )
+    for item in online_prod:
+        nome = item['variacao__produto__nome']
+        produtos[nome]['total_quantidade'] += item['total_quantidade']
+        produtos[nome]['total_vendas'] += item['total_vendas']
+
+    manual_prod = vendas_manuais.values('produto__nome').annotate(
+        total_quantidade=Sum('quantidade'),
+        total_vendas=Count('id')
+    )
+    for item in manual_prod:
+        nome = item['produto__nome']
+        produtos[nome]['total_quantidade'] += item['total_quantidade']
+        produtos[nome]['total_vendas'] += item['total_vendas']
+
+    produtos_vendidos = [
+        {'variacao__produto__nome': nome, **dados}
+        for nome, dados in sorted(produtos.items(), key=lambda x: x[1]['total_quantidade'], reverse=True)[:10]
+    ]
+
+    # ==================== VENDAS POR MÊS ====================
+    mes_dict = defaultdict(float)
+
+    online_mes = pedidos.filter(status__in=['aprovado','entregue','enviado']).annotate(
+        mes=TruncMonth('data_criacao')
+    ).values('mes').annotate(total=Sum('total'))
+
+    manual_mes = vendas_manuais.filter(status='concluida').annotate(
         mes=TruncMonth('data_criacao')
     ).values('mes').annotate(
-        total_mes=Sum('total')
-    ).order_by('mes')
-    
-    meses_labels = []
-    meses_valores = []
-    for item in vendas_por_mes:
+        total=Sum(F('quantidade') * F('preco_unitario'))
+    )
+
+    for item in online_mes:
         if item['mes']:
-            meses_labels.append(item['mes'].strftime('%b/%Y'))
-            meses_valores.append(float(item['total_mes']))
-    
-    # ========================================================== #
-    # FORMAS DE PAGAMENTO                                        #
-    # ========================================================== #
-    pagamentos = pedidos.values('metodo_pagamento').annotate(
-        total=Count('id')
-    ).order_by('-total')
-    
+            mes_dict[item['mes']] += float(item['total'])
+    for item in manual_mes:
+        if item['mes']:
+            mes_dict[item['mes']] += float(item['total'])
+
+    meses_ordenados = sorted(mes_dict.keys())
+    meses_labels = [mes.strftime('%b/%Y') for mes in meses_ordenados]
+    meses_valores = [mes_dict[mes] for mes in meses_ordenados]
+
+    # ==================== FORMAS DE PAGAMENTO ====================
+    pagamentos = pedidos.values('metodo_pagamento').annotate(total=Count('id')).order_by('-total')
     pagamentos_labels = []
     pagamentos_valores = []
+
     for item in pagamentos:
         label = dict(Pedido.METODO_PAGAMENTO_CHOICES).get(item['metodo_pagamento'], item['metodo_pagamento'])
         pagamentos_labels.append(label)
         pagamentos_valores.append(item['total'])
-    
-    # ========================================================== #
-    # CONTEXTO                                                   #
-    # ========================================================== #
+
+    # Inclui vendas manuais por forma de pagamento
+    vendas_por_forma = vendas_manuais.values('forma_pagamento').annotate(total=Count('id'))
+    for item in vendas_por_forma:
+        label = dict(Venda.FORMA_PAGAMENTO_CHOICES).get(item['forma_pagamento'], item['forma_pagamento'])
+        pagamentos_labels.append(label)
+        pagamentos_valores.append(item['total'])
+
+    # ==================== CONTEXTO ====================
     context = {
-        # Filtros
         'data_inicio': request.GET.get('data_inicio', ''),
         'data_fim': request.GET.get('data_fim', ''),
-        
-        # Estatísticas gerais
-        'total_pedidos': total_pedidos,
+
+        'total_pedidos': total_geral,
         'valor_total': valor_total,
-        'pedidos_pendentes': pedidos_pendentes,
-        'pedidos_aprovados': pedidos_aprovados,
-        'pedidos_processando': pedidos_processando,
-        'pedidos_enviados': pedidos_enviados,
-        'pedidos_entregues': pedidos_entregues,
-        'pedidos_cancelados': pedidos_cancelados,
-        
-        # Produtos mais vendidos
+        'pedidos_pendentes': pendentes,
+        'pedidos_aprovados': aprovados,
+        'pedidos_processando': processando,
+        'pedidos_enviados': enviados,
+        'pedidos_entregues': entregues,
+        'pedidos_cancelados': cancelados,
+
         'produtos_vendidos': produtos_vendidos,
-        
-        # Vendas por mês
+
         'meses_labels': meses_labels,
         'meses_valores': meses_valores,
-        
-        # Formas de pagamento
+
         'pagamentos_labels': pagamentos_labels,
         'pagamentos_valores': pagamentos_valores,
     }
-    
+
     return render(request, 'vendas/relatorios_pedidos.html', context)
 
 @login_required
