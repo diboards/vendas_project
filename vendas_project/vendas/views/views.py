@@ -76,7 +76,7 @@ def calcular_precos(produto_list):
 
 
 def remover_acentos(texto):
-    """Remove acentos e coloca em minúsculas."""
+    """Remove acentos e converte para minúsculas."""
     nfkd = unicodedata.normalize('NFKD', texto)
     return ''.join([c for c in nfkd if not unicodedata.combining(c)]).lower()
 
@@ -86,7 +86,6 @@ def pagina_inicial(request):
 
     produtos_query = Produto.objects.filter(ativo=True)
 
-    # --- Função auxiliar para calcular preços e montar dicionário ---
     def calcular_precos(produto_list):
         resultado = []
         for p in produto_list:
@@ -123,17 +122,17 @@ def pagina_inicial(request):
             })
         return resultado
 
-    # --- Lógica de busca ---
+    # --- Lógica de busca (sem unaccent) ---
     if busca:
-        # Prepara variações do termo (original, sem acento, singular)
+        # Gera variações do termo: original, sem acento, singular
         termos = []
         termos.append(busca)
         sem_acento = remover_acentos(busca)
         termos.append(sem_acento)
         if sem_acento.endswith('s'):
-            termos.append(sem_acento[:-1])  # tenta singular
+            termos.append(sem_acento[:-1])  # remove 's' final para singular
 
-        # Constrói filtro com operador OR entre todos os termos
+        # Constrói filtro OR entre todos os termos
         filtro = Q()
         for termo in termos:
             filtro |= (
@@ -142,24 +141,9 @@ def pagina_inicial(request):
                 Q(categoria__icontains=termo)
             )
 
-        # Se for PostgreSQL, tenta usar unaccent (ignora acentos)
-        if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
-            try:
-                from django.contrib.postgres.lookups import Unaccent
-                filtro_unaccent = Q()
-                for termo in termos:
-                    filtro_unaccent |= (
-                        Q(nome__unaccent__icontains=termo) |
-                        Q(descricao__unaccent__icontains=termo) |
-                        Q(categoria__unaccent__icontains=termo)
-                    )
-                filtro |= filtro_unaccent
-            except ImportError:
-                pass  # unaccent não disponível, segue sem ele
-
         produtos_busca = produtos_query.filter(filtro).distinct().order_by('-data_cadastro')
 
-        # Zera as listas de categorias porque a busca substitui as seções
+        # Zera listas de categorias
         produtos_lancamentos = []
         produtos_promocoes = []
         produtos_conjuntos = []
