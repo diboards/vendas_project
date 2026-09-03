@@ -3,12 +3,10 @@
 {% load cache %}
 
 {% block content %}
-<!-- Ícones do Bootstrap -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
 <div class="container-projetos">
-
     <!-- BANNER/HERO -->
     <section class="hero-banner" style="background: url('{% static 'img/logo.png' %}') no-repeat center center; background-size: cover; background-position: center;">
         <div class="hero-overlay" style="background: rgba(0,0,0,0.3); padding: 60px 0;">
@@ -20,218 +18,265 @@
         </div>
     </section>
 
-    <!-- CAROUSEL - PRODUTOS EM DESTAQUE -->
-    {% if not categoria_selecionada %}
-    {% cache 600 carousel_produtos %}    
-    <div id="carouselProdutos" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
-        <div class="carousel-inner">
-            {% for produto in produtos_destaque|slice:":3" %}
-            <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                <div class="carousel-banner">
-                    <div class="carousel-content">
-                        <p class="carousel-tag">⭐ Destaque</p>
-                        <h2 class="carousel-title">{{ produto.nome }}</h2>
-                        <p class="carousel-price">💰 R$ {{ produto.preco_pix }} no PIX</p>
-                        <p class="carousel-parcelado">ou 3x de R$ {{ produto.preco_parcela }} sem juros</p>
-                        <a href="{% url 'detalhes_produto' produto.id %}" class="btn-carousel">🛒 Comprar agora →</a>
-                    </div>
-                    <img src="{{ produto.imagem }}" class="carousel-img" alt="{{ produto.nome }}"
-                         onerror="this.style.display='none'">
-                    <div class="carousel-overlay"></div>
-                </div>
+    {% if busca %}
+        <!-- RESULTADOS DA BUSCA -->
+        <section class="categoria-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="bi bi-search"></i> Resultados para "{{ busca }}"
+                    <span class="section-badge">{{ produtos_busca|length }} produto(s)</span>
+                </h2>
+                <a href="{% url 'pagina_inicial' %}" class="ver-todos-link">Limpar busca <i class="bi bi-x-circle"></i></a>
             </div>
-            {% empty %}
-            <div class="carousel-item active">
-                <div class="carousel-banner" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
-                    <div class="carousel-content text-center" style="width: 100%;">
-                        <p class="carousel-tag">📢</p>
-                        <h2 class="carousel-title">Nenhum produto em destaque</h2>
-                        <p class="carousel-parcelado">Cadastre produtos com a categoria "Destaque" para aparecerem aqui.</p>
+            
+            {% if produtos_busca %}
+            <div class="produtos-scroll-container">
+                <div class="produtos-scroll" id="scrollBusca">
+                    {% for produto in produtos_busca %}
+                    <div class="produto-card">
+                        <a href="{% url 'detalhes_produto' produto.id %}">
+                            <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
+                                 style="width:100%; height:200px; object-fit:cover;"
+                                 onerror="this.style.display='none'">
+                        </a>
+                        <div class="produto-info">
+                            <h6 class="produto-descricao" title="{{ produto.descricao }}">{{ produto.descricao|truncatechars:60 }}</h6>
+                            <p class="old-price">R$ {{ produto.preco }}</p>
+                            <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                            <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                            <button class="btn-quick-add" data-id="{{ produto.id }}">
+                                <i class="bi bi-cart-plus"></i> Comprar
+                            </button>
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
+                <button class="scroll-btn left" onclick="scrollProdutos('scrollBusca', -1)"><i class="bi bi-chevron-left"></i></button>
+                <button class="scroll-btn right" onclick="scrollProdutos('scrollBusca', 1)"><i class="bi bi-chevron-right"></i></button>
             </div>
-            {% endfor %}
-        </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#carouselProdutos" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#carouselProdutos" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-        </button>
-        <div class="carousel-indicators">
-            {% for produto in produtos_destaque|slice:":3" %}
-            <button type="button" data-bs-target="#carouselProdutos" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></button>
-            {% endfor %}
-        </div>
-    </div>
-    {% endcache %}
-    {% endif %}
-
-    <!-- SEÇÃO: LANÇAMENTOS -->
-    {% if not categoria_selecionada or categoria_selecionada == 'lancamentos' %}
-    <section class="categoria-section" id="produtos">
-        <div class="section-header">
-            <h2 class="section-title">
-                <i class="bi bi-stars"></i> Lançamentos
-                <span class="section-badge">Novidades</span>
-            </h2>
-            <a href="?categoria=lancamentos" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
-        </div>
-        
-        <div class="produtos-scroll-container">
-            {% cache 300 produtos_lancamentos %}    
-            <div class="produtos-scroll" id="scrollLancamentos">
-                {% for produto in produtos_lancamentos %}
-                <div class="produto-card">
-                    <a href="{% url 'detalhes_produto' produto.id %}">
-                        <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
-                             style="width:100%; height:200px; object-fit:cover;"
+            {% else %}
+            <div class="alert alert-warning text-center py-5">
+                <i class="bi bi-emoji-frown fs-3 d-block mb-3"></i>
+                Nenhum produto encontrado para "{{ busca }}".
+            </div>
+            {% endif %}
+        </section>
+    {% else %}
+        <!-- CAROUSEL - PRODUTOS EM DESTAQUE -->
+        {% if not categoria_selecionada %}
+        {% cache 600 carousel_produtos %}    
+        <div id="carouselProdutos" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                {% for produto in produtos_destaque|slice:":3" %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                    <div class="carousel-banner">
+                        <div class="carousel-content">
+                            <p class="carousel-tag">⭐ Destaque</p>
+                            <h2 class="carousel-title">{{ produto.nome }}</h2>
+                            <p class="carousel-price">💰 R$ {{ produto.preco_pix }} no PIX</p>
+                            <p class="carousel-parcelado">ou 3x de R$ {{ produto.preco_parcela }} sem juros</p>
+                            <a href="{% url 'detalhes_produto' produto.id %}" class="btn-carousel">🛒 Comprar agora →</a>
+                        </div>
+                        <img src="{{ produto.imagem }}" class="carousel-img" alt="{{ produto.nome }}"
                              onerror="this.style.display='none'">
-                        {% if produto.novo %}
-                            <span class="badge-novo">NOVO</span>
-                        {% endif %}
-                    </a>
-                    <div class="produto-info">
-                        <h6 class="produto-descricao" title="{{ produto.descricao }}">{{ produto.descricao|truncatechars:50 }}</h6>
-                        <p class="old-price">R$ {{ produto.preco }}</p>
-                        <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
-                        <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
-                        <button class="btn-quick-add" data-id="{{ produto.id }}">
-                            <i class="bi bi-cart-plus"></i> Comprar
-                        </button>
+                        <div class="carousel-overlay"></div>
                     </div>
                 </div>
                 {% empty %}
-                <div class="text-center py-5">Nenhum lançamento disponível no momento.</div>
+                <div class="carousel-item active">
+                    <div class="carousel-banner" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
+                        <div class="carousel-content text-center" style="width: 100%;">
+                            <p class="carousel-tag">📢</p>
+                            <h2 class="carousel-title">Nenhum produto em destaque</h2>
+                            <p class="carousel-parcelado">Cadastre produtos com a categoria "Destaque" para aparecerem aqui.</p>
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
             </div>
-            {% endcache %}
-            <button class="scroll-btn left" onclick="scrollProdutos('scrollLancamentos', -1)"><i class="bi bi-chevron-left"></i></button>
-            <button class="scroll-btn right" onclick="scrollProdutos('scrollLancamentos', 1)"><i class="bi bi-chevron-right"></i></button>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselProdutos" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselProdutos" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            </button>
+            <div class="carousel-indicators">
+                {% for produto in produtos_destaque|slice:":3" %}
+                <button type="button" data-bs-target="#carouselProdutos" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></button>
+                {% endfor %}
+            </div>
         </div>
-    </section>
-    {% endif %}
+        {% endcache %}
+        {% endif %}
 
-    <!-- 🔥 SEÇÃO: PROMOÇÕES (NOVA) -->
-    {% if not categoria_selecionada or categoria_selecionada == 'promocoes' %}
-    <section class="categoria-section">
-        <div class="section-header">
-            <h2 class="section-title">
-                <i class="bi bi-tag-fill"></i> Promoções
-                <span class="section-badge discount">Ofertas</span>
-            </h2>
-            <a href="?categoria=promocoes" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
-        </div>
-        
-        <div class="produtos-scroll-container">
-            <div class="produtos-scroll" id="scrollPromocoes">
-                {% for produto in produtos_promocoes %}
-                <div class="produto-card destaque">
-                    <a href="{% url 'detalhes_produto' produto.id %}">
-                        <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
-                             style="width:100%; height:200px; object-fit:cover;"
-                             onerror="this.style.display='none'">
-                        <span class="badge-desconto">-10%</span>
-                    </a>
-                    <div class="produto-info">
-                        <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
-                        <p class="old-price">R$ {{ produto.preco }}</p>
-                        <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
-                        <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
-                        <button class="btn-quick-add" data-id="{{ produto.id }}">
-                            <i class="bi bi-cart-plus"></i> Comprar
-                        </button>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="text-center py-5">Nenhuma promoção disponível no momento.</div>
-                {% endfor %}
+        <!-- SEÇÃO: LANÇAMENTOS -->
+        {% if not categoria_selecionada or categoria_selecionada == 'lancamentos' %}
+        <section class="categoria-section" id="produtos">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="bi bi-stars"></i> Lançamentos
+                    <span class="section-badge">Novidades</span>
+                </h2>
+                <a href="?categoria=lancamentos" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
             </div>
-            <button class="scroll-btn left" onclick="scrollProdutos('scrollPromocoes', -1)"><i class="bi bi-chevron-left"></i></button>
-            <button class="scroll-btn right" onclick="scrollProdutos('scrollPromocoes', 1)"><i class="bi bi-chevron-right"></i></button>
-        </div>
-    </section>
-    {% endif %}
+            
+            <div class="produtos-scroll-container">
+                {% cache 300 produtos_lancamentos %}    
+                <div class="produtos-scroll" id="scrollLancamentos">
+                    {% for produto in produtos_lancamentos %}
+                    <div class="produto-card">
+                        <a href="{% url 'detalhes_produto' produto.id %}">
+                            <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
+                                 style="width:100%; height:200px; object-fit:cover;"
+                                 onerror="this.style.display='none'">
+                            {% if produto.novo %}
+                                <span class="badge-novo">NOVO</span>
+                            {% endif %}
+                        </a>
+                        <div class="produto-info">
+                            <h6 class="produto-descricao" title="{{ produto.descricao }}">{{ produto.descricao|truncatechars:50 }}</h6>
+                            <p class="old-price">R$ {{ produto.preco }}</p>
+                            <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                            <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                            <button class="btn-quick-add" data-id="{{ produto.id }}">
+                                <i class="bi bi-cart-plus"></i> Comprar
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">Nenhum lançamento disponível no momento.</div>
+                    {% endfor %}
+                </div>
+                {% endcache %}
+                <button class="scroll-btn left" onclick="scrollProdutos('scrollLancamentos', -1)"><i class="bi bi-chevron-left"></i></button>
+                <button class="scroll-btn right" onclick="scrollProdutos('scrollLancamentos', 1)"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </section>
+        {% endif %}
 
-    <!-- SEÇÃO: CONJUNTOS -->
-    {% if not categoria_selecionada or categoria_selecionada == 'conjuntos' %}
-    <section class="categoria-section">
-        <div class="section-header">
-            <h2 class="section-title">
-                <i class="bi bi-collection"></i> Conjuntos
-                <span class="section-badge">Looks completos</span>
-            </h2>
-            <a href="?categoria=conjuntos" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
-        </div>
-        
-        <div class="produtos-scroll-container">
-            <div class="produtos-scroll" id="scrollConjuntos">
-                {% for produto in produtos_conjuntos %}
-                <div class="produto-card">
-                    <a href="{% url 'detalhes_produto' produto.id %}">
-                        <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
-                             style="width:100%; height:200px; object-fit:cover;"
-                             onerror="this.style.display='none'">
-                    </a>
-                    <div class="produto-info">
-                        <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
-                        <p class="old-price">R$ {{ produto.preco }}</p>
-                        <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
-                        <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
-                        <button class="btn-quick-add" data-id="{{ produto.id }}">
-                            <i class="bi bi-cart-plus"></i> Comprar
-                        </button>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="text-center py-5">Nenhum conjunto disponível no momento.</div>
-                {% endfor %}
+        <!-- SEÇÃO: PROMOÇÕES -->
+        {% if not categoria_selecionada or categoria_selecionada == 'promocoes' %}
+        <section class="categoria-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="bi bi-tag-fill"></i> Promoções
+                    <span class="section-badge discount">Ofertas</span>
+                </h2>
+                <a href="?categoria=promocoes" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
             </div>
-            <button class="scroll-btn left" onclick="scrollProdutos('scrollConjuntos', -1)"><i class="bi bi-chevron-left"></i></button>
-            <button class="scroll-btn right" onclick="scrollProdutos('scrollConjuntos', 1)"><i class="bi bi-chevron-right"></i></button>
-        </div>
-    </section>
-    {% endif %}
+            
+            <div class="produtos-scroll-container">
+                <div class="produtos-scroll" id="scrollPromocoes">
+                    {% for produto in produtos_promocoes %}
+                    <div class="produto-card destaque">
+                        <a href="{% url 'detalhes_produto' produto.id %}">
+                            <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
+                                 style="width:100%; height:200px; object-fit:cover;"
+                                 onerror="this.style.display='none'">
+                            <span class="badge-desconto">-10%</span>
+                        </a>
+                        <div class="produto-info">
+                            <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
+                            <p class="old-price">R$ {{ produto.preco }}</p>
+                            <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                            <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                            <button class="btn-quick-add" data-id="{{ produto.id }}">
+                                <i class="bi bi-cart-plus"></i> Comprar
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">Nenhuma promoção disponível no momento.</div>
+                    {% endfor %}
+                </div>
+                <button class="scroll-btn left" onclick="scrollProdutos('scrollPromocoes', -1)"><i class="bi bi-chevron-left"></i></button>
+                <button class="scroll-btn right" onclick="scrollProdutos('scrollPromocoes', 1)"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </section>
+        {% endif %}
 
-    <!-- SEÇÃO: OUTROS PRODUTOS -->
-    {% if not categoria_selecionada or categoria_selecionada == 'outros' %}
-    <section class="categoria-section">
-        <div class="section-header">
-            <h2 class="section-title">
-                <i class="bi bi-grid"></i> Bolsas
-            </h2>
-            <a href="?categoria=outros" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
-        </div>
-        
-        <div class="produtos-scroll-container">
-            <div class="produtos-scroll" id="scrollOutros">
-                {% for produto in produtos_outros %}
-                <div class="produto-card">
-                    <a href="{% url 'detalhes_produto' produto.id %}"> <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy" style="width:100%; height:200px; object-fit:cover;" onerror="this.style.display='none'"></a>
-                    
-                   <div class="produto-info">
-                    <p class="produto-descricao" title="{{ produto.descricao }}">{{ produto.descricao|truncatechars:60 }}</p>
-                    <p class="old-price">R$ {{ produto.preco }}</p>
-                    <p class="old-price">R$ {{ produto.preco }}</p>
-                    <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
-                    <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
-                    <button class="btn-quick-add" data-id="{{ produto.id }}">
-                        <i class="bi bi-cart-plus"></i> Comprar
-                    </button>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="text-center py-5">Nenhum produto disponível no momento.</div>
-                {% endfor %}
+        <!-- SEÇÃO: CONJUNTOS -->
+        {% if not categoria_selecionada or categoria_selecionada == 'conjuntos' %}
+        <section class="categoria-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="bi bi-collection"></i> Conjuntos
+                    <span class="section-badge">Looks completos</span>
+                </h2>
+                <a href="?categoria=conjuntos" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
             </div>
-            <button class="scroll-btn left" onclick="scrollProdutos('scrollOutros', -1)"><i class="bi bi-chevron-left"></i></button>
-            <button class="scroll-btn right" onclick="scrollProdutos('scrollOutros', 1)"><i class="bi bi-chevron-right"></i></button>
-        </div>
-    </section>
+            
+            <div class="produtos-scroll-container">
+                <div class="produtos-scroll" id="scrollConjuntos">
+                    {% for produto in produtos_conjuntos %}
+                    <div class="produto-card">
+                        <a href="{% url 'detalhes_produto' produto.id %}">
+                            <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
+                                 style="width:100%; height:200px; object-fit:cover;"
+                                 onerror="this.style.display='none'">
+                        </a>
+                        <div class="produto-info">
+                            <h6 title="{{ produto.nome }}">{{ produto.nome|truncatechars:30 }}</h6>
+                            <p class="old-price">R$ {{ produto.preco }}</p>
+                            <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                            <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                            <button class="btn-quick-add" data-id="{{ produto.id }}">
+                                <i class="bi bi-cart-plus"></i> Comprar
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">Nenhum conjunto disponível no momento.</div>
+                    {% endfor %}
+                </div>
+                <button class="scroll-btn left" onclick="scrollProdutos('scrollConjuntos', -1)"><i class="bi bi-chevron-left"></i></button>
+                <button class="scroll-btn right" onclick="scrollProdutos('scrollConjuntos', 1)"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- SEÇÃO: OUTROS PRODUTOS -->
+        {% if not categoria_selecionada or categoria_selecionada == 'outros' %}
+        <section class="categoria-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="bi bi-grid"></i> Outros Produtos
+                </h2>
+                <a href="?categoria=outros" class="ver-todos-link">Ver todos <i class="bi bi-arrow-right"></i></a>
+            </div>
+            
+            <div class="produtos-scroll-container">
+                <div class="produtos-scroll" id="scrollOutros">
+                    {% for produto in produtos_outros %}
+                    <div class="produto-card">
+                        <a href="{% url 'detalhes_produto' produto.id %}">
+                            <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" loading="lazy"
+                                 style="width:100%; height:200px; object-fit:cover;"
+                                 onerror="this.style.display='none'">
+                        </a>
+                        <div class="produto-info">
+                            <p class="produto-descricao" title="{{ produto.descricao }}">{{ produto.descricao|truncatechars:60 }}</p>
+                            <p class="old-price">R$ {{ produto.preco }}</p>
+                            <p class="price">R$ {{ produto.preco_pix }} <span>no PIX</span></p>
+                            <p class="parcelado">ou 3x de R$ {{ produto.preco_parcela }}</p>
+                            <button class="btn-quick-add" data-id="{{ produto.id }}">
+                                <i class="bi bi-cart-plus"></i> Comprar
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">Nenhum produto disponível no momento.</div>
+                    {% endfor %}
+                </div>
+                <button class="scroll-btn left" onclick="scrollProdutos('scrollOutros', -1)"><i class="bi bi-chevron-left"></i></button>
+                <button class="scroll-btn right" onclick="scrollProdutos('scrollOutros', 1)"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </section>
+        {% endif %}
     {% endif %}
 
     <!-- Bloco informativo -->
-    {% if not categoria_selecionada %}
+    {% if not categoria_selecionada and not busca %}
     <section class="info-section mt-5">
         <h4 class="section-title text-center mb-4">Aqui é onde você encontra peças selecionadas com ótimo design.</h4>
         <div class="row my-5 align-items-center">
@@ -278,49 +323,133 @@
         </div>
     </section>
     {% endif %}
-
 </div>
 
-<!-- ESTILOS - MANTENHA SEU CSS EXISTENTE E ADICIONE: -->
 <style>
-/* ... seus estilos existentes ... */
-
-/* Estilo para badge de desconto */
-.badge-desconto {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #e74c3c;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    z-index: 10;
-}
-
-/* Estilo para produtos em promoção */
-.produto-card.destaque {
-    border: 2px solid #e74c3c;
-}
-
-.section-badge.discount {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-}
-/* Ajuste o CSS para dar boa aparência:  */
+    .badge-desconto {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #e74c3c;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        z-index: 10;
+    }
+    .produto-card.destaque {
+        border: 2px solid #e74c3c;
+    }
+    .section-badge.discount {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+    }
     .produto-descricao {
-    font-size: 0.85rem;
-    color: #555;
-    margin-bottom: 8px;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* limita a 2 linhas */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
+        font-size: 0.85rem;
+        color: #555;
+        margin-bottom: 8px;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
 </style>
 
 <script>
-// ... seu JavaScript existente ...
+    function scrollProdutos(scrollId, direction) {
+        const container = document.getElementById(scrollId);
+        if (!container) return;
+        const card = container.querySelector('.produto-card');
+        if (!card) return;
+        const gap = 25;
+        const scrollAmount = card.offsetWidth + gap;
+        container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+    }
+
+    function getCSRFToken() {
+        const tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (tokenInput) return tokenInput.value;
+        const metaToken = document.querySelector('meta[name="csrf-token"]');
+        if (metaToken) return metaToken.content;
+        return '';
+    }
+
+    async function adicionarAoCarrinho(produtoId, buttonElement) {
+        if (!produtoId) return;
+        const originalText = buttonElement.innerHTML;
+        buttonElement.innerHTML = '<i class="bi bi-arrow-repeat spinner"></i> Adicionando...';
+        buttonElement.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('quantidade', 1);
+            formData.append('action', 'add');
+            const csrfToken = getCSRFToken();
+            const response = await fetch(`/carrinho/adicionar/${produtoId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            if (response.ok) {
+                buttonElement.innerHTML = '<i class="bi bi-check-lg"></i> Adicionado!';
+                buttonElement.style.background = '#28a745';
+                buttonElement.style.borderColor = '#28a745';
+                buttonElement.style.color = 'white';
+                await atualizarCarrinhoCount();
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalText;
+                    buttonElement.disabled = false;
+                    buttonElement.style.background = '';
+                    buttonElement.style.borderColor = '';
+                    buttonElement.style.color = '';
+                }, 2000);
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro ao adicionar');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            buttonElement.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Erro!';
+            setTimeout(() => {
+                buttonElement.innerHTML = originalText;
+                buttonElement.disabled = false;
+            }, 2000);
+        }
+    }
+
+    async function atualizarCarrinhoCount() {
+        try {
+            const response = await fetch('/carrinho/count/');
+            const data = await response.json();
+            const badge = document.getElementById('carrinho-count');
+            if (badge) badge.innerText = data.count || 0;
+        } catch (error) {
+            console.error('Erro ao atualizar contador:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const scrollContainers = document.querySelectorAll('.produtos-scroll');
+        scrollContainers.forEach(container => {
+            container.addEventListener('wheel', function(e) {
+                if (e.deltaY !== 0) {
+                    e.preventDefault();
+                    container.scrollLeft += e.deltaY;
+                }
+            });
+        });
+
+        const botoesComprar = document.querySelectorAll('.btn-quick-add');
+        botoesComprar.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const produtoId = this.dataset.id;
+                if (produtoId) adicionarAoCarrinho(produtoId, this);
+            });
+        });
+
+        atualizarCarrinhoCount();
+    });
 </script>
 {% endblock %}
