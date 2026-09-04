@@ -56,17 +56,11 @@ except Exception as e:
 
 print("🔄 Verificando se a coluna forma_pagamento existe em vendas_venda...")
 with connection.cursor() as cursor:
-    cursor.execute("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='vendas_venda' AND column_name='forma_pagamento';
-    """)
-    exists = cursor.fetchone()
-    if not exists:
+    try:
         cursor.execute("""
             ALTER TABLE vendas_venda 
             ADD COLUMN forma_pagamento varchar(20) DEFAULT 'pix' NOT NULL;
         """)
         print("✅ Coluna forma_pagamento criada!")
-    else:
-        print("ℹ️ Coluna forma_pagamento já existe.")
+    except Exception as e:
+        print(f"ℹ️ Coluna forma_pagamento já existe ou não pôde ser criada: {e}")
