@@ -2248,6 +2248,7 @@ def nova_venda(request):
         quantidade = request.POST.get('quantidade')
         observacoes = request.POST.get('observacoes', '')
         status = request.POST.get('status', 'concluida')
+        forma_pagamento = request.POST.get('forma_pagamento', 'pix')  # 🆕 ADICIONE AQUI
         
         if not produto_id or not variacao_id or not quantidade:
             messages.error(request, '❌ Produto, variação e quantidade são obrigatórios.')
@@ -2265,13 +2266,14 @@ def nova_venda(request):
             messages.error(request, f'❌ Estoque insuficiente. Disponível: {variacao.quantidade_estoque}')
             return redirect('nova_venda')
         
-        # 🔥 CRIA A VENDA COM USUÁRIO
+        # 🔥 CRIA A VENDA COM USUÁRIO E FORMA DE PAGAMENTO
         venda = Venda.objects.create(
-            vendedor=request.user,  # ← ADICIONADO
+            vendedor=request.user,
             produto=variacao.produto,
             variacao=variacao,
             quantidade=quantidade,
             preco_unitario=variacao.preco,
+            forma_pagamento=forma_pagamento,  # 🆕 ADICIONE AQUI
             observacoes=observacoes,
             status=status
         )
