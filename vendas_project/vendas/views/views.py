@@ -2333,7 +2333,6 @@ def relatorios_pedidos(request):
         filtro_pedidos &= Q(data_criacao__date__lte=data_fim_parsed)
         filtro_vendas &= Q(data_criacao__date__lte=data_fim_parsed)
 
-    # Busca pedidos online e vendas manuais
     pedidos = Pedido.objects.filter(filtro_pedidos)
     vendas_manuais = Venda.objects.filter(filtro_vendas)
 
@@ -2352,17 +2351,31 @@ def relatorios_pedidos(request):
     valor_total = valor_total_online + valor_total_manual
 
     # ==================== STATUS ====================
-    pendentes = pedidos.filter(status='pendente').count() + vendas_manuais.filter(status='pendente').count()
-    aprovados = pedidos.filter(status='aprovado').count()
-    processando = pedidos.filter(status='processando').count()
-    enviados = pedidos.filter(status='enviado').count()
-    entregues = pedidos.filter(status='entregue').count() + vendas_manuais.filter(status='concluida').count()
-    cancelados = pedidos.filter(status='cancelado').count() + vendas_manuais.filter(status='cancelada').count()
+    # Pedidos online
+    pedidos_pendentes = pedidos.filter(status='pendente').count()
+    pedidos_aprovados = pedidos.filter(status='aprovado').count()
+    pedidos_aguardando = pedidos.filter(status='aguardando_aprovacao').count()
+    pedidos_processando = pedidos.filter(status='processando').count()
+    pedidos_enviados = pedidos.filter(status='enviado').count()
+    pedidos_entregues = pedidos.filter(status='entregue').count()
+    pedidos_cancelados = pedidos.filter(status='cancelado').count()
+
+    # Vendas manuais
+    vendas_pendentes = vendas_manuais.filter(status='pendente').count()
+    vendas_concluidas = vendas_manuais.filter(status='concluida').count()
+    vendas_canceladas = vendas_manuais.filter(status='cancelada').count()
+
+    # Combinar status (mapeando vendas concluídas como "entregues" e aguardando como "processando")
+    total_pendentes = pedidos_pendentes + vendas_pendentes
+    total_aprovados = pedidos_aprovados
+    total_processando = pedidos_processando + pedidos_aguardando
+    total_enviados = pedidos_enviados
+    total_entregues = pedidos_entregues + vendas_concluidas
+    total_cancelados = pedidos_cancelados + vendas_canceladas
 
     # ==================== PRODUTOS MAIS VENDIDOS ====================
     produtos = defaultdict(lambda: {'total_quantidade': 0, 'total_vendas': 0})
 
-    # Produtos de pedidos online
     online_prod = ItemPedido.objects.filter(pedido__in=pedidos).values(
         'variacao__produto__nome'
     ).annotate(
@@ -2371,18 +2384,17 @@ def relatorios_pedidos(request):
     )
     for item in online_prod:
         nome = item['variacao__produto__nome']
-        produtos[nome]['total_quantidade'] += item['total_quantidade']
-        produtos[nome]['total_vendas'] += item['total_vendas']
+        produtos[nome]['total_quantidade'] += item['total_quantidade'] or 0
+        produtos[nome]['total_vendas'] += item['total_vendas'] or 0
 
-    # Produtos de vendas manuais
     manual_prod = vendas_manuais.values('produto__nome').annotate(
         total_quantidade=Sum('quantidade'),
         total_vendas=Count('id')
     )
     for item in manual_prod:
         nome = item['produto__nome']
-        produtos[nome]['total_quantidade'] += item['total_quantidade']
-        produtos[nome]['total_vendas'] += item['total_vendas']
+        produtos[nome]['total_quantidade'] += item['total_quantidade'] or 0
+        produtos[nome]['total_vendas'] += item['total_vendas'] or 0
 
     produtos_vendidos = [
         {'variacao__produto__nome': nome, **dados}
@@ -2417,14 +2429,12 @@ def relatorios_pedidos(request):
     pagamentos_labels = []
     pagamentos_valores = []
 
-    # Pagamentos de pedidos online
     pagamentos_online = pedidos.values('metodo_pagamento').annotate(total=Count('id')).order_by('-total')
     for item in pagamentos_online:
         label = dict(Pedido.METODO_PAGAMENTO_CHOICES).get(item['metodo_pagamento'], item['metodo_pagamento'])
         pagamentos_labels.append(label)
         pagamentos_valores.append(item['total'])
 
-    # Pagamentos de vendas manuais
     pagamentos_manuais = vendas_manuais.values('forma_pagamento').annotate(total=Count('id'))
     for item in pagamentos_manuais:
         label = dict(Venda.FORMA_PAGAMENTO_CHOICES).get(item['forma_pagamento'], item['forma_pagamento'])
@@ -2438,12 +2448,12 @@ def relatorios_pedidos(request):
 
         'total_pedidos': total_geral,
         'valor_total': valor_total,
-        'pedidos_pendentes': pendentes,
-        'pedidos_aprovados': aprovados,
-        'pedidos_processando': processando,
-        'pedidos_enviados': enviados,
-        'pedidos_entregues': entregues,
-        'pedidos_cancelados': cancelados,
+        'pedidos_pendentes': total_pendentes,
+        'pedidos_aprovados': total_aprovados,
+        'pedidos_processando': total_processando,
+        'pedidos_enviados': total_enviados,
+        'pedidos_entregues': total_entregues,
+        'pedidos_cancelados': total_cancelados,
 
         'produtos_vendidos': produtos_vendidos,
 
@@ -2455,7 +2465,6 @@ def relatorios_pedidos(request):
     }
 
     return render(request, 'vendas/relatorios_pedidos.html', context)
-
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def editar_venda(request, venda_id):
