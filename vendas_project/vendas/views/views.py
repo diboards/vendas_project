@@ -2212,27 +2212,26 @@ def meus_pedidos(request):
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def lista_vendas(request):
-    """Lista todas as vendas com filtros"""
-    
+    busca = request.GET.get('busca', '')
     vendas = Venda.objects.all().order_by('-data_criacao')
     
-    # 🔥 FILTRO POR BUSCA
-    busca = request.GET.get('busca', '').strip()
     if busca:
-        vendas = vendas.filter(produto__nome__icontains=busca)
+        vendas = vendas.filter(
+            Q(produto__nome__icontains=busca) |
+            Q(vendedor__username__icontains=busca)
+        )
     
-    # 🔥 ESTATÍSTICAS
     total_vendas = vendas.count()
-    total_valor = sum(v.total for v in vendas)
     total_concluidas = vendas.filter(status='concluida').count()
     total_pendentes = vendas.filter(status='pendente').count()
+    total_valor = sum(venda.total for venda in vendas)  # ou use aggregate
     
     context = {
         'vendas': vendas,
         'total_vendas': total_vendas,
-        'total_valor': total_valor,
         'total_concluidas': total_concluidas,
         'total_pendentes': total_pendentes,
+        'total_valor': total_valor,
         'busca': busca,
     }
     return render(request, 'vendas/lista_vendas.html', context)
