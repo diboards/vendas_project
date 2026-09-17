@@ -495,6 +495,7 @@
 
 <!-- JavaScript ATUALIZADO com gerenciamento de endereços e tratamento de status -->
 <script src="https://sdk.mercadopago.com/js/v2"></script>
+<script src="https://www.mercadopago.com/v2/security.js" view="checkout"></script>
 <script>
     // POLYFILL - Garantir que Object.values existe
 if (!Object.values) {
@@ -568,6 +569,8 @@ let cidadeFreteAtual = 'Retirada na loja';
 let prazoFreteAtual = '1 hora';
 let enderecoSelecionado = null;
 let mpCardForm = null;
+let cardFormMontado = false;
+let mercadoPagoInicializado = false;
 
 // ============================================
 // FUNÇÕES UTILITÁRIAS
@@ -772,6 +775,11 @@ function toggleCamposCartao() {
 // ============================================
 
 function inicializarMercadoPago() {
+    if (mercadoPagoInicializado) {
+        console.log("ℹ️ Mercado Pago já foi inicializado.");
+        return;
+    }
+
     if (!mpPublicKey) {
         console.error("❌ Public Key não configurada");
         return;
@@ -982,37 +990,79 @@ function inicializarMercadoPago() {
                         
                         const pagamentoUrl = `/processar-pagamento-cartao/${pedidoData.pedido_id}/`;
                         
+                        // ==========================================
+                        // DEVICE ID + CPF REAL
+                        // ==========================================
+
+                        const deviceId =
+                            window.MP_DEVICE_SESSION_ID || "";
+
+                        console.log(
+                            "🔐 Device ID:",
+                            deviceId ? "RECEBIDO" : "NÃO RECEBIDO"
+                        );
+
+                        const cpf =
+                            document
+                                .getElementById('docNumber')
+                                ?.value
+                                ?.replace(/\D/g, '') || "";
+
+                        if (!cpf) {
+                            throw new Error("Informe um CPF válido.");
+                        }
+
+                        const email = "{{ request.user.email }}";
+
+                        if (!email) {
+                            throw new Error(
+                                "O usuário precisa possuir um e-mail válido."
+                            );
+                        }
+
+                        const pagamentoHeaders = {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken':
+                                document.querySelector(
+                                    '[name=csrfmiddlewaretoken]'
+                                ).value,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        };
+
+                        if (deviceId) {
+                            pagamentoHeaders['X-Meli-Session-Id'] = deviceId;
+                        }
+
                         const pagamentoResponse = await fetch(pagamentoUrl, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
+                            headers: pagamentoHeaders,
                             body: JSON.stringify({
                                 token: formData.token,
                                 payment_method_id: formData.paymentMethodId,
                                 installments: parseInt(formData.installments) || 1,
                                 issuer_id: formData.issuerId || null,
-                                transaction_amount: pedidoData.total || "{{ total|floatformat:2 }}".replace(',', '.'),
+                                transaction_amount: Number(
+                                    pedidoData.total ||
+                                    "{{ total|floatformat:2 }}".replace(',', '.')
+                                ),
                                 description: `Pedido #${pedidoData.pedido_id}`,
+                                device_id: deviceId,
                                 payer: {
-                                    email: "{{ request.user.email }}",
+                                    email: email,
                                     identification: {
                                         type: "CPF",
-                                        number: document.getElementById('docNumber')?.value.replace(/\D/g, '') || "12345678909"
+                                        number: cpf
                                     }
                                 }
                             })
                         });
-                        
                         const resultado = await pagamentoResponse.json();
                         console.log("📡 Resultado:", resultado);
                         
                         if (resultado.status === 'approved') {
                             window.location.href = `/pedido/confirmado/${pedidoData.pedido_id}/`;
                         } else if (resultado.status === 'rejected') {
-                            const motivo = resultado.message || resultado.status_detail || 'cc_rejected_other_reason';
+                            const motivo = resultado.status_detail || resultado.message || 'cc_rejected_other_reason';
                             throw new Error(getMensagemStatus(motivo));
                         } else if (resultado.status === 'pending' || resultado.status === 'in_process') {
                             window.location.href = `/pedido/pendente/${pedidoData.pedido_id}/`;
@@ -1030,70 +1080,72 @@ function inicializarMercadoPago() {
             }
         });
         
-        // MONTAR O FORMULÁRIO APENAS QUANDO CARTÃO FOR SELECIONADO
-        const metodoPagamentoRadio = document.querySelector('input[name="metodo_pagamento"]:checked');
-        if (metodoPagamentoRadio && metodoPagamentoRadio.value === 'cartao') {
-            mpCardForm.mount();
+        // ============================================
+        // CONTROLE ÚNICO DO CARD FORM
+        // ============================================
+
+        async function montarCardForm() {
+            if (!mpCardForm) {
+                console.warn("⚠️ CardForm ainda não foi criado.");
+                return;
+            }
+
+            if (cardFormMontado) {
+                console.log("ℹ️ CardForm já está montado.");
+                return;
+            }
+
+            try {
+                console.log("🎯 Montando formulário de cartão...");
+                await mpCardForm.mount();
+                cardFormMontado = true;
+                console.log("✅ CardForm montado com sucesso!");
+            } catch (error) {
+                console.error("❌ Erro ao montar CardForm:", error);
+            }
         }
-        
-        
-        // Adicionar listener para quando mudar o método de pagamento
+
+        function desmontarCardForm() {
+            if (!mpCardForm || !cardFormMontado) {
+                return;
+            }
+
+            try {
+                console.log("🧹 Desmontando formulário de cartão...");
+                mpCardForm.unmount();
+                cardFormMontado = false;
+                console.log("✅ CardForm desmontado!");
+            } catch (error) {
+                console.warn("⚠️ Erro ao desmontar CardForm:", error);
+                cardFormMontado = false;
+            }
+        }
+
+        // UM ÚNICO listener para método de pagamento
         document.querySelectorAll('input[name="metodo_pagamento"]').forEach(radio => {
-            radio.addEventListener('change', function() {
+            radio.addEventListener('change', async function() {
+                console.log("💳 Método de pagamento:", this.value);
+
                 if (this.value === 'cartao') {
-                    console.log("🎯 Montando formulário de cartão...");
-                    if (mpCardForm) {
-                        mpCardForm.mount();
-                    }
-                } else if (this.value === 'pix') {
-                    console.log("🧹 Desmontando formulário de cartão...");
-                    if (mpCardForm) {
-                        try {
-                            mpCardForm.unmount();
-                        } catch (e) {
-                            console.warn("Erro ao desmontar:", e);
-                        }
-                    }
+                    await montarCardForm();
+                } else {
+                    desmontarCardForm();
                 }
             });
         });
 
-        // Verificar método inicial
-        const metodoPagamentoInicial = document.querySelector('input[name="metodo_pagamento"]:checked');
-        if (metodoPagamentoInicial && metodoPagamentoInicial.value === 'cartao') {
-            console.log("🎯 Montando formulário inicial...");
-            mpCardForm.mount();
+        // Montar somente uma vez se cartão já estiver selecionado
+        const metodoPagamentoInicial =
+            document.querySelector('input[name="metodo_pagamento"]:checked');
+
+        if (metodoPagamentoInicial?.value === 'cartao') {
+            await montarCardForm();
         }
-        
-        // Adicionar listener para quando mudar o método de pagamento
-        document.querySelectorAll('input[name="metodo_pagamento"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'cartao') {
-                    console.log("🎯 Montando formulário de cartão...");
-                    if (mpCardForm) {
-                        mpCardForm.mount();
-                    }
-                } else if (this.value === 'pix') {
-                    console.log("🧹 Desmontando formulário de cartão...");
-                    if (mpCardForm) {
-                        try {
-                            mpCardForm.unmount();
-                            // Limpar campos do cartão
-                            document.getElementById('cardNumber').value = '';
-                            document.getElementById('expirationDate').value = '';
-                            document.getElementById('securityCode').value = '';
-                            document.getElementById('cardholderName').value = '';
-                            document.getElementById('docNumber').value = '';
-                        } catch (e) {
-                            console.warn("Erro ao desmontar:", e);
-                        }
-                    }
-                }
-            });
-        });
-        
+
+        mercadoPagoInicializado = true;
+
         console.log("✅ Mercado Pago inicializado com sucesso!");
-        
+
     } catch (error) {
         console.error("❌ Erro ao inicializar Mercado Pago:", error);
     }
