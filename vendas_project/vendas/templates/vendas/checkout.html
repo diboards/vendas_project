@@ -1036,68 +1036,112 @@ function inicializarMercadoPago() {
 // CONTROLE DE MOUNT DO CARD FORM
 // ============================================
 
-        // MONTAR O FORMULÁRIO APENAS QUANDO CARTÃO FOR SELECIONADO
-        const metodoPagamentoRadio = document.querySelector('input[name="metodo_pagamento"]:checked');
-        if (metodoPagamentoRadio && metodoPagamentoRadio.value === 'cartao') {
-            mpCardForm.mount();
-        }
-        
-        
-        // Adicionar listener para quando mudar o método de pagamento
-        document.querySelectorAll('input[name="metodo_pagamento"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'cartao') {
-                    console.log("🎯 Montando formulário de cartão...");
-                    if (mpCardForm) {
-                        mpCardForm.mount();
-                    }
-                } else if (this.value === 'pix') {
-                    console.log("🧹 Desmontando formulário de cartão...");
-                    if (mpCardForm) {
-                        try {
-                            mpCardForm.unmount();
-                        } catch (e) {
-                            console.warn("Erro ao desmontar:", e);
-                        }
-                    }
-                }
-            });
-        });
+       // ============================================
+// CONTROLE DE MOUNT DO CARD FORM
+// ============================================
 
-        // Verificar método inicial
-        const metodoPagamentoInicial = document.querySelector('input[name="metodo_pagamento"]:checked');
-        if (metodoPagamentoInicial && metodoPagamentoInicial.value === 'cartao') {
-            console.log("🎯 Montando formulário inicial...");
-            mpCardForm.mount();
-        }
-        
-        // Adicionar listener para quando mudar o método de pagamento
-        document.querySelectorAll('input[name="metodo_pagamento"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'cartao') {
-                    console.log("🎯 Montando formulário de cartão...");
-                    if (mpCardForm) {
-                        mpCardForm.mount();
-                    }
-                } else if (this.value === 'pix') {
-                    console.log("🧹 Desmontando formulário de cartão...");
-                    if (mpCardForm) {
-                        try {
-                            mpCardForm.unmount();
-                            // Limpar campos do cartão
-                            document.getElementById('cardNumber').value = '';
-                            document.getElementById('expirationDate').value = '';
-                            document.getElementById('securityCode').value = '';
-                            document.getElementById('cardholderName').value = '';
-                            document.getElementById('docNumber').value = '';
-                        } catch (e) {
-                            console.warn("Erro ao desmontar:", e);
-                        }
-                    }
-                }
-            });
-        });
+let mpCardFormMounted = false;
 
+
+// Montar se o cartão já estiver selecionado
+const metodoPagamentoInicial = document.querySelector(
+    'input[name="metodo_pagamento"]:checked'
+);
+
+if (
+    metodoPagamentoInicial &&
+    metodoPagamentoInicial.value === 'cartao' &&
+    !mpCardFormMounted
+) {
+    console.log("🎯 Montando formulário inicial...");
+
+    try {
+        mpCardForm.mount();
+        mpCardFormMounted = true;
+    } catch (error) {
+        console.error("❌ Erro ao montar formulário inicial:", error);
+    }
+}
+
+
+// ============================================
+// MUDANÇA PIX / CARTÃO
+// ============================================
+
+document.querySelectorAll('input[name="metodo_pagamento"]').forEach(radio => {
+
+    radio.addEventListener('change', function() {
+
+        if (this.value === 'cartao') {
+
+            console.log("🎯 Selecionado: CARTÃO");
+
+            if (!mpCardForm) {
+                console.error("❌ mpCardForm não foi inicializado.");
+                return;
+            }
+
+            // Só monta se ainda não estiver montado
+            if (!mpCardFormMounted) {
+
+                console.log("🎯 Montando formulário de cartão...");
+
+                try {
+                    mpCardForm.mount();
+                    mpCardFormMounted = true;
+
+                    console.log("✅ CardForm montado com sucesso.");
+
+                } catch (error) {
+                    console.error(
+                        "❌ Erro ao montar CardForm:",
+                        error
+                    );
+                }
+
+            } else {
+
+                console.log(
+                    "ℹ️ CardForm já está montado. Nenhum mount adicional será feito."
+                );
+
+            }
+
+        } else if (this.value === 'pix') {
+
+            console.log("🧹 Selecionado: PIX");
+
+            if (!mpCardForm) {
+                return;
+            }
+
+            if (mpCardFormMounted) {
+
+                try {
+
+                    mpCardForm.unmount();
+                    mpCardFormMounted = false;
+
+                    console.log("✅ CardForm desmontado.");
+
+                } catch (error) {
+
+                    console.warn(
+                        "⚠️ Erro ao desmontar CardForm:",
+                        error
+                    );
+
+                    // Mesmo se o SDK der erro, consideramos
+                    // que precisamos permitir uma nova tentativa.
+                    mpCardFormMounted = false;
+                }
+            }
+
+        }
+
+    });
+
+});
         
         console.log("✅ Mercado Pago inicializado com sucesso!");
         
