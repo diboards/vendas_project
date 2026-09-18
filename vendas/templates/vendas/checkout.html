@@ -1009,7 +1009,8 @@ function inicializarMercadoPago() {
                                         number: document.getElementById('docNumber')?.value.replace(/\D/g, '') || "12345678909"
                                     }
                                 }
-                            })
+                            })    
+                            });
                         
                         const resultado = await pagamentoResponse.json();
                         console.log("📡 Resultado:", resultado);
