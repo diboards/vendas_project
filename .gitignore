@@ -1,2 +1,8 @@
-
+venv/
 db.sqlite3
+*.crt
+*.key
+__pycache__/
+*.pyc
+.env
+staticfiles/
