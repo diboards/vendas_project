@@ -1637,7 +1637,36 @@ def pagamento_pendente(request, pedido_id):
     pedido.save()
 
     return render(request, 'vendas/pagamento_pendente.html', {'pedido': pedido})
+
+#Veiws para tentar pagar novamente
+@login_required
+def retomar_pagamento(request, pedido_id):
+    """Copia os itens do pedido antigo para o carrinho e redireciona ao checkout"""
+    pedido = get_object_or_404(Pedido, id=pedido_id, usuario=request.user)
     
+    if pedido.status not in ['pendente', 'aguardando_aprovacao']:
+        messages.warning(request, 'Este pedido não pode ser retomado.')
+        return redirect('detalhes_pedido', pedido_id=pedido.id)
+    
+    # Limpa o carrinho atual
+    CarrinhoItem.objects.filter(usuario=request.user).delete()
+    
+    # Adiciona os itens do pedido no carrinho
+    itens = ItemPedido.objects.filter(pedido=pedido)
+    for item in itens:
+        if item.variacao:
+            CarrinhoItem.objects.create(
+                usuario=request.user,
+                variacao=item.variacao,
+                quantidade=item.quantidade,
+            )
+    
+    # Cancela o pedido antigo (opcional, para não duplicar)
+    pedido.status = 'cancelado'
+    pedido.save()
+    
+    messages.success(request, 'Itens carregados. Finalize o pagamento.')
+    return redirect('checkout')
 
 # vendas/views/views.py
 
