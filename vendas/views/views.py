@@ -1175,76 +1175,127 @@ def processar_pagamento_cartao(request, pedido_id):
         else:
             data = request.POST
         
-        print(f"📦 Dados recebidos: {data}")
-        
         token = data.get('token')
-        print(f"💳 Token: {token[:30] if token else 'NÃO FORNECIDO'}...")
+        device_id = data.get('device_id')  # 🔥 CAPTURA DEVICE ID
         
-        # VALOR MÍNIMO PARA TESTE
+        if not token:
+            return JsonResponse({
+                "status": "error",
+                "message": "Token do cartão não fornecido."
+            }, status=400)
+        
+        print(f"💳 Token: {token[:30]}...")
+        print(f"📱 Device ID: {device_id or 'NÃO FORNECIDO'}")
+        
+        # 🔥 USA O VALOR REAL DO PEDIDO (não força R$5)
         transaction_amount = float(data.get("transaction_amount", pedido.total))
+        
+        # 🔥 GARANTE QUE É O VALOR DO PEDIDO
+        if abs(transaction_amount - float(pedido.total)) > 0.01:
+            print(f"⚠️ Valor divergente! Forçando valor do pedido: R$ {pedido.total}")
+            transaction_amount = float(pedido.total)
+        
         print(f"💰 Valor: R$ {transaction_amount}")
         
-        # Se o valor for muito baixo, usar um valor mínimo
-        if transaction_amount < 5.00:
-            print(f"⚠️ Valor muito baixo (R$ {transaction_amount}). Usando R$ 5.00 para teste.")
-            transaction_amount = 5.00
-        
         sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+        
+        # 🔥 MONTA DADOS COMPLETOS DO COMPRADOR
+        payer_data = {
+            "email": request.user.email,
+            "first_name": request.user.first_name or "Cliente",
+            "last_name": request.user.last_name or "Mirna",
+            "identification": {
+                "type": "CPF",
+                "number": data.get("payer", {}).get("identification", {}).get("number", "12345678909")
+            }
+        }
+        
+        # 🔥 ADICIONA ENDEREÇO SE DISPONÍVEL
+        if pedido.endereco_entrega:
+            end = pedido.endereco_entrega
+            payer_data["address"] = {
+                "zip_code": end.cep.replace('-', '').replace('.', ''),
+                "street_name": end.rua,
+                "street_number": str(end.numero) if end.numero else "S/N",
+                "neighborhood": end.bairro,
+                "city": end.cidade,
+                "federal_unit": end.estado,
+            }
+        
+        # 🔥 MONTA ITENS DO PEDIDO PARA O ANTIFRAUDE
+        itens = []
+        for item in ItemPedido.objects.filter(pedido=pedido):
+            itens.append({
+                "id": str(item.variacao.id) if item.variacao else "0",
+                "title": item.variacao.produto.nome if item.variacao else "Produto",
+                "description": f"{item.variacao.cor}/{item.variacao.tamanho}" if item.variacao else "",
+                "quantity": int(item.quantidade),
+                "unit_price": float(item.preco_unitario),
+                "category_id": "fashion",
+            })
         
         payment_data = {
             "transaction_amount": transaction_amount,
             "token": token,
-            "description": f"Pedido #{pedido.id}",
+            "description": f"Pedido #{pedido.id} - Mirna Boutique",
             "installments": int(data.get("installments", 1)),
             "payment_method_id": data.get("payment_method_id"),
-            "payer": {
-                "email": data.get("payer", {}).get("email", request.user.email),
-                "identification": {
-                    "type": "CPF",
-                    "number": data.get("payer", {}).get("identification", {}).get("number", "12345678909")
+            "statement_descriptor": "MIRNA BOUTIQUE",  # 🔥 Aparece na fatura
+            "payer": payer_data,
+            "additional_info": {  # 🔥 DADOS PARA ANTIFRAUDE
+                "items": itens,
+                "payer": {
+                    "first_name": request.user.first_name or "Cliente",
+                    "last_name": request.user.last_name or "Mirna",
+                    "phone": {
+                        "area_code": "61",
+                        "number": "999999999"
+                    },
+                    "address": payer_data.get("address", {})
+                },
+                "shipments": {
+                    "receiver_address": payer_data.get("address", {})
                 }
             }
         }
         
-        # issuer_id é opcional
+        # 🔥 ISSUER ID
         issuer_id = data.get("issuer_id")
         if issuer_id:
-            payment_data["issuer_id"] = issuer_id
-            print(f"🏦 Issuer ID: {issuer_id}")
+            payment_data["issuer_id"] = str(issuer_id)
         
-        print(f"📤 Enviando para Mercado Pago: {json.dumps(payment_data, indent=2)}")
+        print(f"📤 Enviando para MP...")
         
-        payment_response = sdk.payment().create(payment_data)
+        # 🔥 ENVIA COM O DEVICE ID NO HEADER
+        request_options = {}
+        if device_id:
+            request_options["custom_headers"] = {
+                "X-meli-session-id": device_id
+            }
+            print(f"📱 Enviando header X-meli-session-id")
+        
+        payment_response = sdk.payment().create(payment_data, request_options)
         payment = payment_response["response"]
         
-        print(f"📡 Resposta MP - Status: {payment.get('status')}")
-        print(f"📡 Resposta completa: {json.dumps(payment, indent=2)}")
-        
-        # Se houve erro na API do MP
-        if payment.get('status') in [400, '400'] or payment.get('error'):
-            erro_msg = payment.get('message', 'Erro desconhecido')
-            print(f"❌ ERRO MP: {erro_msg}")
-            print(f"❌ Detalhes: {payment.get('cause', 'Sem detalhes')}")
-            
-            return JsonResponse({
-                'status': 400,
-                'message': erro_msg,
-                'details': payment
-            }, status=400)
+        print(f"📡 Status: {payment.get('status')}")
+        print(f"📡 Detail: {payment.get('status_detail')}")
         
         # Atualizar pedido
-        pedido.pagamento_id = payment.get('id')
-        pedido.status_pagamento = payment.get('status')
+        pedido.id_mercado_pago = str(payment.get('id', ''))
+        pedido.status_pagamento = payment.get('status', 'pendente')
         
         if payment.get('status') == 'approved':
-            pedido.status = 'pago'
+            pedido.status = 'aprovado'
         elif payment.get('status') == 'rejected':
             pedido.status = 'cancelado'
+        elif payment.get('status') in ['pending', 'in_process']:
+            pedido.status = 'processando'
         
         pedido.save()
         
         return JsonResponse({
             'status': payment.get('status'),
+            'status_detail': payment.get('status_detail'),
             'payment_id': payment.get('id'),
             'message': payment.get('status_detail', ''),
             'pedido_id': pedido.id
