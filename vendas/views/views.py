@@ -1265,6 +1265,7 @@ def processar_pagamento_cartao(request, pedido_id):
             payment_data["issuer_id"] = str(issuer_id)
         
         print(f"📤 Enviando pagamento para MP...")
+        print(f"📦 payment_data: {json.dumps(payment_data, indent=2, default=str)}")
         
         # 🔥 Chama a API com RequestOptions (só se tiver device_id)
         if device_id:
@@ -1276,7 +1277,30 @@ def processar_pagamento_cartao(request, pedido_id):
         else:
             payment_response = sdk.payment().create(payment_data)
         
-        payment = payment_response["response"]
+        print(f"📡 Resposta completa MP: {json.dumps(payment_response, indent=2, default=str)}")
+        
+        payment = payment_response.get("response", {})
+        
+        # 🔥 VERIFICA SE HOUVE ERRO NA API (HTTP 4xx/5xx)
+        if payment_response.get("status") not in [200, 201] or not payment.get("id"):
+            erro_msg = payment.get("message", "Erro desconhecido")
+            causas = payment.get("cause", [])
+            
+            print(f"❌ ERRO MP: {erro_msg}")
+            print(f"❌ Causas: {json.dumps(causas, indent=2, default=str)}")
+            
+            # Monta mensagem legível
+            detalhes = erro_msg
+            if causas:
+                detalhes = "; ".join([f"{c.get('code', '')}: {c.get('description', '')}" for c in causas])
+            
+            return JsonResponse({
+                'status': 'error',
+                'message': erro_msg,
+                'details': detalhes,
+                'payment_id': None,
+                'pedido_id': pedido.id
+            }, status=400)
         
         print(f"📡 Status: {payment.get('status')}")
         print(f"📡 Detail: {payment.get('status_detail')}")
