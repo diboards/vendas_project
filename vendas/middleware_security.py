@@ -38,17 +38,52 @@ class SecurityHeadersMiddleware:
         
         return response
     
-    def _get_csp_policy(self):
+        def _get_csp_policy(self):
         """Retorna a política de segurança de conteúdo"""
         return (
             "default-src 'self'; "
-            "script-src 'self' https://sdk.mercadopago.com https://cdn.jsdelivr.net https://code.jquery.com 'unsafe-inline'; "
-            "style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; "
-            "img-src 'self' data: https://res.cloudinary.com https://*.onrender.com https://*.cloudinary.com; "
-            "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
-            "connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com; "
-            "frame-src 'self' https://www.mercadopago.com.br; "
+            # Scripts permitidos (Mercado Pago SDK, Bootstrap, jQuery)
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+                "https://sdk.mercadopago.com "
+                "https://*.mercadopago.com "
+                "https://*.mercadolibre.com "
+                "https://cdn.jsdelivr.net "
+                "https://code.jquery.com; "
+            # Estilos (Bootstrap, Google Fonts)
+            "style-src 'self' 'unsafe-inline' "
+                "https://cdn.jsdelivr.net "
+                "https://fonts.googleapis.com "
+                "https://*.mercadopago.com "
+                "https://*.mercadolibre.com; "
+            # Imagens (Cloudinary + Mercado Pago fingerprint/tracking)
+            "img-src 'self' data: blob: "
+                "https://res.cloudinary.com "
+                "https://*.onrender.com "
+                "https://*.cloudinary.com "
+                "https://www.mercadolibre.com "
+                "https://*.mercadolibre.com "
+                "https://www.mercadolivre.com "
+                "https://*.mercadopago.com; "
+            # Fontes
+            "font-src 'self' data: "
+                "https://cdn.jsdelivr.net "
+                "https://fonts.gstatic.com; "
+            # Conexões (fetch, XHR) - Mercado Pago precisa do mercadolibre.com
+            "connect-src 'self' "
+                "https://api.mercadopago.com "
+                "https://*.mercadopago.com "
+                "https://api.mercadolibre.com "
+                "https://*.mercadolibre.com "
+                "https://www.mercadolibre.com; "
+            # Iframes (checkout do Mercado Pago)
+            "frame-src 'self' "
+                "https://www.mercadopago.com.br "
+                "https://*.mercadopago.com "
+                "https://www.mercadolibre.com "
+                "https://*.mercadolibre.com; "
+            # Vídeos/áudio
             "media-src 'self'; "
+            # Bloqueios
             "object-src 'none'; "
             "base-uri 'self'; "
             "form-action 'self'; "
