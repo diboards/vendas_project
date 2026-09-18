@@ -159,17 +159,17 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <img src="{% if item.produto.imagem %}{{ item.produto.imagem.url }}{% else %}{% static 'vendas/images/default-product.png' %}{% endif %}" 
-                                                 alt="{{ item.produto.nome }}"
+                                            <img src="{% if item.variacao.produto.imagem %}{{ item.variacao.produto.imagem.url }}{% elif item.variacao.imagem %}{{ item.variacao.imagem.url }}{% else %}{% static 'vendas/images/default-product.png' %}{% endif %}" 
+                                                 alt="{{ item.variacao.produto.nome }}"
                                                  class="rounded me-2" 
                                                  style="width: 40px; height: 40px; object-fit: cover;">
                                             <div>
-                                                <strong class="small">{{ item.produto.nome }}</strong>
-                                                <br>
-                                                <small class="text-muted">
-                                                    {{ item.cor_selecionada|default:"Branco" }}, 
-                                                    {{ item.tamanho_selecionado|default:"M" }}
-                                                </small>
+                                                <strong class="small">{{ item.variacao.produto.nome }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        {{ item.variacao.cor }}, 
+                                                        {{ item.variacao.tamanho }}
+                                                    </small>
                                             </div>
                                         </div>
                                     </td>
