@@ -1177,7 +1177,7 @@ def processar_pagamento_cartao(request, pedido_id):
             data = request.POST
         
         token = data.get('token')
-        device_id = data.get('device_id')  # 🔥 CAPTURA DEVICE ID
+        device_id = data.get('device_id')
         
         if not token:
             return JsonResponse({
@@ -1188,10 +1188,9 @@ def processar_pagamento_cartao(request, pedido_id):
         print(f"💳 Token: {token[:30]}...")
         print(f"📱 Device ID: {device_id or 'NÃO FORNECIDO'}")
         
-        # 🔥 USA O VALOR REAL DO PEDIDO (não força R$5)
+        # Valor do pedido
         transaction_amount = float(data.get("transaction_amount", pedido.total))
         
-        # 🔥 GARANTE QUE É O VALOR DO PEDIDO
         if abs(transaction_amount - float(pedido.total)) > 0.01:
             print(f"⚠️ Valor divergente! Forçando valor do pedido: R$ {pedido.total}")
             transaction_amount = float(pedido.total)
@@ -1200,7 +1199,7 @@ def processar_pagamento_cartao(request, pedido_id):
         
         sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
         
-        # 🔥 MONTA DADOS COMPLETOS DO COMPRADOR
+        # Dados do comprador
         payer_data = {
             "email": request.user.email,
             "first_name": request.user.first_name or "Cliente",
@@ -1211,7 +1210,7 @@ def processar_pagamento_cartao(request, pedido_id):
             }
         }
         
-        # 🔥 ADICIONA ENDEREÇO SE DISPONÍVEL
+        # Endereço
         if pedido.endereco_entrega:
             end = pedido.endereco_entrega
             payer_data["address"] = {
@@ -1223,7 +1222,7 @@ def processar_pagamento_cartao(request, pedido_id):
                 "federal_unit": end.estado,
             }
         
-        # 🔥 MONTA ITENS DO PEDIDO PARA O ANTIFRAUDE
+        # Itens do pedido
         itens = []
         for item in ItemPedido.objects.filter(pedido=pedido):
             itens.append({
@@ -1241,9 +1240,9 @@ def processar_pagamento_cartao(request, pedido_id):
             "description": f"Pedido #{pedido.id} - Mirna Boutique",
             "installments": int(data.get("installments", 1)),
             "payment_method_id": data.get("payment_method_id"),
-            "statement_descriptor": "MIRNA BOUTIQUE",  # 🔥 Aparece na fatura
+            "statement_descriptor": "MIRNA BOUTIQUE",
             "payer": payer_data,
-            "additional_info": {  # 🔥 DADOS PARA ANTIFRAUDE
+            "additional_info": {
                 "items": itens,
                 "payer": {
                     "first_name": request.user.first_name or "Cliente",
@@ -1260,19 +1259,14 @@ def processar_pagamento_cartao(request, pedido_id):
             }
         }
         
-        # 🔥 ISSUER ID
+        # Issuer ID
         issuer_id = data.get("issuer_id")
         if issuer_id:
             payment_data["issuer_id"] = str(issuer_id)
         
-        print(f"📤 Enviando para MP...")
-        
-        # 🔥 ENVIA COM O DEVICE ID NO HEADER
-               # 🔥 SDK 2.x: usa RequestOptions (instância, não dict)
-        from mercadopago.config import RequestOptions
-        
         print(f"📤 Enviando pagamento para MP...")
         
+        # 🔥 Chama a API com RequestOptions (só se tiver device_id)
         if device_id:
             print(f"📱 Enviando X-meli-session-id: {device_id[:40]}...")
             request_options = RequestOptions(
