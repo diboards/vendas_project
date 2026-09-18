@@ -1267,14 +1267,19 @@ def processar_pagamento_cartao(request, pedido_id):
         print(f"📤 Enviando para MP...")
         
         # 🔥 ENVIA COM O DEVICE ID NO HEADER
-        request_options = {}
+        request_options = None
         if device_id:
-            request_options["custom_headers"] = {
+            request_options = {"custom_headers": {
                 "X-meli-session-id": device_id
             }
-            print(f"📱 Enviando header X-meli-session-id")
+            }                   
+            print(f"📱 Enviando header X-meli-session-id: {device_id[:30]}...")
         
-        payment_response = sdk.payment().create(payment_data, request_options)
+        if request_options:
+            payment_response = sdk.payment().create(payment_data, request_options)
+        else:
+            payment_response = sdk.payment().create(payment_data)
+        
         payment = payment_response["response"]
         
         print(f"📡 Status: {payment.get('status')}")
