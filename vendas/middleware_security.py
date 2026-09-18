@@ -38,7 +38,7 @@ class SecurityHeadersMiddleware:
         
         return response
     
-        def _get_csp_policy(self):
+    def _get_csp_policy(self):
         """Retorna a política de segurança de conteúdo"""
         return (
             "default-src 'self'; "
