@@ -1268,15 +1268,16 @@ def processar_pagamento_cartao(request, pedido_id):
         print(f"📤 Enviando para MP...")
         
         # 🔥 ENVIA COM O DEVICE ID NO HEADER
-        request_options = None
-        if device_id:
-            request_options = {"custom_headers": {
-                "X-meli-session-id": device_id
-            }
-            }                   
-            print(f"📱 Enviando header X-meli-session-id: {device_id[:30]}...")
+               # 🔥 SDK 2.x: usa RequestOptions (instância, não dict)
+        from mercadopago.config import RequestOptions
         
-        if request_options:
+        print(f"📤 Enviando pagamento para MP...")
+        
+        if device_id:
+            print(f"📱 Enviando X-meli-session-id: {device_id[:40]}...")
+            request_options = RequestOptions(
+                custom_headers={"X-meli-session-id": device_id}
+            )
             payment_response = sdk.payment().create(payment_data, request_options)
         else:
             payment_response = sdk.payment().create(payment_data)
