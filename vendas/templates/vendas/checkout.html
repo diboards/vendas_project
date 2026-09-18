@@ -985,7 +985,7 @@ function inicializarMercadoPago() {
                         
                         const pagamentoUrl = `/processar-pagamento-cartao/${pedidoData.pedido_id}/`;
                         
-                        const pagamentoResponse = await fetch(pagamentoUrl, {
+                                                const pagamentoResponse = await fetch(pagamentoUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -999,7 +999,7 @@ function inicializarMercadoPago() {
                                 issuer_id: formData.issuerId || null,
                                 transaction_amount: pedidoData.total || "{{ total|floatformat:2 }}".replace(',', '.'),
                                 description: `Pedido #${pedidoData.pedido_id}`,
-                                device_id: window.MP_DEVICE_SESSION_ID || null,  // 🔥 ADICIONE
+                                device_id: window.MP_DEVICE_SESSION_ID || null,
                                 payer: {
                                     email: "{{ request.user.email }}",
                                     first_name: "{{ request.user.first_name|default:'' }}",
@@ -1009,8 +1009,10 @@ function inicializarMercadoPago() {
                                         number: document.getElementById('docNumber')?.value.replace(/\D/g, '') || "12345678909"
                                     }
                                 }
-                            })    
-                            });
+                            })
+                        });  // 🔥 AQUI ESTAVA FALTANDO O FECHAMENTO
+                        
+                        
                         
                         const resultado = await pagamentoResponse.json();
                         console.log("📡 Resultado:", resultado);
