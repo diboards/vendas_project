@@ -1211,12 +1211,17 @@ def processar_pagamento_cartao(request, pedido_id):
         }
         
         # Endereço
+        endereco_data = {}
         if pedido.endereco_entrega:
             end = pedido.endereco_entrega
-            payer_data["address"] = {
+            endereco_data = {
                 "zip_code": end.cep.replace('-', '').replace('.', ''),
                 "street_name": end.rua,
                 "street_number": str(end.numero) if end.numero else "S/N",
+            }
+            # 🔥 Adiciona address no payer (fora do additional_info) com os nomes que o MP aceita
+            payer_data["address"] = {
+                **endereco_data,
                 "neighborhood": end.bairro,
                 "city": end.cidade,
                 "federal_unit": end.estado,
@@ -1251,10 +1256,25 @@ def processar_pagamento_cartao(request, pedido_id):
                         "area_code": "61",
                         "number": "999999999"
                     },
-                    "address": payer_data.get("address", {})
+                    # 🔥 Dentro do additional_info, os nomes são diferentes
+                    "address": {
+                        "zip_code": endereco_data.get("zip_code", ""),
+                        "street_name": endereco_data.get("street_name", ""),
+                        "street_number": endereco_data.get("street_number", ""),
+                        "neighborhood": end.bairro if pedido.endereco_entrega else "",
+                        "city_name": end.cidade if pedido.endereco_entrega else "",       # 🔥 AQUI
+                        "state_name": end.estado if pedido.endereco_entrega else "",       # 🔥 AQUI
+                    }
                 },
                 "shipments": {
-                    "receiver_address": payer_data.get("address", {})
+                    "receiver_address": {
+                        "zip_code": endereco_data.get("zip_code", ""),
+                        "street_name": endereco_data.get("street_name", ""),
+                        "street_number": endereco_data.get("street_number", ""),
+                        "neighborhood": end.bairro if pedido.endereco_entrega else "",
+                        "city_name": end.cidade if pedido.endereco_entrega else "",       # 🔥 AQUI
+                        "state_name": end.estado if pedido.endereco_entrega else "",       # 🔥 AQUI
+                    }
                 }
             }
         }
