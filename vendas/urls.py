@@ -80,7 +80,7 @@ urlpatterns = [
     path('pedido/<int:pedido_id>/verificar-status/', views_principais.verificar_status_pagamento, name='verificar_status_pagamento'),
     path('pedido/<int:pedido_id>/diagnostico/', views_principais.diagnostico_pagamento, name='diagnostico_pagamento'),
     # retornar o pagamento
-    path('retomar-pagamento/<int:pedido_id>/', views.retomar_pagamento, name='retomar_pagamento'),
+    path('retomar-pagamento/<int:pedido_id>/', views_principais.retomar_pagamento, name='retomar_pagamento'),
     
     # RESET DE SENHA
     path('password_reset/', auth_views.PasswordResetView.as_view(
