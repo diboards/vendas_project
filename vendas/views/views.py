@@ -944,10 +944,7 @@ def checkout(request):
     })
 
 
-@login_required
-#def excluir_endereco(request, endereco_id):
-   
-   
+
 
 @login_required
 def pagamento(request):
@@ -1164,331 +1161,102 @@ def criar_pagamento(request):
 @login_required
 def processar_pagamento_cartao(request, pedido_id):
     if request.method != "POST":
-        return JsonResponse(
-            {"erro": "Método não permitido."},
-            status=405
-        )
-
+        return JsonResponse({"erro": "Método não permitido."}, status=405)
+    
     try:
-        pedido = get_object_or_404(
-            Pedido,
-            id=pedido_id,
-            usuario=request.user
-        )
-
-        print(f"\n{'=' * 60}")
-        print(f"🔐 PROCESSANDO PAGAMENTO - PEDIDO #{pedido.id}")
-        print(f"{'=' * 60}")
-
-        # ============================================================
-        # 1. RECEBER DADOS
-        # ============================================================
-
-        if request.content_type == "application/json":
-            try:
-                data = json.loads(request.body)
-            except json.JSONDecodeError:
-                return JsonResponse(
-                    {"erro": "JSON inválido."},
-                    status=400
-                )
+        pedido = get_object_or_404(Pedido, id=pedido_id, usuario=request.user)
+        
+        print(f"\n{'='*50}")
+        print(f"🔐 Processando pagamento para pedido #{pedido.id}")
+        print(f"{'='*50}")
+        
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
         else:
             data = request.POST
-
-        token = data.get("token")
-
-        if not token:
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "erro": "Token do cartão não foi fornecido."
-                },
-                status=400
-            )
-
-        # ============================================================
-        # 2. VALOR
-        # ============================================================
-
-        try:
-            transaction_amount = float(
-                data.get("transaction_amount", pedido.total)
-            )
-        except (TypeError, ValueError):
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "erro": "Valor da transação inválido."
-                },
-                status=400
-            )
-
-        # IMPORTANTE:
-        # Não alteramos artificialmente o valor da compra.
-        transaction_amount = round(transaction_amount, 2)
-
-        if transaction_amount <= 0:
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "erro": "Valor da transação inválido."
-                },
-                status=400
-            )
-
-        print(f"💰 Valor: R$ {transaction_amount:.2f}")
-
-        # ============================================================
-        # 3. PAGAMENTO
-        # ============================================================
-
-        installments = data.get("installments", 1)
-
-        try:
-            installments = int(installments)
-        except (TypeError, ValueError):
-            installments = 1
-
-        payment_method_id = data.get("payment_method_id")
-
-        if not payment_method_id:
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "erro": "Método de pagamento não informado."
-                },
-                status=400
-            )
-
-        # ============================================================
-        # 4. DADOS DO PAGADOR
-        # ============================================================
-
-        payer_data = data.get("payer", {})
-
-        if not isinstance(payer_data, dict):
-            payer_data = {}
-
-        email = payer_data.get("email") or request.user.email
-
-        if not email:
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "erro": "E-mail do comprador não informado."
-                },
-                status=400
-            )
-
-        identification = payer_data.get("identification", {})
-
-        if not isinstance(identification, dict):
-            identification = {}
-
-        cpf = identification.get("number")
-
-        if not cpf:
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "erro": "CPF do comprador não informado."
-                },
-                status=400
-            )
-
-        # Remove caracteres do CPF
-        cpf = "".join(
-            caractere
-            for caractere in str(cpf)
-            if caractere.isdigit()
-        )
-
-        if len(cpf) != 11:
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "erro": "CPF inválido."
-                },
-                status=400
-            )
-
-        # ============================================================
-        # 5. DADOS DO PAGAMENTO
-        # ============================================================
-
+        
+        print(f"📦 Dados recebidos: {data}")
+        
+        token = data.get('token')
+        print(f"💳 Token: {token[:30] if token else 'NÃO FORNECIDO'}...")
+        
+        # VALOR MÍNIMO PARA TESTE
+        transaction_amount = float(data.get("transaction_amount", pedido.total))
+        print(f"💰 Valor: R$ {transaction_amount}")
+        
+        # Se o valor for muito baixo, usar um valor mínimo
+        if transaction_amount < 5.00:
+            print(f"⚠️ Valor muito baixo (R$ {transaction_amount}). Usando R$ 5.00 para teste.")
+            transaction_amount = 5.00
+        
+        sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+        
         payment_data = {
             "transaction_amount": transaction_amount,
             "token": token,
             "description": f"Pedido #{pedido.id}",
-            "installments": installments,
-            "payment_method_id": payment_method_id,
+            "installments": int(data.get("installments", 1)),
+            "payment_method_id": data.get("payment_method_id"),
             "payer": {
-                "email": email,
+                "email": data.get("payer", {}).get("email", request.user.email),
                 "identification": {
-                    "type": identification.get("type", "CPF"),
-                    "number": cpf
+                    "type": "CPF",
+                    "number": data.get("payer", {}).get("identification", {}).get("number", "12345678909")
                 }
             }
         }
-
-        # issuer_id, quando fornecido pelo frontend
+        
+        # issuer_id é opcional
         issuer_id = data.get("issuer_id")
-
         if issuer_id:
             payment_data["issuer_id"] = issuer_id
-
-        # ============================================================
-        # 6. MERCADO PAGO
-        # ============================================================
-
-        sdk = mercadopago.SDK(
-            settings.MERCADOPAGO_ACCESS_TOKEN
-        )
-
-        # Chave única para esta tentativa de pagamento
-        import uuid
-
-        request_options = mercadopago.config.RequestOptions()
-
-        request_options.custom_headers = {
-            "x-idempotency-key": str(uuid.uuid4())
-        }
-
-        # ============================================================
-        # 7. DEVICE ID
-        # ============================================================
-
-        device_id = (
-            request.headers.get("X-Meli-Session-Id")
-            or data.get("device_id")
-        )
-
-        if device_id:
-            request_options.custom_headers[
-                "x-meli-session-id"
-            ] = device_id
-
-            print("📱 Device ID recebido: SIM")
-        else:
-            print("⚠️ Device ID recebido: NÃO")
-
-        # ============================================================
-        # 8. ENVIAR PARA MERCADO PAGO
-        # ============================================================
-
-        print("📤 Enviando pagamento para Mercado Pago...")
-        print(f"   Pedido: #{pedido.id}")
-        print(f"   Valor: R$ {transaction_amount:.2f}")
-        print(f"   Método: {payment_method_id}")
-        print(f"   Parcelas: {installments}")
-        print(f"   E-mail: {email}")
-        print(f"   Device ID: {'SIM' if device_id else 'NÃO'}")
-
-        payment_response = sdk.payment().create(
-            payment_data,
-            request_options
-        )
-
-        payment = payment_response.get("response", {})
-
-        # ============================================================
-        # 9. RESPOSTA DO MERCADO PAGO
-        # ============================================================
-
-        status_pagamento = payment.get("status")
-        status_detail = payment.get("status_detail")
-        payment_id = payment.get("id")
-
-        print("\n📡 RESPOSTA MERCADO PAGO")
-        print(f"   ID: {payment_id}")
-        print(f"   STATUS: {status_pagamento}")
-        print(f"   STATUS DETAIL: {status_detail}")
-        print(f"   MÉTODO: {payment.get('payment_method_id')}")
-
-        # ============================================================
-        # 10. ERRO DA API
-        # ============================================================
-
-        if payment.get("error"):
-
-            print("❌ ERRO NA API DO MERCADO PAGO")
-            print(f"   Mensagem: {payment.get('message')}")
-            print(f"   Causa: {payment.get('cause')}")
-
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "message": payment.get(
-                        "message",
-                        "Erro ao processar pagamento."
-                    ),
-                    "details": payment.get("cause")
-                },
-                status=400
-            )
-
-        # ============================================================
-        # 11. ATUALIZAR PEDIDO
-        # ============================================================
-
-        pedido.pagamento_id = payment_id
-        pedido.status_pagamento = status_pagamento
-
-        if status_pagamento == "approved":
-            pedido.status = "pago"
-
-        elif status_pagamento == "rejected":
-            pedido.status = "cancelado"
-
+            print(f"🏦 Issuer ID: {issuer_id}")
+        
+        print(f"📤 Enviando para Mercado Pago: {json.dumps(payment_data, indent=2)}")
+        
+        payment_response = sdk.payment().create(payment_data)
+        payment = payment_response["response"]
+        
+        print(f"📡 Resposta MP - Status: {payment.get('status')}")
+        print(f"📡 Resposta completa: {json.dumps(payment, indent=2)}")
+        
+        # Se houve erro na API do MP
+        if payment.get('status') in [400, '400'] or payment.get('error'):
+            erro_msg = payment.get('message', 'Erro desconhecido')
+            print(f"❌ ERRO MP: {erro_msg}")
+            print(f"❌ Detalhes: {payment.get('cause', 'Sem detalhes')}")
+            
+            return JsonResponse({
+                'status': 400,
+                'message': erro_msg,
+                'details': payment
+            }, status=400)
+        
+        # Atualizar pedido
+        pedido.pagamento_id = payment.get('id')
+        pedido.status_pagamento = payment.get('status')
+        
+        if payment.get('status') == 'approved':
+            pedido.status = 'pago'
+        elif payment.get('status') == 'rejected':
+            pedido.status = 'cancelado'
+        
         pedido.save()
-
-        # ============================================================
-        # 12. RESPOSTA PARA O JAVASCRIPT
-        # ============================================================
-
-        if status_pagamento == "approved":
-
-            return JsonResponse({
-                "status": "approved",
-                "payment_id": payment_id,
-                "message": "Pagamento aprovado.",
-                "pedido_id": pedido.id
-            })
-
-        elif status_pagamento == "rejected":
-
-            return JsonResponse({
-                "status": "rejected",
-                "payment_id": payment_id,
-                "status_detail": status_detail,
-                "message": status_detail or "Pagamento recusado.",
-                "pedido_id": pedido.id
-            })
-
-        else:
-
-            return JsonResponse({
-                "status": status_pagamento,
-                "payment_id": payment_id,
-                "status_detail": status_detail,
-                "message": status_detail or "",
-                "pedido_id": pedido.id
-            })
-
+        
+        return JsonResponse({
+            'status': payment.get('status'),
+            'payment_id': payment.get('id'),
+            'message': payment.get('status_detail', ''),
+            'pedido_id': pedido.id
+        })
+        
     except Exception as e:
-
-        print(f"\n❌ EXCEÇÃO NO PAGAMENTO: {str(e)}")
-
+        print(f"❌ EXCEÇÃO: {str(e)}")
         import traceback
         traceback.print_exc()
+        return JsonResponse({"erro": str(e), "status": "error"}, status=500)
 
-        return JsonResponse(
-            {
-                "status": "error",
-                "erro": str(e)
-            },
-            status=500
-        )
+
 
 def detectar_bandeira(numero_cartao):
     """Detecta a bandeira do cartão baseado nos primeiros dígitos"""
