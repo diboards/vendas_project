@@ -1,4 +1,5 @@
 # vendas/views.py
+from mercadopago.config import RequestOptions
 from decimal import Decimal
 from django.db.models.functions import TruncMonth
 from django.utils.dateparse import parse_date
