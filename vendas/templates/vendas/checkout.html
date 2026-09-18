@@ -999,15 +999,17 @@ function inicializarMercadoPago() {
                                 issuer_id: formData.issuerId || null,
                                 transaction_amount: pedidoData.total || "{{ total|floatformat:2 }}".replace(',', '.'),
                                 description: `Pedido #${pedidoData.pedido_id}`,
+                                device_id: window.MP_DEVICE_SESSION_ID || null,  // 🔥 ADICIONE
                                 payer: {
                                     email: "{{ request.user.email }}",
+                                    first_name: "{{ request.user.first_name|default:'' }}",
+                                    last_name: "{{ request.user.last_name|default:'' }}",
                                     identification: {
                                         type: "CPF",
                                         number: document.getElementById('docNumber')?.value.replace(/\D/g, '') || "12345678909"
                                     }
                                 }
                             })
-                        });
                         
                         const resultado = await pagamentoResponse.json();
                         console.log("📡 Resultado:", resultado);
