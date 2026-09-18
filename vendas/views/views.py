@@ -1256,14 +1256,12 @@ def processar_pagamento_cartao(request, pedido_id):
                         "area_code": "61",
                         "number": "999999999"
                     },
-                    # 🔥 Dentro do additional_info, os nomes são diferentes
                     "address": {
                         "zip_code": endereco_data.get("zip_code", ""),
                         "street_name": endereco_data.get("street_name", ""),
                         "street_number": endereco_data.get("street_number", ""),
-                        "neighborhood": end.bairro if pedido.endereco_entrega else "",
-                        "city_name": end.cidade if pedido.endereco_entrega else "",       # 🔥 AQUI
-                        "state_name": end.estado if pedido.endereco_entrega else "",       # 🔥 AQUI
+                        "city_name": end.cidade if pedido.endereco_entrega else "",
+                        "state_name": end.estado if pedido.endereco_entrega else "",
                     }
                 },
                 "shipments": {
@@ -1271,9 +1269,8 @@ def processar_pagamento_cartao(request, pedido_id):
                         "zip_code": endereco_data.get("zip_code", ""),
                         "street_name": endereco_data.get("street_name", ""),
                         "street_number": endereco_data.get("street_number", ""),
-                        "neighborhood": end.bairro if pedido.endereco_entrega else "",
-                        "city_name": end.cidade if pedido.endereco_entrega else "",       # 🔥 AQUI
-                        "state_name": end.estado if pedido.endereco_entrega else "",       # 🔥 AQUI
+                        "city_name": end.cidade if pedido.endereco_entrega else "",
+                        "state_name": end.estado if pedido.endereco_entrega else "",
                     }
                 }
             }
