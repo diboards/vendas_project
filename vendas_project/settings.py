@@ -167,7 +167,7 @@ WSGI_APPLICATION = 'vendas_project.wsgi.application'
 # 🗄️ Banco (NEON)
 DATABASES = {
     'default': dj_database_url.config(
-        conn_max_age=60,
+        conn_max_age=0,
         ssl_require=True
     )
 }
