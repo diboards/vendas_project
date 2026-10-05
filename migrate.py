@@ -19,25 +19,25 @@ print("👤 Verificando superusuário...")
 
 if not username or not email or not password:
     print("⚠️ Variáveis do superusuário não configuradas.")
-else:
-    try:
-        user = User.objects.filter(username=username).first()
-
-        if not user:
-    User.objects.create_superuser(
-        username=username,
-        email=email,
-        password=password
-    )
-    print(f"✅ Superusuário criado: {username}")
-else:
-    user.email = email
-    user.set_password(password)
-    user.is_staff = True
-    user.is_superuser = True
-    user.save()
-
-    print(f"✅ Senha do superusuário atualizada: {username}")
-
-    except Exception as e:
-        print(f"⚠️ Erro ao criar superusuário: {e}")
+    else:
+        try:
+            user = User.objects.filter(username=username).first()
+    
+            if not user:
+        User.objects.create_superuser(
+            username=username,
+            email=email,
+            password=password
+        )
+        print(f"✅ Superusuário criado: {username}")
+    else:
+        user.email = email
+        user.set_password(password)
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+    
+        print(f"✅ Senha do superusuário atualizada: {username}")
+    
+        except Exception as e:
+            print(f"⚠️ Erro ao criar superusuário: {e}")
