@@ -19,7 +19,7 @@ from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.contrib.admin.views.decorators import staff_member_required
 from decimal import Decimal, InvalidOperation
