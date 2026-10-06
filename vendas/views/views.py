@@ -28,6 +28,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 #
+
 from django.forms import inlineformset_factory
 
 from collections import OrderedDict
@@ -51,8 +52,10 @@ from django.conf import settings
 from django.core.cache import cache
 from django.contrib.admin.views.decorators import staff_member_required
 
-
-
+#Views para health check não tocar no banco a cada 5 minutos.
+def uptime_check(request):
+    return HttpResponse("OK", content_type="text/plain")
+    
 # vendas/views/views.py
 
 def calcular_precos(produto_list):
