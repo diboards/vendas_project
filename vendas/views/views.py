@@ -2441,13 +2441,10 @@ def api_produto_variacoes(request, produto_id):
 #@cache_page(60 * 30)
 @login_required
 def relatorios_pedidos(request):
-
-    # ==========================================================
-    # FILTRO DE DATAS
-    # ==========================================================
-
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
+
+    # ==================== FILTROS DE DATA ====================
 
     data_inicio_parsed = parse_date(data_inicio) if data_inicio else None
     data_fim_parsed = parse_date(data_fim) if data_fim else None
@@ -2456,50 +2453,51 @@ def relatorios_pedidos(request):
     filtro_vendas = Q()
 
     if data_inicio_parsed:
-        filtro_pedidos &= Q(
-            data_criacao__date__gte=data_inicio_parsed
-        )
-
-        filtro_vendas &= Q(
-            data_criacao__date__gte=data_inicio_parsed
-        )
+        filtro_pedidos &= Q(data_criacao__date__gte=data_inicio_parsed)
+        filtro_vendas &= Q(data_criacao__date__gte=data_inicio_parsed)
 
     if data_fim_parsed:
-        filtro_pedidos &= Q(
-            data_criacao__date__lte=data_fim_parsed
-        )
-
-        filtro_vendas &= Q(
-            data_criacao__date__lte=data_fim_parsed
-        )
+        filtro_pedidos &= Q(data_criacao__date__lte=data_fim_parsed)
+        filtro_vendas &= Q(data_criacao__date__lte=data_fim_parsed)
 
     pedidos = Pedido.objects.filter(filtro_pedidos)
     vendas_manuais = Venda.objects.filter(filtro_vendas)
 
-    print("==========================================")
-    print("📊 RELATÓRIO DE VENDAS")
-    print("==========================================")
-    print(f"📅 Data início: {data_inicio_parsed}")
-    print(f"📅 Data fim: {data_fim_parsed}")
-    print(f"🛒 Pedidos online: {pedidos.count()}")
-    print(f"🏪 Vendas manuais: {vendas_manuais.count()}")
+    print(f"📊 Pedidos online: {pedidos.count()}")
+    print(f"📊 Vendas manuais: {vendas_manuais.count()}")
 
+    # ==================== DEBUG DOS PEDIDOS ====================
 
-    # ==========================================================
-    # TOTAL DE PEDIDOS E VENDAS
-    # ==========================================================
+    for pedido in pedidos:
+        print(
+            f"  Pedido #{pedido.id} - "
+            f"Status: {pedido.status} - "
+            f"Total: {pedido.total} - "
+            f"Data: {pedido.data_criacao}"
+        )
+
+    # ==================== ITENS DOS PEDIDOS ====================
+
+    itens_pedido = ItemPedido.objects.filter(
+        pedido__in=pedidos
+    )
+
+    print(f"📦 Itens de pedido encontrados: {itens_pedido.count()}")
+
+    for item in itens_pedido:
+        print(
+            f"  Item #{item.id} - "
+            f"Pedido: {item.pedido.id} - "
+            f"Produto: {item.variacao.produto.nome if item.variacao else 'N/A'} - "
+            f"Qtd: {item.quantidade}"
+        )
+
+    # ==================== TOTAIS ====================
 
     total_pedidos_online = pedidos.count()
     total_vendas_manuais = vendas_manuais.count()
 
-    total_geral = (
-        total_pedidos_online +
-        total_vendas_manuais
-    )
-
-    # ==========================================================
-    # VALOR TOTAL
-    # ==========================================================
+    total_geral = total_pedidos_online + total_vendas_manuais
 
     valor_total_online = pedidos.aggregate(
         total=Sum('total')
@@ -2511,19 +2509,15 @@ def relatorios_pedidos(request):
         )
     )['total'] or Decimal('0')
 
-    valor_total = (
-        valor_total_online +
-        valor_total_manual
-    )
+    valor_total = valor_total_online + valor_total_manual
 
-    print(f"💰 Total online: R$ {valor_total_online}")
-    print(f"💰 Total manual: R$ {valor_total_manual}")
-    print(f"💰 Total geral: R$ {valor_total}")
+    print(f"💰 Valor total online: {valor_total_online}")
+    print(f"💰 Valor total manual: {valor_total_manual}")
+    print(f"💰 Valor total geral: {valor_total}")
 
+    # ==================== STATUS ====================
 
-    # ==========================================================
-    # STATUS DOS PEDIDOS ONLINE
-    # ==========================================================
+    # Pedidos online
 
     pedidos_pendentes = pedidos.filter(
         status='pendente'
@@ -2553,9 +2547,18 @@ def relatorios_pedidos(request):
         status='cancelado'
     ).count()
 
-    # ==========================================================
-    # STATUS DAS VENDAS MANUAIS
-    # ==========================================================
+    print(
+        f"📊 Status pedidos - "
+        f"Pendentes: {pedidos_pendentes}, "
+        f"Aprovados: {pedidos_aprovados}, "
+        f"Aguardando: {pedidos_aguardando}, "
+        f"Processando: {pedidos_processando}, "
+        f"Enviados: {pedidos_enviados}, "
+        f"Entregues: {pedidos_entregues}, "
+        f"Cancelados: {pedidos_cancelados}"
+    )
+
+    # Vendas manuais
 
     vendas_pendentes = vendas_manuais.filter(
         status='pendente'
@@ -2569,14 +2572,9 @@ def relatorios_pedidos(request):
         status='cancelada'
     ).count()
 
-    # ==========================================================
-    # STATUS CONSOLIDADOS
-    # ==========================================================
+    # Combinar status
 
-    total_pendentes = (
-        pedidos_pendentes +
-        vendas_pendentes
-    )
+    total_pendentes = pedidos_pendentes + vendas_pendentes
 
     total_aprovados = pedidos_aprovados
 
@@ -2597,9 +2595,7 @@ def relatorios_pedidos(request):
         vendas_canceladas
     )
 
-    # ==========================================================
-    # PRODUTOS MAIS VENDIDOS
-    # ==========================================================
+    # ==================== PRODUTOS MAIS VENDIDOS ====================
 
     produtos = defaultdict(
         lambda: {
@@ -2607,10 +2603,6 @@ def relatorios_pedidos(request):
             'total_vendas': 0
         }
     )
-
-    # ----------------------------------------------------------
-    # Produtos vendidos nos pedidos online
-    # ----------------------------------------------------------
 
     online_prod = ItemPedido.objects.filter(
         pedido__in=pedidos
@@ -2623,6 +2615,10 @@ def relatorios_pedidos(request):
             distinct=True
         )
     )
+    print(
+        f"🏆 Produtos online encontrados: "
+        f"{online_prod.count()}"
+    )
 
     for item in online_prod:
 
@@ -2630,20 +2626,19 @@ def relatorios_pedidos(request):
             'variacao__produto__nome'
         ]
 
-        if not nome:
-            nome = 'Produto sem nome'
+        produtos[nome][
+            'total_quantidade'
+        ] += item['total_quantidade'] or 0
 
-        produtos[nome]['total_quantidade'] += (
-            item['total_quantidade'] or 0
+        produtos[nome][
+            'total_vendas'
+        ] += item['total_vendas'] or 0
+
+        print(
+            f"  Produto online: {nome} - "
+            f"Qtd: {item['total_quantidade']} - "
+            f"Vendas: {item['total_vendas']}"
         )
-
-        produtos[nome]['total_vendas'] += (
-            item['total_vendas'] or 0
-        )
-
-    # ----------------------------------------------------------
-    # Produtos vendidos manualmente
-    # ----------------------------------------------------------
 
     manual_prod = vendas_manuais.values(
         'produto__nome'
@@ -2655,21 +2650,19 @@ def relatorios_pedidos(request):
     for item in manual_prod:
 
         nome = item['produto__nome']
+        produtos[nome][
+            'total_quantidade'
+        ] += item['total_quantidade'] or 0
 
-        if not nome:
-            nome = 'Produto sem nome'
+        produtos[nome][
+            'total_vendas'
+        ] += item['total_vendas'] or 0
 
-        produtos[nome]['total_quantidade'] += (
-            item['total_quantidade'] or 0
+        print(
+            f"  Produto manual: {nome} - "
+            f"Qtd: {item['total_quantidade']} - "
+            f"Vendas: {item['total_vendas']}"
         )
-
-        produtos[nome]['total_vendas'] += (
-            item['total_vendas'] or 0
-        )
-
-    # ----------------------------------------------------------
-    # Ordenar produtos pela quantidade vendida
-    # ----------------------------------------------------------
 
     produtos_vendidos = [
         {
@@ -2682,25 +2675,14 @@ def relatorios_pedidos(request):
             reverse=True
         )[:10]
     ]
+    print(
+        f"🏆 Total produtos vendidos: "
+        f"{len(produtos_vendidos)}"
+    )
 
-    print("📦 PRODUTOS MAIS VENDIDOS:")
-
-    for produto in produtos_vendidos:
-
-        print(
-            f"   {produto['variacao__produto__nome']}: "
-            f"{produto['total_quantidade']} unidades"
-        )
-
-    # ==========================================================
-    # GRÁFICO DE VENDAS POR MÊS
-    # ==========================================================
+    # ==================== VENDAS POR MÊS ====================
 
     mes_dict = defaultdict(float)
-
-    # ----------------------------------------------------------
-    # Pedidos online
-    # ----------------------------------------------------------
 
     online_mes = pedidos.filter(
         status__in=[
@@ -2716,10 +2698,6 @@ def relatorios_pedidos(request):
         total=Sum('total')
     )
 
-    # ----------------------------------------------------------
-    # Vendas manuais
-    # ----------------------------------------------------------
-
     manual_mes = vendas_manuais.filter(
         status='concluida'
     ).annotate(
@@ -2733,149 +2711,78 @@ def relatorios_pedidos(request):
         )
     )
 
-    # ----------------------------------------------------------
-    # Consolidar os meses
-    # ----------------------------------------------------------
-
     for item in online_mes:
 
         if item['mes']:
-
-            mes_dict[item['mes']] += float(
+            mes_dict[
+                item['mes']
+            ] += float(
                 item['total'] or 0
             )
 
     for item in manual_mes:
 
         if item['mes']:
-
-            mes_dict[item['mes']] += float(
+            mes_dict[
+                item['mes']
+            ] += float(
                 item['total'] or 0
             )
 
     meses_ordenados = sorted(
         mes_dict.keys()
     )
-
     meses_labels = [
         mes.strftime('%b/%Y')
         for mes in meses_ordenados
     ]
-
     meses_valores = [
-        round(mes_dict[mes], 2)
+        mes_dict[mes]
         for mes in meses_ordenados
     ]
-
-    print("📈 GRÁFICO MENSAL")
-    print(f"   Meses: {meses_labels}")
-    print(f"   Valores: {meses_valores}")
-
-    # ==========================================================
-    # FORMAS DE PAGAMENTO
-    # ==========================================================
-
-    pagamentos = defaultdict(int)
-
-    # ----------------------------------------------------------
-    # Pagamentos dos pedidos online
-    # ----------------------------------------------------------
-
-    pagamentos_online = pedidos.values(
-        'metodo_pagamento'
-    ).annotate(
-        total=Count('id')
+    print(
+        f"📈 Meses com dados: "
+        f"{len(meses_labels)}"
     )
 
-    escolhas_pedido = dict(
-        Pedido.METODO_PAGAMENTO_CHOICES
+    # ==================== PAGAMENTOS PIX ======================
+  
+    pix_online = pedidos.filter(
+        metodo_pagamento='pix'
+    ).count()
+
+    pix_manual = vendas_manuais.filter(
+        forma_pagamento='pix'
+    ).count()
+
+    total_pix = pix_online + pix_manual
+
+    pagamentos_labels = ['PIX']
+    pagamentos_valores = [total_pix]
+
+    print(
+        f"💳 PIX online: {pix_online}"
+    )
+    print(
+        f"💳 PIX manual: {pix_manual}"
+    )
+    print(
+        f"💳 TOTAL DE PAGAMENTOS PIX: {total_pix}"
     )
 
-
-    for item in pagamentos_online:
-
-        metodo = item['metodo_pagamento']
-
-        if not metodo:
-            metodo = 'outros'
-        label = escolhas_pedido.get(
-            metodo,
-            metodo
-        )
-        pagamentos[label] += (
-            item['total'] or 0
-        )
-
-    # ----------------------------------------------------------
-    # Pagamentos das vendas manuais
-    # ----------------------------------------------------------
-
-    pagamentos_manuais = vendas_manuais.values(
-        'forma_pagamento'
-    ).annotate(
-        total=Count('id')
-    )
-
-
-    escolhas_venda = dict(
-        Venda.FORMA_PAGAMENTO_CHOICES
-    )
-
-
-    for item in pagamentos_manuais:
-
-        metodo = item['forma_pagamento']
-
-        if not metodo:
-            metodo = 'outros'
-
-        label = escolhas_venda.get(
-            metodo,
-            metodo
-        )
-
-        pagamentos[label] += (
-            item['total'] or 0
-        )
-
-
-    # ----------------------------------------------------------
-    # Ordenar formas de pagamento
-    # ----------------------------------------------------------
-
-    pagamentos_ordenados = sorted(
-        pagamentos.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )
-
-    pagamentos_labels = [
-        item[0]
-        for item in pagamentos_ordenados
-    ]
-
-    pagamentos_valores = [
-        item[1]
-        for item in pagamentos_ordenados
-    ]
-
-
-    print("💳 FORMAS DE PAGAMENTO")
-    print(f"   Labels: {pagamentos_labels}")
-    print(f"   Valores: {pagamentos_valores}")
-
-
-    # ==========================================================
-    # CONTEXT
-    # ==========================================================
+    # ==================== CONTEXTO ====================
 
     context = {
-
-        'data_inicio': data_inicio or '',
-        'data_fim': data_fim or '',
+        'data_inicio': request.GET.get(
+            'data_inicio',
+            ''
+        ),
+        'data_fim': request.GET.get(
+            'data_fim',
+            ''
+        ),
 
         'total_pedidos': total_geral,
-       
         'valor_total': valor_total,
         'pedidos_pendentes': total_pendentes,
         'pedidos_aprovados': total_aprovados,
@@ -2890,13 +2797,8 @@ def relatorios_pedidos(request):
         'pagamentos_valores': pagamentos_valores,
     }
 
-
-    print("==========================================")
-    print("✅ RELATÓRIO GERADO")
-    print("==========================================")
-
-
-    return render(request,'vendas/relatorios_pedidos.html', context)
+    return render(
+        request,'vendas/relatorios_pedidos.html', context)
     
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
