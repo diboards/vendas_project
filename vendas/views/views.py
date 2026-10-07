@@ -2522,27 +2522,21 @@ def relatorios_pedidos(request):
     pedidos_pendentes = pedidos.filter(
         status='pendente'
     ).count()
-
     pedidos_aprovados = pedidos.filter(
         status='aprovado'
     ).count()
-
     pedidos_aguardando = pedidos.filter(
         status='aguardando_aprovacao'
     ).count()
-
     pedidos_processando = pedidos.filter(
         status='processando'
     ).count()
-
     pedidos_enviados = pedidos.filter(
         status='enviado'
     ).count()
-
     pedidos_entregues = pedidos.filter(
         status='entregue'
     ).count()
-
     pedidos_cancelados = pedidos.filter(
         status='cancelado'
     ).count()
@@ -2745,30 +2739,103 @@ def relatorios_pedidos(request):
         f"{len(meses_labels)}"
     )
 
-    # ==================== PAGAMENTOS PIX ======================
-  
-    pix_online = pedidos.filter(
-        metodo_pagamento='pix'
-    ).count()
+    # ==================== FORMAS DE PAGAMENTO ====================
 
-    pix_manual = vendas_manuais.filter(
-        forma_pagamento='pix'
-    ).count()
+pagamentos = defaultdict(int)
 
-    total_pix = pix_online + pix_manual
+# -------------------- PEDIDOS ONLINE --------------------
 
-    pagamentos_labels = ['PIX']
-    pagamentos_valores = [total_pix]
+pagamentos_online = pedidos.values(
+    'metodo_pagamento'
+).annotate(
+    total=Count('id')
+)
+
+for item in pagamentos_online:
+
+    metodo = item['metodo_pagamento']
+
+    label = dict(
+        Pedido.METODO_PAGAMENTO_CHOICES
+    ).get(
+        metodo,
+        metodo
+    )
+
+    # Mantém somente os meios desejados
+    if metodo == 'pix':
+        pagamentos['PIX'] += item['total'] or 0
+
+    elif metodo in ['dinheiro']:
+        pagamentos['Dinheiro'] += item['total'] or 0
+
+    elif metodo in ['cartao', 'cartão']:
+        pagamentos['Cartão'] += item['total'] or 0
 
     print(
-        f"💳 PIX online: {pix_online}"
+        f"💳 Pagamento online: "
+        f"{label} - {item['total']}"
     )
+
+
+# -------------------- VENDAS MANUAIS --------------------
+
+pagamentos_manuais = vendas_manuais.values(
+    'forma_pagamento'
+).annotate(
+    total=Count('id')
+)
+
+for item in pagamentos_manuais:
+
+    metodo = item['forma_pagamento']
+
+    label = dict(
+        Venda.FORMA_PAGAMENTO_CHOICES
+    ).get(
+        metodo,
+        metodo
+    )
+
+    # Mantém somente os meios desejados
+    if metodo == 'pix':
+        pagamentos['PIX'] += item['total'] or 0
+
+    elif metodo == 'dinheiro':
+        pagamentos['Dinheiro'] += item['total'] or 0
+
+    elif metodo in ['cartao', 'cartão']:
+        pagamentos['Cartão'] += item['total'] or 0
+
     print(
-        f"💳 PIX manual: {pix_manual}"
+        f"💵 Pagamento manual: "
+        f"{label} - {item['total']}"
     )
-    print(
-        f"💳 TOTAL DE PAGAMENTOS PIX: {total_pix}"
-    )
+
+
+# -------------------- RESULTADO FINAL --------------------
+
+pagamentos_labels = [
+    'PIX',
+    'Dinheiro',
+    'Cartão'
+]
+
+pagamentos_valores = [
+    pagamentos['PIX'],
+    pagamentos['Dinheiro'],
+    pagamentos['Cartão']
+]
+
+print(
+    f"📊 Pagamentos consolidados: "
+    f"{pagamentos_labels}"
+)
+
+print(
+    f"📊 Valores consolidados: "
+    f"{pagamentos_valores}"
+)
 
     # ==================== CONTEXTO ====================
 
