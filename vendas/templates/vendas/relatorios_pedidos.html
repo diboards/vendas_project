@@ -155,85 +155,159 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    // ========================================================== //
-    // GRÁFICO: VENDAS POR MÊS                                    //
-    // ========================================================== //
-    const mesesLabels = {{ meses_labels|safe }};
-    const mesesValores = {{ meses_valores|safe }};
+{% block extra_js %}
 
-    if (mesesLabels.length > 0) {
-        const ctxLinha = document.getElementById('graficoVendasPorMes').getContext('2d');
-        new Chart(ctxLinha, {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{{ meses_labels|json_script:"meses-labels-data" }}
+{{ meses_valores|json_script:"meses-valores-data" }}
+{{ pagamentos_labels|json_script:"pagamentos-labels-data" }}
+{{ pagamentos_valores|json_script:"pagamentos-valores-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    console.log('📊 Inicializando gráficos do relatório...');
+
+    // ================================
+    // DADOS - VENDAS POR MÊS
+    // ================================
+
+    const mesesLabels = JSON.parse(
+        document.getElementById('meses-labels-data').textContent
+    );
+
+    const mesesValores = JSON.parse(
+        document.getElementById('meses-valores-data').textContent
+    );
+
+    console.log('📅 Meses:', mesesLabels);
+    console.log('💰 Valores:', mesesValores);
+
+
+    // ================================
+    // GRÁFICO DE VENDAS POR MÊS
+    // ================================
+
+    const canvasMes = document.getElementById('graficoVendasPorMes');
+
+    if (canvasMes && mesesLabels.length > 0) {
+
+        new Chart(canvasMes, {
             type: 'line',
+
             data: {
                 labels: mesesLabels,
+
                 datasets: [{
                     label: 'Vendas (R$)',
                     data: mesesValores,
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    borderColor: '#0d6efd',
+
                     borderWidth: 3,
+
                     fill: true,
                     tension: 0.3,
-                    pointBackgroundColor: '#0d6efd',
-                    pointRadius: 4,
+
+                    pointRadius: 4
                 }]
             },
+
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+
                 plugins: {
                     legend: {
                         display: false
                     }
                 },
+
                 scales: {
                     y: {
                         beginAtZero: true,
+
                         ticks: {
                             callback: function(value) {
-                                return 'R$ ' + value.toFixed(0);
+                                return 'R$ ' + Number(value).toFixed(2);
                             }
                         }
                     }
                 }
             }
         });
-    } else {
-        document.getElementById('graficoVendasPorMes').parentElement.innerHTML = 
-            '<p class="text-center text-muted py-4">Nenhum dado para exibir</p>';
+
+        console.log('✅ Gráfico de vendas criado.');
+
+    } else if (canvasMes) {
+
+        canvasMes.parentElement.innerHTML =
+            '<p class="text-center text-muted py-4">' +
+            'Nenhum dado para exibir' +
+            '</p>';
+
+        console.log('⚠️ Nenhum dado para o gráfico mensal.');
     }
 
-    // ========================================================== //
-    // GRÁFICO: FORMAS DE PAGAMENTO                               //
-    // ========================================================== //
-    const pagamentosLabels = {{ pagamentos_labels|safe }};
-    const pagamentosValores = {{ pagamentos_valores|safe }};
 
-    const coresFixas = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'];
+    // ================================
+    // DADOS - FORMAS DE PAGAMENTO
+    // ================================
 
-    if (pagamentosLabels.length > 0) {
-        const ctxPizza = document.getElementById('graficoPagamentos').getContext('2d');
-        new Chart(ctxPizza, {
+    const pagamentosLabels = JSON.parse(
+        document.getElementById('pagamentos-labels-data').textContent
+    );
+
+    const pagamentosValores = JSON.parse(
+        document.getElementById('pagamentos-valores-data').textContent
+    );
+
+    console.log('💳 Pagamentos:', pagamentosLabels);
+    console.log('🔢 Quantidades:', pagamentosValores);
+
+
+    // ================================
+    // GRÁFICO DE PAGAMENTOS
+    // ================================
+
+    const canvasPagamento = document.getElementById('graficoPagamentos');
+
+    const coresFixas = [
+        '#4e73df',
+        '#1cc88a',
+        '#36b9cc',
+        '#f6c23e',
+        '#e74a3b',
+        '#858796'
+    ];
+
+    if (canvasPagamento && pagamentosLabels.length > 0) {
+
+        new Chart(canvasPagamento, {
+
             type: 'pie',
+
             data: {
                 labels: pagamentosLabels,
+
                 datasets: [{
                     data: pagamentosValores,
-                    backgroundColor: coresFixas.slice(0, pagamentosLabels.length),
-                    borderColor: '#fff',
+
+                    backgroundColor:
+                        coresFixas.slice(0, pagamentosLabels.length),
+
+                    borderColor: '#ffffff',
                     borderWidth: 1
                 }]
             },
+
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+
                 plugins: {
                     legend: {
                         position: 'bottom',
+
                         labels: {
                             boxWidth: 12
                         }
@@ -241,9 +315,20 @@
                 }
             }
         });
-    } else {
-        document.getElementById('graficoPagamentos').parentElement.innerHTML = 
-            '<p class="text-center text-muted py-4">Nenhum dado para exibir</p>';
+
+        console.log('✅ Gráfico de pagamentos criado.');
+
+    } else if (canvasPagamento) {
+
+        canvasPagamento.parentElement.innerHTML =
+            '<p class="text-center text-muted py-4">' +
+            'Nenhum dado para exibir' +
+            '</p>';
+
+        console.log('⚠️ Nenhum dado para o gráfico de pagamentos.');
     }
+
+});
 </script>
+
 {% endblock %}
