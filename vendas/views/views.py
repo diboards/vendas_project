@@ -2741,113 +2741,113 @@ def relatorios_pedidos(request):
 
     # ==================== FORMAS DE PAGAMENTO ====================
 
-pagamentos = defaultdict(int)
-
-# -------------------- PEDIDOS ONLINE --------------------
-
-pagamentos_online = pedidos.values(
-    'metodo_pagamento'
-).annotate(
-    total=Count('id')
-)
-
-for item in pagamentos_online:
-
-    metodo = item['metodo_pagamento']
-
-    label = dict(
-        Pedido.METODO_PAGAMENTO_CHOICES
-    ).get(
-        metodo,
-        metodo
+    pagamentos = defaultdict(int)
+    
+    # -------------------- PEDIDOS ONLINE --------------------
+    
+    pagamentos_online = pedidos.values(
+        'metodo_pagamento'
+    ).annotate(
+        total=Count('id')
     )
 
-    # Mantém somente os meios desejados
-    if metodo == 'pix':
-        pagamentos['PIX'] += item['total'] or 0
-
-    elif metodo in ['dinheiro']:
-        pagamentos['Dinheiro'] += item['total'] or 0
-
-    elif metodo in ['cartao', 'cartão']:
-        pagamentos['Cartão'] += item['total'] or 0
-
-    print(
-        f"💳 Pagamento online: "
-        f"{label} - {item['total']}"
-    )
-
-
-# -------------------- VENDAS MANUAIS --------------------
-
-pagamentos_manuais = vendas_manuais.values(
-    'forma_pagamento'
-).annotate(
-    total=Count('id')
-)
-
-for item in pagamentos_manuais:
-
-    metodo = item['forma_pagamento']
-
-    label = dict(
-        Venda.FORMA_PAGAMENTO_CHOICES
-    ).get(
-        metodo,
-        metodo
-    )
-
-    # Mantém somente os meios desejados
-    if metodo == 'pix':
-        pagamentos['PIX'] += item['total'] or 0
-
-    elif metodo == 'dinheiro':
-        pagamentos['Dinheiro'] += item['total'] or 0
-
-    elif metodo in ['cartao', 'cartão']:
-        pagamentos['Cartão'] += item['total'] or 0
-
-    print(
-        f"💵 Pagamento manual: "
-        f"{label} - {item['total']}"
-    )
-
-
-# -------------------- RESULTADO FINAL --------------------
-
-pagamentos_labels = [
-    'PIX',
-    'Dinheiro',
-    'Cartão'
-]
-
-pagamentos_valores = [
-    pagamentos['PIX'],
-    pagamentos['Dinheiro'],
-    pagamentos['Cartão']
-]
-
-print(
-    f"📊 Pagamentos consolidados: "
-    f"{pagamentos_labels}"
-)
-
-print(
-    f"📊 Valores consolidados: "
-    f"{pagamentos_valores}"
-)
-
-    # ==================== CONTEXTO ====================
-
-    context = {
-        'data_inicio': request.GET.get(
-            'data_inicio',
-            ''
-        ),
-        'data_fim': request.GET.get(
-            'data_fim',
-            ''
-        ),
+    for item in pagamentos_online:
+    
+        metodo = item['metodo_pagamento']
+    
+        label = dict(
+            Pedido.METODO_PAGAMENTO_CHOICES
+        ).get(
+            metodo,
+            metodo
+        )
+    
+        # Mantém somente os meios desejados
+        if metodo == 'pix':
+            pagamentos['PIX'] += item['total'] or 0
+    
+        elif metodo in ['dinheiro']:
+            pagamentos['Dinheiro'] += item['total'] or 0
+    
+        elif metodo in ['cartao', 'cartão']:
+            pagamentos['Cartão'] += item['total'] or 0
+    
+        print(
+            f"💳 Pagamento online: "
+            f"{label} - {item['total']}"
+        )
+    
+    
+        # -------------------- VENDAS MANUAIS --------------------
+        
+        pagamentos_manuais = vendas_manuais.values(
+            'forma_pagamento'
+        ).annotate(
+            total=Count('id')
+        )
+    
+    for item in pagamentos_manuais:
+    
+        metodo = item['forma_pagamento']
+    
+        label = dict(
+            Venda.FORMA_PAGAMENTO_CHOICES
+        ).get(
+            metodo,
+            metodo
+        )
+    
+        # Mantém somente os meios desejados
+        if metodo == 'pix':
+            pagamentos['PIX'] += item['total'] or 0
+    
+        elif metodo == 'dinheiro':
+            pagamentos['Dinheiro'] += item['total'] or 0
+    
+        elif metodo in ['cartao', 'cartão']:
+            pagamentos['Cartão'] += item['total'] or 0
+    
+        print(
+            f"💵 Pagamento manual: "
+            f"{label} - {item['total']}"
+        )
+    
+    
+        # -------------------- RESULTADO FINAL --------------------
+        
+        pagamentos_labels = [
+            'PIX',
+            'Dinheiro',
+            'Cartão'
+        ]
+        
+        pagamentos_valores = [
+            pagamentos['PIX'],
+            pagamentos['Dinheiro'],
+            pagamentos['Cartão']
+        ]
+        
+        print(
+            f"📊 Pagamentos consolidados: "
+            f"{pagamentos_labels}"
+        )
+        
+        print(
+            f"📊 Valores consolidados: "
+            f"{pagamentos_valores}"
+        )
+    
+        # ==================== CONTEXTO ====================
+    
+        context = {
+            'data_inicio': request.GET.get(
+                'data_inicio',
+                ''
+            ),
+            'data_fim': request.GET.get(
+                'data_fim',
+                ''
+            ),
 
         'total_pedidos': total_geral,
         'valor_total': valor_total,
