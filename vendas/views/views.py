@@ -466,6 +466,7 @@ def visualizar_carrinho(request):
                     'variacao_id': item_db.variacao.id,
                     'produto_id': item_db.variacao.produto.id,
                     'nome': item_db.variacao.produto.nome,
+                    'descricao': item_db.variacao.produto.descricao,
                     'quantidade': item_db.quantidade,
                     'preco': float(item_db.variacao.preco),
                     'cor': item_db.variacao.cor,
