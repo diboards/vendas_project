@@ -1958,6 +1958,7 @@ def estoque(request):
         produtos_com_precos.append({
             'id': p.id,
             'nome': p.nome,
+            'descricao': p.descricao,
             'preco': float(preco),
             'quantidade_estoque': estoque,
             'cor': cor,
