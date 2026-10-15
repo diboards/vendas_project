@@ -502,9 +502,11 @@ def visualizar_carrinho(request):
                 variacao = ProdutoVariacao.objects.get(id=item.get('variacao_id'))
                 estoque_disponivel = variacao.quantidade_estoque
                 nome = variacao.produto.nome
+                descricao = variacao.produto.descricao
             except ProdutoVariacao.DoesNotExist:
                 estoque_disponivel = 0
                 nome = item.get('produto_nome', 'Produto')
+                descricao = ''
             
             itens.append({
                 'chave': chave,
@@ -512,6 +514,7 @@ def visualizar_carrinho(request):
                 'variacao_id': item.get('variacao_id'),
                 'produto_id': item.get('produto_id'),
                 'nome': nome,
+                'descricao': descricao,
                 'quantidade': quantidade,
                 'preco': preco,
                 'cor': item.get('cor', 'Branco'),
