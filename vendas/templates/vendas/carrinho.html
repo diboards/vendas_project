@@ -62,6 +62,11 @@
                         <!-- Informações do produto -->
                         <div class="col-md-4">
                             <h5 class="mb-2 fw-bold">{{ item.nome }}</h5>
+                            {% if item.descricao %}
+                            <p class="mb-2 text-muted small" title="{{ item.descricao }}">
+                                {{ item.descricao|truncatechars:80 }}
+                            </p>
+                            {% endif %}
                             <p class="mb-1 text-muted small">Ref: #{{ item.produto_id|stringformat:"06d" }}</p>
                             <p class="mb-1 text-muted small">Vendido por <strong>Mirna Boutique</strong></p>
                             <div class="mt-2">
