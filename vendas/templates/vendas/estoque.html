@@ -144,6 +144,11 @@
                                             <div>
                                                 <strong>{{ produto.nome }}</strong>
                                                 <br>
+                                                {% if produto.descricao %}
+                                                <small class="text-muted d-block" title="{{ produto.descricao }}">
+                                                    {{ produto.descricao|truncatechars:60 }}
+                                                </small>
+                                                {% endif %}
                                                 <span class="badge bg-secondary bg-opacity-10 text-secondary">
                                                     {{ produto.variacoes_count }} var.
                                                 </span>
