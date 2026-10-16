@@ -165,11 +165,17 @@
                                                  style="width: 40px; height: 40px; object-fit: cover;">
                                             <div>
                                                 <strong class="small">{{ item.variacao.produto.nome }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        {{ item.variacao.cor }}, 
-                                                        {{ item.variacao.tamanho }}
-                                                    </small>
+                                                {% if item.variacao.produto.descricao %}
+                                                <br>
+                                                <small class="text-muted" title="{{ item.variacao.produto.descricao }}">
+                                                    {{ item.variacao.produto.descricao|truncatechars:60 }}
+                                                </small>
+                                                {% endif %}
+                                                <br>
+                                                <small class="text-muted">
+                                                    {{ item.variacao.cor }}, 
+                                                    {{ item.variacao.tamanho }}
+                                                </small>
                                             </div>
                                         </div>
                                     </td>
