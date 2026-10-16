@@ -55,8 +55,14 @@
                                              class="rounded me-3" style="width: 70px; height: 70px; object-fit: cover;">
                                     {% endif %}
                                     
+                                    
                                     <div>
                                         <h6 class="mb-1">{{ item.variacao.produto.nome }}</h6>
+                                        {% if item.variacao.produto.descricao %}
+                                        <p class="mb-1 text-muted small" title="{{ item.variacao.produto.descricao }}">
+                                            {{ item.variacao.produto.descricao|truncatechars:60 }}
+                                        </p>
+                                        {% endif %}
                                         <p class="mb-0 text-muted small">
                                             Cor: {{ item.variacao.cor|default:"-" }}<br>
                                             Tamanho: {{ item.variacao.tamanho|default:"-" }}<br>
