@@ -2339,7 +2339,8 @@ def meus_pedidos(request):
 
 # 🔥 LISTA DE VENDAS - 10 minutos (apenas para admin)
 @cache_page(60 * 10)
-@superuser_required
+@login_required
+#@superuser_required
 @user_passes_test(lambda u: u.is_superuser)
 def lista_vendas(request):
     busca = request.GET.get('busca', '')
