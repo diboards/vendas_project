@@ -2322,19 +2322,6 @@ def cadastrar_produto(request):
     
     return render(request, 'vendas/cadastrar_produto.html')
 
-def meus_pedidos(request):
-    # 🔥 CORRIGIDO: usa 'itens_pedido__variacao__produto'
-    pedidos = Pedido.objects.filter(usuario=request.user)\
-        .prefetch_related(
-            'itens_pedido',
-            'itens_pedido__variacao',
-            'itens_pedido__variacao__produto'
-        )\
-        .order_by('-data_criacao')
-
-    return render(request, 'vendas/meus_pedidos.html', {
-        'pedidos': pedidos
-    })
 
 # 🔥 LISTA DE VENDAS - 10 minutos (apenas para admin)
 @cache_page(60 * 10)
