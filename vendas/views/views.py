@@ -2224,7 +2224,6 @@ def editar_produto(request, produto_id):
 # 🔥 DETALHES DO PRODUTO - 1 hora
 
 @superuser_required
-@login_required
 @user_passes_test(lambda u: u.is_superuser)
 def deletar_produto(request, produto_id):
     """Exclui um produto"""
