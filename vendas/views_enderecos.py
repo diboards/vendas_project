@@ -213,7 +213,7 @@ def adicionar_endereco_checkout(request):
             
             if endereco_id:
                 # ===== MODO EDITAR =====
-                endereco = get_object_or_404(Endereco, id=endereco_id, usuario=request.user)
+                endereco = get_object_or_404(EnderecoEntrega, id=endereco_id, usuario=request.user)
                 
                 endereco.rua = request.POST.get('rua')
                 endereco.numero = request.POST.get('numero')
@@ -227,7 +227,7 @@ def adicionar_endereco_checkout(request):
                 
                 if principal:
                     # Remove principal de outros endereços
-                    Endereco.objects.filter(usuario=request.user, principal=True).update(principal=False)
+                    EnderecoEntrega.objects.filter(usuario=request.user, principal=True).update(principal=False)
                     endereco.principal = True
                 else:
                     endereco.principal = False
@@ -245,9 +245,9 @@ def adicionar_endereco_checkout(request):
                 
                 # Se for principal, remove principal de outros
                 if principal:
-                    Endereco.objects.filter(usuario=request.user, principal=True).update(principal=False)
+                    EnderecoEntrega.objects.filter(usuario=request.user, principal=True).update(principal=False)
                 
-                endereco = Endereco(
+                endereco = EnderecoEntrega(
                     usuario=request.user,
                     cep=request.POST.get('cep'),
                     rua=request.POST.get('rua'),
