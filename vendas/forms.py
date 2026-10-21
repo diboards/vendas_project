@@ -84,7 +84,7 @@ class PerfilForm(forms.ModelForm):
         model = Perfil
         fields = ['telefone', 'cpf', 'data_nascimento', 'bio']
         widgets = {
-            'data_nascimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data_nascimento': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control'}),
             'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
             'cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000.000.000-00'}),
             'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
